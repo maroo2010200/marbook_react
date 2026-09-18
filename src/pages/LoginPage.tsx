@@ -4,9 +4,11 @@ import { login } from "../api/api";
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    setError("");
 
     try {
       const data = await login(email, password);
@@ -15,13 +17,17 @@ function LoginPage() {
 
       console.log("Login successful", data);
     } catch (error) {
-      alert("Invalid email or password");
+      setError("Invalid email or password");
     }
   };
 
   return (
     <div>
       <h1>Login</h1>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      
       <form onSubmit={handleSubmit}>
         <input
           type="email"
