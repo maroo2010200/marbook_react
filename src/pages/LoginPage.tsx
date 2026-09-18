@@ -8,14 +8,21 @@ function LoginPage() {
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
 
-    const response = await axios.post(
-        "http://localhost:5244/api/Auth/login",
-        {
-            email,
-            password
-        }
-    );
-    console.log(response.data.token)
+    try {
+        const response = await axios.post(
+            "http://localhost:5244/api/Auth/login",
+            {
+                email,
+                password
+            }
+        )
+        localStorage.setItem("token", response.data.token);
+        console.log("Login successful");
+    }
+    catch (error) {
+        alert("Invalid email or password");
+    }
+
   }
 
   return (
