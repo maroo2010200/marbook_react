@@ -1,5 +1,5 @@
 import { useState } from "react";
-import api from "../api/api";
+import { login } from "../api/api";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -9,12 +9,11 @@ function LoginPage() {
     e.preventDefault();
 
     try {
-      const response = await api.post("/Auth/login", {
-        email,
-        password,
-      });
-      localStorage.setItem("token", response.data.token);
-      console.log("Login successful");
+      const data = await login(email, password);
+
+      localStorage.setItem("token", data.token);
+
+      console.log("Login successful", data);
     } catch (error) {
       alert("Invalid email or password");
     }
