@@ -1,13 +1,21 @@
+import axios from "axios";
 import { useState } from "react";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  function handleSubmit(e: React.SyntheticEvent) {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
 
-    console.log("Email", email);
+    const response = await axios.post(
+        "http://localhost:5244/api/Auth/login",
+        {
+            email,
+            password
+        }
+    );
+    console.log(response.data.token)
   }
 
   return (
