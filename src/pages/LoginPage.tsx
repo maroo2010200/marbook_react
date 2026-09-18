@@ -1,5 +1,5 @@
-import axios from "axios";
 import { useState } from "react";
+import api from "../api/api";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -9,21 +9,16 @@ function LoginPage() {
     e.preventDefault();
 
     try {
-        const response = await axios.post(
-            "http://localhost:5244/api/Auth/login",
-            {
-                email,
-                password
-            }
-        )
-        localStorage.setItem("token", response.data.token);
-        console.log("Login successful");
+      const response = await api.post("/Auth/login", {
+        email,
+        password,
+      });
+      localStorage.setItem("token", response.data.token);
+      console.log("Login successful");
+    } catch (error) {
+      alert("Invalid email or password");
     }
-    catch (error) {
-        alert("Invalid email or password");
-    }
-
-  }
+  };
 
   return (
     <div>
