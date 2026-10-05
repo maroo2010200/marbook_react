@@ -7,7 +7,16 @@ interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => void;
+}
+
+interface RegisterData {
+  email: string;
+  name: string;
+  username: string | null;   // optional, and position doesn't matter now
+  password: string
+  birthdate: string;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -27,6 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("token", newToken);
   };
 
+  const register = async (data: RegisterData) => {
+  const response = await api.post("/Auth/register", data);
+    const newToken = response.data.token;
+    setToken(newToken);
+    localStorage.setItem("token", newToken);
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -40,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token,
     isAuthenticated,
     login,
+    register,
     logout,
   };
 
