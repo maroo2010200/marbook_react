@@ -39,8 +39,11 @@ const login = async (email: string, password: string) => {
   const newToken = response.data.token;
 
   setToken(newToken);
+  localStorage.setItem("token", newToken);
+
   setUser(null);
-  const me = await api.get("/user/me");
+
+  const me = await api.get("/Users/me");
   setUser(me.data);
 };
 
@@ -48,8 +51,8 @@ const login = async (email: string, password: string) => {
     const response = await api.post("/Auth/register", data);
     const { token: newToken, user: apiUser } = response.data;
     setToken(newToken);
-    setUser(apiUser ?? null);
     localStorage.setItem("token", newToken);
+    setUser(apiUser ?? null);
   };
 
   const logout = () => {
