@@ -1,21 +1,22 @@
 import { useState } from "react";
-import { login } from "../api/api";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setError("");
 
     try {
-      const data = await login(email, password);
-
-      localStorage.setItem("token", data.token);
-
-      console.log("Login successful", data);
+      await login(email, password);
+      console.log("Login successful");
+      navigate("/feed");
     } catch (error) {
       setError("Invalid email or password");
     }
