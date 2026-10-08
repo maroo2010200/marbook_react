@@ -1,8 +1,14 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
   const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  }
 
   return (
     <nav
@@ -20,7 +26,7 @@ function Navbar() {
 
       <div style={{ display: "flex", gap: "12px" }}>
         {isAuthenticated ? (
-          <button type="button" onClick={logout}>
+          <button type="button" onClick={handleLogout}>
             Logout
           </button>
         ) : (
