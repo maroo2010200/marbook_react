@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import api from "../api/api";
 
 // Define the shape of our context data
@@ -34,14 +34,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("token"),
   );
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchUser = async () => {
+      try {
+        const me = await api.get("/Users/me");
+        setUser(me.data);
+      } catch {
+        setToken(null);
+        localStorage.removeItem("token");
+      }
+    };
+
+    fetchUser();
+  }, [token]);
+
 const login = async (email: string, password: string) => {
   const response = await api.post("/Auth/login", { email, password });
   const newToken = response.data.token;
 
   setToken(newToken);
   localStorage.setItem("token", newToken);
-
-  setUser(null);
 
   const me = await api.get("/Users/me");
   setUser(me.data);
