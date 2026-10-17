@@ -1,5 +1,9 @@
 import api from "./api";
-import type { Comment, CommentsPagedResult } from "../types/comments";
+import type {
+  Comment,
+  CommentsPagedResult,
+  ToggleCommentLikeResponse,
+} from "../types/comments";
 
 export const commentsApi = {
   getComments: async (
@@ -31,4 +35,32 @@ export const commentsApi = {
     );
     return response.data;
   },
+
+  toggleCommentLike: async (
+    commentId: number
+  ): Promise<ToggleCommentLikeResponse> => {
+    const response = await api.post<ToggleCommentLikeResponse>(
+      `/comments/${commentId}/Likes`
+    );
+    return response.data;
+  },
+
+  createReply: async (
+    commentId: number,
+    content: string
+  ): Promise<Comment> => {
+    const response = await api.post<Comment>(
+      `/comments/${commentId}/Replies`,
+      { content }
+    );
+    return response.data;
+  },
+
+  getReplies: async (commentId: number): Promise<Comment[]> => {
+    const response = await api.get<Comment[]>(
+      `/comments/${commentId}/Replies`
+    );
+    return response.data;
+  },
 };
+

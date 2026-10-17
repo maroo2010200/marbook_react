@@ -146,8 +146,21 @@ export function usePosts(initialPage = 1, pageSize = 10) {
     }
   }, [loading, loadingMore, hasMore, pageSize]);
 
+  const updatePost = useCallback(
+    (postId: number, update: Partial<Post> | ((prev: Post) => Post)) => {
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p.id !== postId) return p;
+          return typeof update === "function" ? update(p) : { ...p, ...update };
+        })
+      );
+    },
+    []
+  );
+
   return {
     posts,
+    updatePost,
     pageNumber,
     loading,
     loadingMore,

@@ -7,10 +7,20 @@ export interface Comment {
   userName: string;
   createdAt: string;
   updatedAt: string;
+  parentCommentId?: number | null;
+  likeCount?: number;
+  replyCount?: number;
+  liked?: boolean;
+  replies?: Comment[];
 }
 
 export type CommentsPagedResult = PagedResult<Comment>;
 
 export interface CommentCreateDto {
   content: string;
+}
+
+export interface ToggleCommentLikeResponse {
+  liked: boolean;
+  likeCount: number;
 }

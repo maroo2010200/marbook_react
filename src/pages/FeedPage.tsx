@@ -6,10 +6,24 @@ import { likesApi } from "../api/likes";
 import { CommentsModal } from "../components/CommentsModal";
 import type { Post } from "../types/posts";
 
+function formatCount(count: number): string {
+  if (count <= 0) {
+    return "";
+  }
+  if (count >= 1_000_000) {
+    return (count / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  }
+  if (count >= 1_000) {
+    return (count / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  }
+  return count.toString();
+}
+
 function FeedPage() {
   const { user, isAuthenticated } = useAuth();
   const {
     posts,
+    updatePost,
     loading,
     loadingMore,
     error,
@@ -48,6 +62,23 @@ function FeedPage() {
     }
   }, [user?.id]);
 
+  // Sync likedPostIds from backend isLiked status on posts
+  useEffect(() => {
+    if (posts.length > 0) {
+      setLikedPostIds((prev) => {
+        let changed = false;
+        const next = new Set(prev);
+        for (const p of posts) {
+          if (p.isLiked && !next.has(p.id)) {
+            next.add(p.id);
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }
+  }, [posts]);
+
   // Comments modal state
   const [selectedPostForComments, setSelectedPostForComments] =
     useState<Post | null>(null);
@@ -77,39 +108,52 @@ function FeedPage() {
 
     likingPostIdsRef.current.add(postId);
     const storageKey = `marbook_likes_${user?.id ?? "guest"}`;
-    const isCurrentlyLiked = likedPostIds.has(postId);
-    const updated = new Set(likedPostIds);
+    const targetPost = posts.find((p) => p.id === postId);
+    const isCurrentlyLiked = Boolean(
+      targetPost?.isLiked ?? likedPostIds.has(postId)
+    );
+    const currentLikesCount =
+      targetPost?.likesCount ?? (isCurrentlyLiked ? 1 : 0);
+    const nextLiked = !isCurrentlyLiked;
+    const optimisticCount = nextLiked
+      ? currentLikesCount + 1
+      : Math.max(0, currentLikesCount - 1);
 
-    if (isCurrentlyLiked) {
-      // Optimistic unlike
-      updated.delete(postId);
-      setLikedPostIds(updated);
-      try {
-        localStorage.setItem(storageKey, JSON.stringify([...updated]));
-        await likesApi.unlikePost(postId);
-      } catch {
-        // Revert on failure
-        updated.add(postId);
-        setLikedPostIds(new Set(updated));
-        localStorage.setItem(storageKey, JSON.stringify([...updated]));
-      } finally {
-        likingPostIdsRef.current.delete(postId);
-      }
-    } else {
-      // Optimistic like
+    // Optimistic UI update
+    const updated = new Set(likedPostIds);
+    if (nextLiked) {
       updated.add(postId);
-      setLikedPostIds(updated);
-      try {
-        localStorage.setItem(storageKey, JSON.stringify([...updated]));
-        await likesApi.likePost(postId);
-      } catch {
-        // Revert on failure
-        updated.delete(postId);
-        setLikedPostIds(new Set(updated));
-        localStorage.setItem(storageKey, JSON.stringify([...updated]));
-      } finally {
-        likingPostIdsRef.current.delete(postId);
+    } else {
+      updated.delete(postId);
+    }
+    setLikedPostIds(updated);
+
+    updatePost(postId, { isLiked: nextLiked, likesCount: optimisticCount });
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify([...updated]));
+      if (nextLiked) {
+        const res = await likesApi.likePost(postId);
+        if (res && typeof res.likeCount === "number") {
+          updatePost(postId, { isLiked: res.liked, likesCount: res.likeCount });
+        }
+      } else {
+        const res = await likesApi.unlikePost(postId);
+        if (res && typeof res.likeCount === "number") {
+          updatePost(postId, { isLiked: res.liked, likesCount: res.likeCount });
+        }
       }
+    } catch {
+      // Revert on failure
+      const reverted = new Set(likedPostIds);
+      setLikedPostIds(reverted);
+      updatePost(postId, {
+        isLiked: isCurrentlyLiked,
+        likesCount: currentLikesCount,
+      });
+      localStorage.setItem(storageKey, JSON.stringify([...reverted]));
+    } finally {
+      likingPostIdsRef.current.delete(postId);
     }
   };
 
@@ -297,7 +341,9 @@ function FeedPage() {
             dateStyle: "medium",
             timeStyle: "short",
           });
-          const isLiked = likedPostIds.has(post.id);
+          const isLiked = Boolean(post.isLiked ?? likedPostIds.has(post.id));
+          const likesCount = post.likesCount ?? (isLiked ? 1 : 0);
+          const commentsCount = post.commentsCount ?? 0;
 
           return (
             <article
@@ -373,18 +419,18 @@ function FeedPage() {
                 {post.content}
               </p>
 
-              {/* Instagram-style Actions: Like & Comment */}
+              {/* Instagram/X-style Actions: Like & Comment with counts next to icons */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 18,
+                  gap: 22,
                   marginTop: 14,
                   paddingTop: 12,
                   borderTop: "1px solid #f0f2f5",
                 }}
               >
-                {/* Heart / Like Button (Instagram-style) */}
+                {/* Heart / Like Button with count */}
                 <button
                   type="button"
                   onClick={() => handleToggleLike(post.id)}
@@ -396,7 +442,7 @@ function FeedPage() {
                     padding: 0,
                     display: "flex",
                     alignItems: "center",
-                    gap: 6,
+                    gap: 7,
                     color: isLiked ? "#ed4956" : "#262626",
                     transition: "transform 0.1s ease",
                   }}
@@ -422,18 +468,20 @@ function FeedPage() {
                   >
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                   </svg>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: isLiked ? "#ed4956" : "#4b4f56",
-                    }}
-                  >
-                    {isLiked ? "Liked" : "Like"}
-                  </span>
+                  {likesCount > 0 && (
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: isLiked ? "#ed4956" : "#262626",
+                      }}
+                    >
+                      {formatCount(likesCount)}
+                    </span>
+                  )}
                 </button>
 
-                {/* Comment Button (Instagram-style) */}
+                {/* Comment Button with count */}
                 <button
                   type="button"
                   onClick={() => handleOpenComments(post)}
@@ -445,7 +493,7 @@ function FeedPage() {
                     padding: 0,
                     display: "flex",
                     alignItems: "center",
-                    gap: 6,
+                    gap: 7,
                     color: "#262626",
                     transition: "transform 0.1s ease",
                   }}
@@ -468,15 +516,17 @@ function FeedPage() {
                   >
                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                   </svg>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "#4b4f56",
-                    }}
-                  >
-                    Comment
-                  </span>
+                  {commentsCount > 0 && (
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "#262626",
+                      }}
+                    >
+                      {formatCount(commentsCount)}
+                    </span>
+                  )}
                 </button>
               </div>
             </article>
@@ -575,6 +625,20 @@ function FeedPage() {
         post={selectedPostForComments}
         isOpen={isCommentsOpen}
         onClose={handleCloseComments}
+        onCommentAdded={(_newComment) => {
+          if (selectedPostForComments) {
+            const postId = selectedPostForComments.id;
+            updatePost(postId, (p) => ({
+              ...p,
+              commentsCount: (p.commentsCount ?? 0) + 1,
+            }));
+            setSelectedPostForComments((prev) =>
+              prev
+                ? { ...prev, commentsCount: (prev.commentsCount ?? 0) + 1 }
+                : prev
+            );
+          }
+        }}
       />
     </div>
   );
