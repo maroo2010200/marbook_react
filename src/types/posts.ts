@@ -1,5 +1,4 @@
-import api from "../api/api";
-
+export { postsApi } from "../api/posts";
 export interface Post {
     id: number;
     content: string;
@@ -12,15 +11,9 @@ export interface Post {
 export interface PagedResult<T> {
     items: T[];
     totalCount: number;
-    pagedNumber: number;
-    pagedSize: number;
+    pageNumber: number;
+    pageSize: number;
+    totalPages?: number;
+    pagedNumber?: number;
+    pagedSize?: number;
 }
-
-export const postsApi = {
-    getAll: async (pagedNumber: number, pagedSize: number) => {
-        const response = await api.get("/posts", {
-            params: { pagedNumber, pagedSize}
-        });
-        return response.data;
-    }
-};
