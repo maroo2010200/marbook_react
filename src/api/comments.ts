@@ -62,5 +62,19 @@ export const commentsApi = {
     );
     return response.data;
   },
+
+  updateComment: async (
+    commentId: number,
+    content: string
+  ): Promise<Comment> => {
+    const response = await api.put<Comment>(`/comments/${commentId}`, {
+      content,
+    });
+    return response.data;
+  },
+
+  deleteComment: async (commentId: number): Promise<void> => {
+    await api.delete(`/comments/${commentId}`);
+  },
 };
 

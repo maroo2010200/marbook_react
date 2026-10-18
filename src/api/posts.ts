@@ -13,4 +13,18 @@ export const postsApi = {
     });
     return response.data;
   },
+
+  createPost: async (content: string): Promise<Post> => {
+    const response = await api.post<Post>("/posts", { content });
+    return response.data;
+  },
+
+  updatePost: async (id: number, content: string): Promise<Post> => {
+    const response = await api.put<Post>(`/posts/${id}`, { content });
+    return response.data;
+  },
+
+  deletePost: async (id: number): Promise<void> => {
+    await api.delete(`/posts/${id}`);
+  },
 };

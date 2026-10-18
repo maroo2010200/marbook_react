@@ -9,6 +9,7 @@ import {
   attachRepliesInTree,
   getAncestorIds,
   addReplyAndIncrementAncestors,
+  deleteCommentAndDecrementAncestors,
 } from "../utils/commentTree";
 
 const PAGE_SIZE = 10;
@@ -17,12 +18,14 @@ interface UseCommentsModalOptions {
   isOpen: boolean;
   post: Post | null;
   onCommentAdded?: (comment: Comment) => void;
+  onCommentDeleted?: (deletedCount: number) => void;
 }
 
 export function useCommentsModal({
   isOpen,
   post,
   onCommentAdded,
+  onCommentDeleted,
 }: UseCommentsModalOptions) {
   const { isAuthenticated } = useAuth();
 
@@ -352,6 +355,37 @@ export function useCommentsModal({
     }
   };
 
+  const handleEditComment = useCallback(
+    async (commentId: number, content: string): Promise<Comment> => {
+      const updated = await commentsApi.updateComment(commentId, content);
+      setComments((prev) =>
+        updateCommentInTree(prev, commentId, (c) => ({
+          ...c,
+          content: updated.content,
+          updatedAt: updated.updatedAt,
+        }))
+      );
+      return updated;
+    },
+    []
+  );
+
+  const handleDeleteComment = useCallback(
+    async (commentId: number): Promise<void> => {
+      const ancestorIds = getAncestorIds(commentsRef.current, commentId) ?? [];
+      await commentsApi.deleteComment(commentId);
+      const { updatedList, totalDeleted } = deleteCommentAndDecrementAncestors(
+        commentsRef.current,
+        commentId,
+        ancestorIds
+      );
+      setComments(updatedList);
+      commentsRef.current = updatedList;
+      onCommentDeleted?.(totalDeleted);
+    },
+    [onCommentDeleted]
+  );
+
   return {
     comments,
     loading,
@@ -377,5 +411,7 @@ export function useCommentsModal({
     handleStartReply,
     handleCancelReply,
     handleSubmit,
+    handleEditComment,
+    handleDeleteComment,
   };
 }

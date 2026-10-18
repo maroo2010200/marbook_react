@@ -12,6 +12,14 @@ export interface Post {
   isLiked?: boolean;
 }
 
+export interface PostCreateDto {
+  content: string;
+}
+
+export interface PostUpdateDto {
+  content: string;
+}
+
 export interface PagedResult<T> {
   items: T[];
   totalCount: number;

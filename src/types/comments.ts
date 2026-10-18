@@ -20,6 +20,10 @@ export interface CommentCreateDto {
   content: string;
 }
 
+export interface CommentUpdateDto {
+  content: string;
+}
+
 export interface ToggleCommentLikeResponse {
   liked: boolean;
   likeCount: number;

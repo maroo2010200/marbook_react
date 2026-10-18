@@ -11,6 +11,7 @@ interface CommentsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCommentAdded?: (comment: Comment) => void;
+  onCommentDeleted?: (deletedCount: number) => void;
 }
 
 export function CommentsModal({
@@ -18,8 +19,9 @@ export function CommentsModal({
   isOpen,
   onClose,
   onCommentAdded,
+  onCommentDeleted,
 }: CommentsModalProps) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   const {
     comments,
@@ -46,7 +48,9 @@ export function CommentsModal({
     handleStartReply,
     handleCancelReply,
     handleSubmit,
-  } = useCommentsModal({ isOpen, post, onCommentAdded });
+    handleEditComment,
+    handleDeleteComment,
+  } = useCommentsModal({ isOpen, post, onCommentAdded, onCommentDeleted });
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -272,6 +276,9 @@ export function CommentsModal({
                 onToggleReplies={handleToggleReplies}
                 onToggleLike={handleToggleCommentLike}
                 onStartReply={handleStartReply}
+                currentUserId={user?.id}
+                onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
               />
             ))}
 

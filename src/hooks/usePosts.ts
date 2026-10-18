@@ -158,9 +158,38 @@ export function usePosts(initialPage = 1, pageSize = 10) {
     []
   );
 
+  const addPost = useCallback((newPost: Post) => {
+    setPosts((prev) => {
+      if (prev.some((p) => p.id === newPost.id)) return prev;
+      const updated = [newPost, ...prev];
+      postsRef.current = updated;
+      return updated;
+    });
+  }, []);
+
+  const removePost = useCallback((postId: number) => {
+    setPosts((prev) => {
+      const updated = prev.filter((p) => p.id !== postId);
+      postsRef.current = updated;
+      return updated;
+    });
+  }, []);
+
+  const createPost = useCallback(
+    async (content: string): Promise<Post> => {
+      const newPost = await postsApi.createPost(content);
+      addPost(newPost);
+      return newPost;
+    },
+    [addPost]
+  );
+
   return {
     posts,
     updatePost,
+    addPost,
+    removePost,
+    createPost,
     pageNumber,
     loading,
     loadingMore,
