@@ -18,6 +18,7 @@ interface AuthContextValue {
   logout: () => void;
   verify: (token: string) => Promise<void>;
   resendVerificationEmail: (email: string) => Promise<string>;
+  updateUser: (updatedData: Partial<User>) => void;
 }
 
 interface RegisterData {
@@ -124,6 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return response.data.message ?? "Verification email resent.";
   };
 
+  const updateUser = (updatedData: Partial<User>) => {
+    setUser((prev) => (prev ? { ...prev, ...updatedData } : null));
+  };
+
   const isAuthenticated = token !== null;
 
   const value: AuthContextValue = {
@@ -135,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     verify,
     resendVerificationEmail,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,8 +1,11 @@
 export { postsApi } from "../api/posts";
 
+export type PostVisibility = "Public" | "Followers" | "Private";
+
 export interface Post {
   id: number;
   content: string;
+  visibility?: PostVisibility;
   userId: number;
   userName: string;
   createdAt: string;
@@ -14,10 +17,20 @@ export interface Post {
 
 export interface PostCreateDto {
   content: string;
+  visibility?: PostVisibility;
 }
 
 export interface PostUpdateDto {
   content: string;
+  visibility?: PostVisibility;
+}
+
+export interface GetPostsParams {
+  pageNumber: number;
+  pageSize: number;
+  search?: string;
+  userId?: number;
+  followingOnly?: boolean;
 }
 
 export interface PagedResult<T> {

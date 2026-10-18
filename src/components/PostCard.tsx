@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import type { Post } from "../types/posts";
+import { Link } from "react-router-dom";
+import type { Post, PostVisibility } from "../types/posts";
 import { postsApi } from "../api/posts";
 
 interface PostCardProps {
@@ -13,6 +14,96 @@ interface PostCardProps {
 }
 
 const MAX_CHAR_COUNT = 500;
+
+const AUDIENCE_OPTIONS: {
+  value: PostVisibility;
+  title: string;
+  subtitle: string;
+  pillLabel: string;
+}[] = [
+  {
+    value: "Public",
+    title: "Public",
+    subtitle: "Anyone on or off Marbook",
+    pillLabel: "Public",
+  },
+  {
+    value: "Followers",
+    title: "Followers only",
+    subtitle: "Only people who follow you",
+    pillLabel: "Followers",
+  },
+  {
+    value: "Private",
+    title: "Private (Only Me)",
+    subtitle: "Only you can see this post",
+    pillLabel: "Only Me",
+  },
+];
+
+function AudienceIcon({
+  visibility,
+  size = 12,
+}: {
+  visibility?: PostVisibility;
+  size?: number;
+}) {
+  if (visibility === "Private") {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+    );
+  }
+
+  if (visibility === "Followers") {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    );
+  }
+
+  // Public
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
 
 function formatCount(count: number): string {
   if (count <= 0) return "";
@@ -43,6 +134,11 @@ export function PostCard({
   // Edit mode state
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
+  const [editVisibility, setEditVisibility] = useState<PostVisibility>(
+    post.visibility || "Public"
+  );
+  const [isEditAudienceOpen, setIsEditAudienceOpen] = useState(false);
+  const editAudienceRef = useRef<HTMLDivElement | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -65,6 +161,23 @@ export function PostCard({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMenuOpen]);
+
+  // Close edit audience dropdown on outside click
+  useEffect(() => {
+    if (!isEditAudienceOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        editAudienceRef.current &&
+        !editAudienceRef.current.contains(e.target as Node)
+      ) {
+        setIsEditAudienceOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isEditAudienceOpen]);
 
   // Adjust textarea height on entering edit mode
   useEffect(() => {
@@ -118,6 +231,8 @@ export function PostCard({
   const handleStartEdit = () => {
     setIsMenuOpen(false);
     setEditContent(post.content);
+    setEditVisibility(post.visibility || "Public");
+    setIsEditAudienceOpen(false);
     setEditError(null);
     setIsEditing(true);
   };
@@ -125,6 +240,8 @@ export function PostCard({
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditContent(post.content);
+    setEditVisibility(post.visibility || "Public");
+    setIsEditAudienceOpen(false);
     setEditError(null);
   };
 
@@ -133,7 +250,11 @@ export function PostCard({
     const trimmed = editContent.trim();
     if (!trimmed || trimmed.length > MAX_CHAR_COUNT || isSaving) return;
 
-    if (trimmed === post.content) {
+    const hasContentChanged = trimmed !== post.content;
+    const hasVisibilityChanged =
+      editVisibility !== (post.visibility || "Public");
+
+    if (!hasContentChanged && !hasVisibilityChanged) {
       setIsEditing(false);
       return;
     }
@@ -142,7 +263,11 @@ export function PostCard({
     setEditError(null);
 
     try {
-      const updated = await postsApi.updatePost(post.id, trimmed);
+      const updated = await postsApi.updatePost(
+        post.id,
+        trimmed,
+        editVisibility
+      );
       onPostUpdated(updated);
       setIsEditing(false);
     } catch {
@@ -175,8 +300,14 @@ export function PostCard({
 
   const editCharCount = editContent.length;
   const isEditOverLimit = editCharCount > MAX_CHAR_COUNT;
+  const hasContentChanged = editContent.trim() !== post.content;
+  const hasVisibilityChanged =
+    editVisibility !== (post.visibility || "Public");
   const canSave =
-    editContent.trim().length > 0 && !isEditOverLimit && !isSaving;
+    editContent.trim().length > 0 &&
+    !isEditOverLimit &&
+    !isSaving &&
+    (hasContentChanged || hasVisibilityChanged);
 
   return (
     <article
@@ -200,41 +331,91 @@ export function PostCard({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              backgroundColor: "#1877f2",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 700,
-              fontSize: 16,
-              flexShrink: 0,
-            }}
+          <Link
+            to={`/profile/${post.userId}`}
+            style={{ textDecoration: "none", flexShrink: 0 }}
+            title={`View ${post.userName}'s profile`}
           >
-            {authorInitial}
-          </div>
-          <div>
             <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                backgroundColor: "#1877f2",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                fontSize: 16,
+                cursor: "pointer",
+                transition: "opacity 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+            >
+              {authorInitial}
+            </div>
+          </Link>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <Link
+              to={`/profile/${post.userId}`}
               style={{
                 fontWeight: 600,
                 fontSize: 15,
                 color: "#050505",
-                lineHeight: 1.2,
+                lineHeight: 1.25,
+                textDecoration: "none",
+                display: "inline-block",
+                cursor: "pointer",
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.textDecoration = "underline")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.textDecoration = "none")
+              }
             >
               {post.userName}
-            </div>
+            </Link>
             <small
               style={{
                 color: "#65676b",
                 fontSize: 12,
+                lineHeight: 1.3,
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 4,
               }}
             >
-              {postDate}
+              <span>{postDate}</span>
+              <span style={{ margin: "0 2px", color: "#8a8d91" }}>•</span>
+              <span
+                title={
+                  post.visibility === "Private"
+                    ? "Audience: Only me (Private)"
+                    : post.visibility === "Followers"
+                    ? "Audience: Followers only"
+                    : "Audience: Public"
+                }
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  color: "#65676b",
+                  cursor: "help",
+                }}
+              >
+                <AudienceIcon visibility={post.visibility} size={11} />
+                <span>
+                  {post.visibility === "Private"
+                    ? "Only Me"
+                    : post.visibility === "Followers"
+                    ? "Followers"
+                    : "Public"}
+                </span>
+              </span>
               {isEdited && editedDate && (
                 <span
                   title={`Edited at ${new Date(post.updatedAt).toLocaleString(
@@ -245,7 +426,6 @@ export function PostCard({
                     }
                   )}`}
                   style={{
-                    marginLeft: 6,
                     color: "#8e8e8e",
                     fontStyle: "italic",
                     cursor: "help",
@@ -444,16 +624,201 @@ export function PostCard({
               justifyContent: "space-between",
               alignItems: "center",
               marginTop: 10,
+              flexWrap: "wrap",
+              gap: 8,
             }}
           >
-            <span
-              style={{
-                fontSize: 12,
-                color: isEditOverLimit ? "#e02424" : "#65676b",
-              }}
-            >
-              {editCharCount}/{MAX_CHAR_COUNT}
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {/* Audience Selector Dropdown in Edit Mode */}
+              <div style={{ position: "relative" }} ref={editAudienceRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsEditAudienceOpen((prev) => !prev)}
+                  aria-haspopup="true"
+                  aria-expanded={isEditAudienceOpen}
+                  title="Change audience"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#4b4f56",
+                    backgroundColor: "#f0f2f5",
+                    border: "1px solid #dcdfe3",
+                    padding: "4px 9px",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    transition: "background-color 0.15s ease",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#e4e6eb")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f0f2f5")
+                  }
+                >
+                  <AudienceIcon visibility={editVisibility} size={12} />
+                  <span>
+                    {editVisibility === "Private"
+                      ? "Only Me"
+                      : editVisibility === "Followers"
+                      ? "Followers"
+                      : "Public"}
+                  </span>
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    style={{
+                      transform: isEditAudienceOpen
+                        ? "rotate(180deg)"
+                        : "rotate(0deg)",
+                      transition: "transform 0.15s ease",
+                    }}
+                  >
+                    <path d="M7 10l5 5 5-5z" />
+                  </svg>
+                </button>
+
+                {isEditAudienceOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "100%",
+                      left: 0,
+                      marginBottom: 6,
+                      backgroundColor: "#fff",
+                      borderRadius: 8,
+                      border: "1px solid #e4e6eb",
+                      boxShadow: "0 6px 18px rgba(0, 0, 0, 0.15)",
+                      width: 250,
+                      zIndex: 35,
+                      overflow: "hidden",
+                      padding: "6px 0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "6px 14px 8px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#65676b",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        borderBottom: "1px solid #f0f2f5",
+                      }}
+                    >
+                      Change audience
+                    </div>
+
+                    {AUDIENCE_OPTIONS.map((opt) => {
+                      const isSelected = editVisibility === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setEditVisibility(opt.value);
+                            setIsEditAudienceOpen(false);
+                          }}
+                          style={{
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            padding: "9px 14px",
+                            backgroundColor: isSelected
+                              ? "#e7f3ff"
+                              : "transparent",
+                            border: "none",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            transition: "background-color 0.12s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = "#f0f2f5";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = isSelected
+                              ? "#e7f3ff"
+                              : "transparent";
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: "50%",
+                              backgroundColor: isSelected
+                                ? "#1877f2"
+                                : "#f0f2f5",
+                              color: isSelected ? "#fff" : "#050505",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <AudienceIcon visibility={opt.value} size={14} />
+                          </div>
+
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: 13,
+                                fontWeight: isSelected ? 700 : 600,
+                                color: isSelected ? "#1877f2" : "#050505",
+                                lineHeight: 1.25,
+                              }}
+                            >
+                              {opt.title}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: "#65676b",
+                                lineHeight: 1.3,
+                                marginTop: 2,
+                              }}
+                            >
+                              {opt.subtitle}
+                            </div>
+                          </div>
+
+                          {isSelected && (
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#1877f2"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <span
+                style={{
+                  fontSize: 12,
+                  color: isEditOverLimit ? "#e02424" : "#65676b",
+                }}
+              >
+                {editCharCount}/{MAX_CHAR_COUNT}
+              </span>
+            </div>
 
             <div style={{ display: "flex", gap: 8 }}>
               <button

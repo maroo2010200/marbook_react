@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import type { Comment } from "../../types/comments";
 
 export interface CommentItemProps {
@@ -191,23 +192,33 @@ export function CommentItem({
         }}
       >
         {/* Avatar */}
-        <div
-          style={{
-            width: avatarSize,
-            height: avatarSize,
-            borderRadius: "50%",
-            backgroundColor: "#e4e6eb",
-            color: "#333",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 700,
-            fontSize: avatarFontSize,
-            flexShrink: 0,
-          }}
+        <Link
+          to={`/profile/${comment.userId}`}
+          style={{ textDecoration: "none", flexShrink: 0 }}
+          title={`View ${comment.userName}'s profile`}
         >
-          {cInitial}
-        </div>
+          <div
+            style={{
+              width: avatarSize,
+              height: avatarSize,
+              borderRadius: "50%",
+              backgroundColor: "#e4e6eb",
+              color: "#333",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              fontSize: avatarFontSize,
+              flexShrink: 0,
+              cursor: "pointer",
+              transition: "opacity 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            {cInitial}
+          </div>
+        </Link>
 
         {/* Content Column */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -319,7 +330,24 @@ export function CommentItem({
                 color: "#262626",
               }}
             >
-              <strong style={{ marginRight: 6 }}>{comment.userName}</strong>
+              <Link
+                to={`/profile/${comment.userId}`}
+                style={{
+                  fontWeight: 600,
+                  marginRight: 6,
+                  color: "#262626",
+                  textDecoration: "none",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.textDecoration = "underline")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.textDecoration = "none")
+                }
+              >
+                {comment.userName}
+              </Link>
               <span style={{ wordBreak: "break-word" }}>
                 {renderCommentContent(comment.content)}
               </span>

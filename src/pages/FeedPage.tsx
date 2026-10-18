@@ -10,6 +10,8 @@ import type { Post } from "../types/posts";
 
 function FeedPage() {
   const { user, isAuthenticated } = useAuth();
+  const [feedTab, setFeedTab] = useState<"for-you" | "following">("for-you");
+
   const {
     posts,
     updatePost,
@@ -22,7 +24,9 @@ function FeedPage() {
     hasMore,
     loadMore,
     fetchPosts,
-  } = usePosts();
+  } = usePosts(1, 10, {
+    followingOnly: feedTab === "following",
+  });
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -220,9 +224,72 @@ function FeedPage() {
         </div>
       </div>
 
+      {/* Personalized Feed Switcher Tabs */}
+      <div
+        style={{
+          display: "flex",
+          backgroundColor: "#fff",
+          borderRadius: 12,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+          padding: "4px",
+          marginBottom: 16,
+        }}
+      >
+        <button
+          type="button"
+          id="feed-tab-for-you"
+          onClick={() => setFeedTab("for-you")}
+          style={{
+            flex: 1,
+            padding: "10px",
+            border: "none",
+            backgroundColor: feedTab === "for-you" ? "#e7f3ff" : "transparent",
+            color: feedTab === "for-you" ? "#1877f2" : "#65676b",
+            fontWeight: feedTab === "for-you" ? 700 : 600,
+            fontSize: 14,
+            borderRadius: 8,
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          <span>🌐</span> For You
+        </button>
+
+        <button
+          type="button"
+          id="feed-tab-following"
+          onClick={() => setFeedTab("following")}
+          style={{
+            flex: 1,
+            padding: "10px",
+            border: "none",
+            backgroundColor: feedTab === "following" ? "#e7f3ff" : "transparent",
+            color: feedTab === "following" ? "#1877f2" : "#65676b",
+            fontWeight: feedTab === "following" ? 700 : 600,
+            fontSize: 14,
+            borderRadius: 8,
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          <span>👥</span> Following
+        </button>
+      </div>
+
       {/* Post Composer for authenticated users */}
       {isAuthenticated && (
-        <PostComposer onPostCreated={createPost} />
+        <PostComposer
+          onPostCreated={createPost}
+          defaultVisibility={feedTab === "following" ? "Followers" : "Public"}
+        />
       )}
 
       {/* Auth notice banner if user tries to like while logged out */}
@@ -318,14 +385,70 @@ function FeedPage() {
         <div
           style={{
             textAlign: "center",
-            padding: "48px 20px",
+            padding: "48px 24px",
             color: "#65676b",
             background: "#fff",
             border: "1px solid #e4e6eb",
-            borderRadius: 8,
+            borderRadius: 12,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
           }}
         >
-          <p style={{ margin: 0, fontSize: 16 }}>No posts yet.</p>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>
+            {feedTab === "following" ? "👥" : "📝"}
+          </div>
+          <h3
+            style={{
+              margin: "0 0 6px",
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#1c1e21",
+            }}
+          >
+            {feedTab === "following"
+              ? "No Posts from Accounts You Follow"
+              : "No Posts Yet"}
+          </h3>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              color: "#65676b",
+              lineHeight: 1.5,
+              maxWidth: 400,
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}
+          >
+            {feedTab === "following"
+              ? "Follow other creators and users across Marbook to see their newest posts here!"
+              : "Be the first to share something with the community using the composer above!"}
+          </p>
+          {feedTab === "following" && (
+            <button
+              type="button"
+              onClick={() => setFeedTab("for-you")}
+              style={{
+                marginTop: 18,
+                padding: "8px 18px",
+                backgroundColor: "#1877f2",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+                transition: "background-color 0.15s ease",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#166fe5")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#1877f2")
+              }
+            >
+              Switch to "For You" Feed
+            </button>
+          )}
         </div>
       )}
 

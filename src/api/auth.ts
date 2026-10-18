@@ -5,6 +5,7 @@ export interface User {
   name: string;
   username: string | null;
   email: string;
+  bio?: string | null;
   isEmailVerified: boolean;
   birthdate: string;
   createdAt: string;
