@@ -22,12 +22,12 @@ const MAX_CHAR_COUNT = 300;
  */
 function renderCommentContent(content: string) {
   const mentionMatch = content.match(
-    /^(@[\w\u0600-\u06FF]+(?:\s+[\w\u0600-\u06FF]+)?)([\s\S]*)$/
+    /^(@[\w\u0600-\u06FF]+)([\s\S]*)$/
   );
   if (mentionMatch) {
     return (
       <>
-        <span style={{ color: "#0095f6", fontWeight: 600, marginRight: 4 }}>
+        <span style={{ color: "#0095f6", fontWeight: 600 }}>
           {mentionMatch[1]}
         </span>
         {mentionMatch[2]}
@@ -100,7 +100,7 @@ export function CommentItem({
   const isEdited =
     Boolean(comment.updatedAt) &&
     new Date(comment.updatedAt).getTime() >
-      new Date(comment.createdAt).getTime() + 3000;
+    new Date(comment.createdAt).getTime() + 3000;
 
   const avatarSize = depth === 0 ? 32 : 24;
   const avatarFontSize = depth === 0 ? 13 : 11;
@@ -647,9 +647,8 @@ export function CommentItem({
               {isLoadingReplies
                 ? "Loading replies..."
                 : isExpanded
-                ? "Hide replies"
-                : `View ${replyCount} ${
-                    replyCount === 1 ? "reply" : "replies"
+                  ? "Hide replies"
+                  : `View ${replyCount} ${replyCount === 1 ? "reply" : "replies"
                   }`}
             </span>
           </button>
