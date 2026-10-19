@@ -129,3 +129,45 @@ export function addReplyAndIncrementAncestors(
 
   return traverse(list);
 }
+
+/**
+ * Removes a comment or reply with targetId from the tree, and decrements replyCount
+ * on all its ancestor comments by the total number of deleted items (1 + its replies).
+ * Returns the updated tree and the total number of deleted items.
+ */
+export function deleteCommentAndDecrementAncestors(
+  list: Comment[],
+  targetId: number,
+  ancestorIds: number[]
+): { updatedList: Comment[]; totalDeleted: number } {
+  const targetComment = findCommentInTree(list, targetId);
+  const totalDeleted = targetComment ? 1 + (targetComment.replyCount ?? 0) : 1;
+  const ancestorSet = new Set(ancestorIds);
+
+  const traverse = (items: Comment[]): Comment[] => {
+    return items
+      .filter((c) => c.id !== targetId)
+      .map((c) => {
+        const isAncestor = ancestorSet.has(c.id);
+        const updatedReplies =
+          c.replies && c.replies.length > 0 ? traverse(c.replies) : c.replies;
+
+        if (isAncestor) {
+          return {
+            ...c,
+            replyCount: Math.max(0, (c.replyCount ?? 0) - totalDeleted),
+            replies: updatedReplies,
+          };
+        }
+
+        return updatedReplies !== c.replies
+          ? { ...c, replies: updatedReplies }
+          : c;
+      });
+  };
+
+  return {
+    updatedList: traverse(list),
+    totalDeleted,
+  };
+}

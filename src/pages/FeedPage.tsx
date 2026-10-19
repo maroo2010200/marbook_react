@@ -4,26 +4,19 @@ import { useAuth } from "../context/AuthContext";
 import { usePosts } from "../hooks/usePosts";
 import { likesApi } from "../api/likes";
 import { CommentsModal } from "../components/CommentsModal";
+import { PostComposer } from "../components/PostComposer";
+import { PostCard } from "../components/PostCard";
 import type { Post } from "../types/posts";
-
-function formatCount(count: number): string {
-  if (count <= 0) {
-    return "";
-  }
-  if (count >= 1_000_000) {
-    return (count / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-  }
-  if (count >= 1_000) {
-    return (count / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
-  }
-  return count.toString();
-}
 
 function FeedPage() {
   const { user, isAuthenticated } = useAuth();
+  const [feedTab, setFeedTab] = useState<"for-you" | "following">("for-you");
+
   const {
     posts,
     updatePost,
+    createPost,
+    removePost,
     loading,
     loadingMore,
     error,
@@ -31,7 +24,9 @@ function FeedPage() {
     hasMore,
     loadMore,
     fetchPosts,
-  } = usePosts();
+  } = usePosts(1, 10, {
+    followingOnly: feedTab === "following",
+  });
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -229,6 +224,74 @@ function FeedPage() {
         </div>
       </div>
 
+      {/* Personalized Feed Switcher Tabs */}
+      <div
+        style={{
+          display: "flex",
+          backgroundColor: "#fff",
+          borderRadius: 12,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+          padding: "4px",
+          marginBottom: 16,
+        }}
+      >
+        <button
+          type="button"
+          id="feed-tab-for-you"
+          onClick={() => setFeedTab("for-you")}
+          style={{
+            flex: 1,
+            padding: "10px",
+            border: "none",
+            backgroundColor: feedTab === "for-you" ? "#e7f3ff" : "transparent",
+            color: feedTab === "for-you" ? "#1877f2" : "#65676b",
+            fontWeight: feedTab === "for-you" ? 700 : 600,
+            fontSize: 14,
+            borderRadius: 8,
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          <span>🌐</span> For You
+        </button>
+
+        <button
+          type="button"
+          id="feed-tab-following"
+          onClick={() => setFeedTab("following")}
+          style={{
+            flex: 1,
+            padding: "10px",
+            border: "none",
+            backgroundColor: feedTab === "following" ? "#e7f3ff" : "transparent",
+            color: feedTab === "following" ? "#1877f2" : "#65676b",
+            fontWeight: feedTab === "following" ? 700 : 600,
+            fontSize: 14,
+            borderRadius: 8,
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          <span>👥</span> Following
+        </button>
+      </div>
+
+      {/* Post Composer for authenticated users */}
+      {isAuthenticated && (
+        <PostComposer
+          onPostCreated={createPost}
+          defaultVisibility={feedTab === "following" ? "Followers" : "Public"}
+        />
+      )}
+
       {/* Auth notice banner if user tries to like while logged out */}
       {likeAuthNotice && (
         <div
@@ -322,214 +385,93 @@ function FeedPage() {
         <div
           style={{
             textAlign: "center",
-            padding: "48px 20px",
+            padding: "48px 24px",
             color: "#65676b",
             background: "#fff",
             border: "1px solid #e4e6eb",
-            borderRadius: 8,
+            borderRadius: 12,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
           }}
         >
-          <p style={{ margin: 0, fontSize: 16 }}>No posts yet.</p>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>
+            {feedTab === "following" ? "👥" : "📝"}
+          </div>
+          <h3
+            style={{
+              margin: "0 0 6px",
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#1c1e21",
+            }}
+          >
+            {feedTab === "following"
+              ? "No Posts from Accounts You Follow"
+              : "No Posts Yet"}
+          </h3>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              color: "#65676b",
+              lineHeight: 1.5,
+              maxWidth: 400,
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}
+          >
+            {feedTab === "following"
+              ? "Follow other creators and users across Marbook to see their newest posts here!"
+              : "Be the first to share something with the community using the composer above!"}
+          </p>
+          {feedTab === "following" && (
+            <button
+              type="button"
+              onClick={() => setFeedTab("for-you")}
+              style={{
+                marginTop: 18,
+                padding: "8px 18px",
+                backgroundColor: "#1877f2",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+                transition: "background-color 0.15s ease",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#166fe5")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#1877f2")
+              }
+            >
+              Switch to "For You" Feed
+            </button>
+          )}
         </div>
       )}
 
       {/* Posts list */}
       {!loading &&
         posts.map((post) => {
-          const authorInitial = (post.userName || "U").charAt(0).toUpperCase();
-          const postDate = new Date(post.createdAt).toLocaleString(undefined, {
-            dateStyle: "medium",
-            timeStyle: "short",
-          });
           const isLiked = Boolean(post.isLiked ?? likedPostIds.has(post.id));
-          const likesCount = post.likesCount ?? (isLiked ? 1 : 0);
-          const commentsCount = post.commentsCount ?? 0;
 
           return (
-            <article
+            <PostCard
               key={post.id}
-              style={{
-                backgroundColor: "#fff",
-                border: "1px solid #e4e6eb",
-                borderRadius: 8,
-                padding: "16px 20px",
-                marginBottom: 16,
-                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+              post={post}
+              isLiked={isLiked}
+              currentUserId={user?.id}
+              onToggleLike={handleToggleLike}
+              onOpenComments={handleOpenComments}
+              onPostUpdated={(updatedPost) => {
+                updatePost(updatedPost.id, updatedPost);
               }}
-            >
-              {/* Header with avatar, author, date */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  marginBottom: 12,
-                }}
-              >
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    backgroundColor: "#1877f2",
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 700,
-                    fontSize: 16,
-                    flexShrink: 0,
-                  }}
-                >
-                  {authorInitial}
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      fontSize: 15,
-                      color: "#050505",
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {post.userName}
-                  </div>
-                  <small
-                    style={{
-                      color: "#65676b",
-                      fontSize: 12,
-                    }}
-                  >
-                    {postDate}
-                  </small>
-                </div>
-              </div>
-
-              {/* Content */}
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  fontSize: 15,
-                  lineHeight: 1.5,
-                  color: "#1c1e21",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {post.content}
-              </p>
-
-              {/* Instagram/X-style Actions: Like & Comment with counts next to icons */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 22,
-                  marginTop: 14,
-                  paddingTop: 12,
-                  borderTop: "1px solid #f0f2f5",
-                }}
-              >
-                {/* Heart / Like Button with count */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleLike(post.id)}
-                  aria-label={isLiked ? "Unlike post" : "Like post"}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 7,
-                    color: isLiked ? "#ed4956" : "#262626",
-                    transition: "transform 0.1s ease",
-                  }}
-                  onMouseDown={(e) =>
-                    (e.currentTarget.style.transform = "scale(0.92)")
-                  }
-                  onMouseUp={(e) =>
-                    (e.currentTarget.style.transform = "scale(1)")
-                  }
-                >
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill={isLiked ? "#ed4956" : "none"}
-                    stroke={isLiked ? "#ed4956" : "#262626"}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{
-                      transition: "fill 0.15s ease, stroke 0.15s ease",
-                    }}
-                  >
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
-                  {likesCount > 0 && (
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: isLiked ? "#ed4956" : "#262626",
-                      }}
-                    >
-                      {formatCount(likesCount)}
-                    </span>
-                  )}
-                </button>
-
-                {/* Comment Button with count */}
-                <button
-                  type="button"
-                  onClick={() => handleOpenComments(post)}
-                  aria-label="Comment on post"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 7,
-                    color: "#262626",
-                    transition: "transform 0.1s ease",
-                  }}
-                  onMouseDown={(e) =>
-                    (e.currentTarget.style.transform = "scale(0.92)")
-                  }
-                  onMouseUp={(e) =>
-                    (e.currentTarget.style.transform = "scale(1)")
-                  }
-                >
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#262626"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                  </svg>
-                  {commentsCount > 0 && (
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: "#262626",
-                      }}
-                    >
-                      {formatCount(commentsCount)}
-                    </span>
-                  )}
-                </button>
-              </div>
-            </article>
+              onPostDeleted={(deletedId) => {
+                removePost(deletedId);
+              }}
+            />
           );
         })}
 
@@ -635,6 +577,26 @@ function FeedPage() {
             setSelectedPostForComments((prev) =>
               prev
                 ? { ...prev, commentsCount: (prev.commentsCount ?? 0) + 1 }
+                : prev
+            );
+          }
+        }}
+        onCommentDeleted={(deletedCount) => {
+          if (selectedPostForComments) {
+            const postId = selectedPostForComments.id;
+            updatePost(postId, (p) => ({
+              ...p,
+              commentsCount: Math.max(0, (p.commentsCount ?? 0) - deletedCount),
+            }));
+            setSelectedPostForComments((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    commentsCount: Math.max(
+                      0,
+                      (prev.commentsCount ?? 0) - deletedCount
+                    ),
+                  }
                 : prev
             );
           }

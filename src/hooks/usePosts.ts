@@ -1,8 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { Post } from "../types/posts";
+import type { Post, PostVisibility } from "../types/posts";
 import { postsApi } from "../api/posts";
 
-export function usePosts(initialPage = 1, pageSize = 10) {
+export interface UsePostsOptions {
+  userId?: number;
+  followingOnly?: boolean;
+}
+
+export function usePosts(
+  initialPage = 1,
+  pageSize = 10,
+  options?: UsePostsOptions
+) {
+  const userId = options?.userId;
+  const followingOnly = options?.followingOnly;
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [pageNumber, setPageNumber] = useState(initialPage);
   const [loading, setLoading] = useState(true);
@@ -27,7 +39,12 @@ export function usePosts(initialPage = 1, pageSize = 10) {
       setError(null);
       setLoadMoreError(null);
 
-      const data = await postsApi.getAll(initialPage, pageSize);
+      const data = await postsApi.getAll({
+        pageNumber: initialPage,
+        pageSize,
+        userId,
+        followingOnly,
+      });
       const items = data?.items ?? [];
       const totalCount = data?.totalCount;
 
@@ -50,7 +67,7 @@ export function usePosts(initialPage = 1, pageSize = 10) {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, [initialPage, pageSize]);
+  }, [initialPage, pageSize, userId, followingOnly]);
 
   useEffect(() => {
     let ignore = false;
@@ -62,7 +79,12 @@ export function usePosts(initialPage = 1, pageSize = 10) {
         setError(null);
         setLoadMoreError(null);
 
-        const data = await postsApi.getAll(initialPage, pageSize);
+        const data = await postsApi.getAll({
+          pageNumber: initialPage,
+          pageSize,
+          userId,
+          followingOnly,
+        });
         if (ignore) return;
 
         const items = data?.items ?? [];
@@ -98,7 +120,7 @@ export function usePosts(initialPage = 1, pageSize = 10) {
       ignore = true;
       isFetchingRef.current = false;
     };
-  }, [initialPage, pageSize]);
+  }, [initialPage, pageSize, userId, followingOnly]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore || isFetchingRef.current) {
@@ -115,7 +137,12 @@ export function usePosts(initialPage = 1, pageSize = 10) {
       setLoadingMore(true);
       setLoadMoreError(null);
 
-      const data = await postsApi.getAll(nextPage, pageSize);
+      const data = await postsApi.getAll({
+        pageNumber: nextPage,
+        pageSize,
+        userId,
+        followingOnly,
+      });
       const newItems = data?.items ?? [];
       const totalCount = data?.totalCount;
 
@@ -158,9 +185,46 @@ export function usePosts(initialPage = 1, pageSize = 10) {
     []
   );
 
+  const addPost = useCallback((newPost: Post) => {
+    setPosts((prev) => {
+      if (prev.some((p) => p.id === newPost.id)) return prev;
+      const updated = [newPost, ...prev];
+      postsRef.current = updated;
+      return updated;
+    });
+  }, []);
+
+  const removePost = useCallback((postId: number) => {
+    setPosts((prev) => {
+      const updated = prev.filter((p) => p.id !== postId);
+      postsRef.current = updated;
+      return updated;
+    });
+  }, []);
+
+  const createPost = useCallback(
+    async (
+      content: string,
+      visibility: PostVisibility = "Public",
+      imageUrls?: string[]
+    ): Promise<Post> => {
+      const newPost = await postsApi.createPost(
+        content,
+        visibility,
+        imageUrls
+      );
+      addPost(newPost);
+      return newPost;
+    },
+    [addPost]
+  );
+
   return {
     posts,
     updatePost,
+    addPost,
+    removePost,
+    createPost,
     pageNumber,
     loading,
     loadingMore,

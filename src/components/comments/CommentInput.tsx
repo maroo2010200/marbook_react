@@ -1,5 +1,8 @@
-import type { RefObject, FormEvent } from "react";
+import { useRef, type RefObject, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { mediaApi } from "../../api/media";
+import { getMediaUrl } from "../../utils/media";
+import { extractMediaUrlFromLink } from "../../utils/richText";
 
 export interface CommentInputProps {
   isAuthenticated: boolean;
@@ -11,6 +14,10 @@ export interface CommentInputProps {
   onChangeComment: (val: string) => void;
   onCancelReply: () => void;
   onSubmit: (e: FormEvent) => void;
+  attachedImageUrl: string | null;
+  onAttachImage: (url: string | null) => void;
+  isUploadingImage: boolean;
+  onUploadingChange: (uploading: boolean) => void;
 }
 
 export function CommentInput({
@@ -23,7 +30,13 @@ export function CommentInput({
   onChangeComment,
   onCancelReply,
   onSubmit,
+  attachedImageUrl,
+  onAttachImage,
+  isUploadingImage,
+  onUploadingChange,
 }: CommentInputProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   if (!isAuthenticated) {
     return (
       <div
@@ -62,6 +75,30 @@ export function CommentInput({
       </div>
     );
   }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    onUploadingChange(true);
+    try {
+      const url = await mediaApi.upload(file, "comments");
+      onAttachImage(url);
+    } catch (err: any) {
+      alert(
+        err.response?.data?.message ||
+          "Failed to upload image. Supported: JPG, PNG, WebP, GIF under 10MB."
+      );
+    } finally {
+      onUploadingChange(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const canSubmit =
+    (newComment.trim().length > 0 || Boolean(attachedImageUrl)) &&
+    !submitting &&
+    !isUploadingImage;
 
   return (
     <div
@@ -112,6 +149,55 @@ export function CommentInput({
           </div>
         )}
 
+        {/* Attached Image/GIF Thumbnail Preview */}
+        {attachedImageUrl && (
+          <div
+            style={{
+              position: "relative",
+              display: "inline-block",
+              marginBottom: 8,
+              borderRadius: 8,
+              overflow: "hidden",
+              border: "1px solid #dbdbdb",
+              backgroundColor: "#f0f2f5",
+            }}
+          >
+            <img
+              src={getMediaUrl(attachedImageUrl)}
+              alt="Attached comment preview"
+              style={{
+                width: 60,
+                height: 60,
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => onAttachImage(null)}
+              title="Remove attachment"
+              style={{
+                position: "absolute",
+                top: 2,
+                right: 2,
+                width: 18,
+                height: 18,
+                borderRadius: "50%",
+                backgroundColor: "rgba(0, 0, 0, 0.65)",
+                color: "#fff",
+                border: "none",
+                fontSize: 10,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Submission error message */}
         {submitError && (
           <div
@@ -125,18 +211,72 @@ export function CommentInput({
           </div>
         )}
 
-        {/* Input & Submit button row */}
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        {/* Input & Action Buttons Row */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {/* Hidden image file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleFileSelect}
+            style={{ display: "none" }}
+          />
+
+          {/* Attach Image / GIF button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={submitting || isUploadingImage}
+            title="Attach image or GIF"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: submitting || isUploadingImage ? "not-allowed" : "pointer",
+              padding: "6px",
+              color: isUploadingImage ? "#94b8ea" : "#45bd62",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "50%",
+              transition: "background-color 0.15s ease",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#f0f2f5")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7-3 3.72L9 13l-3 4h12l-4-5z" />
+            </svg>
+          </button>
+
           <input
             ref={inputRef}
             type="text"
             placeholder={
               replyingTo
                 ? `Reply to @${replyingTo.userName}...`
-                : "Add a comment..."
+                : "Write a comment or attach GIF/image..."
             }
             value={newComment}
-            onChange={(e) => onChangeComment(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              onChangeComment(val);
+              if (!attachedImageUrl) {
+                const detected = extractMediaUrlFromLink(val.trim());
+                if (detected) {
+                  onAttachImage(detected.mediaUrl);
+                  onChangeComment("");
+                }
+              }
+            }}
             disabled={submitting}
             style={{
               flex: 1,
@@ -147,18 +287,17 @@ export function CommentInput({
               outline: "none",
             }}
           />
+
           <button
             type="submit"
-            disabled={!newComment.trim() || submitting}
+            disabled={!canSubmit}
             style={{
               background: "none",
               border: "none",
-              color:
-                !newComment.trim() || submitting ? "#b2dffc" : "#0095f6",
+              color: !canSubmit ? "#b2dffc" : "#0095f6",
               fontWeight: 600,
               fontSize: 14,
-              cursor:
-                !newComment.trim() || submitting ? "default" : "pointer",
+              cursor: !canSubmit ? "default" : "pointer",
               padding: "6px 10px",
             }}
           >
@@ -166,6 +305,8 @@ export function CommentInput({
               ? replyingTo
                 ? "Replying..."
                 : "Posting..."
+              : isUploadingImage
+              ? "Uploading..."
               : replyingTo
               ? "Reply"
               : "Post"}

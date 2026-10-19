@@ -5,12 +5,14 @@ import { CommentItem } from "./comments/CommentItem";
 import { CommentInput } from "./comments/CommentInput";
 import type { Post } from "../types/posts";
 import type { Comment } from "../types/comments";
+import { getMediaUrl } from "../utils/media";
 
 interface CommentsModalProps {
   post: Post | null;
   isOpen: boolean;
   onClose: () => void;
   onCommentAdded?: (comment: Comment) => void;
+  onCommentDeleted?: (deletedCount: number) => void;
 }
 
 export function CommentsModal({
@@ -18,8 +20,9 @@ export function CommentsModal({
   isOpen,
   onClose,
   onCommentAdded,
+  onCommentDeleted,
 }: CommentsModalProps) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   const {
     comments,
@@ -38,6 +41,10 @@ export function CommentsModal({
     sentinelRef,
     inputRef,
     setNewComment,
+    attachedImageUrl,
+    setAttachedImageUrl,
+    isUploadingImage,
+    setIsUploadingImage,
     loadInitialComments,
     loadMoreComments,
     handleContainerScroll,
@@ -46,7 +53,9 @@ export function CommentsModal({
     handleStartReply,
     handleCancelReply,
     handleSubmit,
-  } = useCommentsModal({ isOpen, post, onCommentAdded });
+    handleEditComment,
+    handleDeleteComment,
+  } = useCommentsModal({ isOpen, post, onCommentAdded, onCommentDeleted });
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -124,9 +133,22 @@ export function CommentsModal({
                 justifyContent: "center",
                 fontWeight: 700,
                 fontSize: 15,
+                overflow: "hidden",
               }}
             >
-              {authorInitial}
+              {post.userAvatarUrl ? (
+                <img
+                  src={getMediaUrl(post.userAvatarUrl)}
+                  alt={post.userName}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                authorInitial
+              )}
             </div>
             <div>
               <div style={{ fontWeight: 600, fontSize: 14, color: "#262626" }}>
@@ -272,6 +294,9 @@ export function CommentsModal({
                 onToggleReplies={handleToggleReplies}
                 onToggleLike={handleToggleCommentLike}
                 onStartReply={handleStartReply}
+                currentUserId={user?.id}
+                onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
               />
             ))}
 
@@ -362,6 +387,10 @@ export function CommentsModal({
           onChangeComment={setNewComment}
           onCancelReply={handleCancelReply}
           onSubmit={handleSubmit}
+          attachedImageUrl={attachedImageUrl}
+          onAttachImage={setAttachedImageUrl}
+          isUploadingImage={isUploadingImage}
+          onUploadingChange={setIsUploadingImage}
         />
       </div>
     </div>
