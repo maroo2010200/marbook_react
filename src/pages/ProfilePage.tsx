@@ -11,6 +11,10 @@ import { PostCard } from "../components/PostCard";
 import { CommentsModal } from "../components/CommentsModal";
 import { EditProfileModal } from "../components/EditProfileModal";
 import { PostComposer } from "../components/PostComposer";
+import { LightboxModal } from "../components/LightboxModal";
+import { ImageAdjustModal } from "../components/ImageAdjustModal";
+import { mediaApi } from "../api/media";
+import { getMediaUrl } from "../utils/media";
 
 function formatMemberDate(dateString: string): string {
   try {
@@ -42,7 +46,7 @@ function formatBirthdate(dateString?: string): string {
 
 export function ProfilePage() {
   const { id: rawId } = useParams<{ id: string }>();
-  const { user: currentUser, isAuthenticated } = useAuth();
+  const { user: currentUser, isAuthenticated, updateUser } = useAuth();
   const navigate = useNavigate();
 
   // Determine target user ID: if route is /profile/me or id missing, use currentUser.id
@@ -65,6 +69,23 @@ export function ProfilePage() {
 
   // Edit Profile modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Avatar upload & adjuster & lightbox state
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [adjustModalState, setAdjustModalState] = useState<{
+    isOpen: boolean;
+    imageSrc: string;
+    fileName: string;
+  }>({
+    isOpen: false,
+    imageSrc: "",
+    fileName: "",
+  });
+
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   // Fetch Profile data
   const fetchProfile = useCallback(async () => {
@@ -283,9 +304,10 @@ export function ProfilePage() {
   // Post creation on own profile -> updates local posts and profile post count
   const handleCreatePost = async (
     content: string,
-    visibility?: PostVisibility
+    visibility?: PostVisibility,
+    imageUrls?: string[]
   ) => {
-    const newPost = await createPost(content, visibility);
+    const newPost = await createPost(content, visibility, imageUrls);
     setProfile((prev) =>
       prev ? { ...prev, postsCount: prev.postsCount + 1 } : null
     );
@@ -293,6 +315,39 @@ export function ProfilePage() {
   };
 
   const isMe = profile?.isMe || (currentUser?.id && profile?.id === currentUser.id);
+
+  // Avatar file selection -> Opens ImageAdjustModal for zooming/panning
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    setAdjustModalState({
+      isOpen: true,
+      imageSrc: objectUrl,
+      fileName: file.name,
+    });
+    if (avatarInputRef.current) avatarInputRef.current.value = "";
+  };
+
+  const handleAdjustAvatarConfirm = async (croppedFile: File) => {
+    setAdjustModalState((prev) => ({ ...prev, isOpen: false }));
+    if (!profile) return;
+    setIsUploadingAvatar(true);
+    try {
+      const url = await mediaApi.upload(croppedFile, "avatars");
+      const updated = await usersApi.updateMyProfile({
+        name: profile.name,
+        birthdate: profile.birthdate,
+        avatarUrl: url,
+      });
+      setProfile(updated);
+      updateUser({ avatarUrl: url });
+    } catch {
+      alert("Failed to upload avatar image.");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   if (profileLoading) {
     return (
@@ -391,9 +446,19 @@ export function ProfilePage() {
         {/* Cover Accent Banner */}
         <div
           style={{
-            height: 120,
-            background:
-              "linear-gradient(135deg, #1877f2 0%, #00c6ff 100%)",
+            height: 180,
+            width: "100%",
+            position: "relative",
+            background: profile.coverUrl
+              ? `url(${getMediaUrl(profile.coverUrl)}) center/cover no-repeat`
+              : "linear-gradient(135deg, #1877f2 0%, #00c6ff 100%)",
+            cursor: profile.coverUrl ? "pointer" : "default",
+          }}
+          onClick={() => {
+            if (profile.coverUrl) {
+              setLightboxImages([profile.coverUrl]);
+              setIsLightboxOpen(true);
+            }
           }}
         />
 
@@ -412,24 +477,92 @@ export function ProfilePage() {
               gap: 12,
             }}
           >
-            <div
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: "50%",
-                backgroundColor: "#1877f2",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 38,
-                fontWeight: 700,
-                border: "4px solid #fff",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                userSelect: "none",
-              }}
-            >
-              {authorInitial}
+            <div style={{ position: "relative" }}>
+              <div
+                style={{
+                  width: 104,
+                  height: 104,
+                  borderRadius: "50%",
+                  backgroundColor: "#1877f2",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 40,
+                  fontWeight: 700,
+                  border: "4px solid #fff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  userSelect: "none",
+                  overflow: "hidden",
+                  cursor: profile.avatarUrl ? "pointer" : "default",
+                }}
+                onClick={() => {
+                  if (profile.avatarUrl) {
+                    setLightboxImages([profile.avatarUrl]);
+                    setIsLightboxOpen(true);
+                  }
+                }}
+              >
+                {profile.avatarUrl ? (
+                  <img
+                    src={getMediaUrl(profile.avatarUrl)}
+                    alt={profile.name}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  authorInitial
+                )}
+              </div>
+
+              {isMe && (
+                <>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleAvatarUpload}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      avatarInputRef.current?.click();
+                    }}
+                    disabled={isUploadingAvatar}
+                    title="Update profile picture"
+                    style={{
+                      position: "absolute",
+                      bottom: 4,
+                      right: 4,
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      backgroundColor: "#e4e6eb",
+                      border: "2px solid #fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      fontSize: 14,
+                      transition: "background-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#d8dadf")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e4e6eb")
+                    }
+                  >
+                    📷
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -990,6 +1123,27 @@ export function ProfilePage() {
           onProfileUpdated={(updated) => setProfile(updated)}
         />
       )}
+
+      {/* Lightbox for profile photo / cover */}
+      <LightboxModal
+        isOpen={isLightboxOpen}
+        images={lightboxImages}
+        onClose={() => setIsLightboxOpen(false)}
+      />
+
+      {/* Image Adjuster for Avatar */}
+      <ImageAdjustModal
+        isOpen={adjustModalState.isOpen}
+        imageSrc={adjustModalState.imageSrc}
+        fileName={adjustModalState.fileName}
+        aspectRatio={1}
+        cropShape="round"
+        title="Adjust Profile Picture"
+        onConfirm={handleAdjustAvatarConfirm}
+        onCancel={() =>
+          setAdjustModalState((prev) => ({ ...prev, isOpen: false }))
+        }
+      />
     </div>
   );
 }

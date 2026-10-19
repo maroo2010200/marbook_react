@@ -1,9 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import type { Post, PostVisibility } from "../types/posts";
+import { mediaApi } from "../api/media";
+import { getMediaUrl } from "../utils/media";
+import { ImageAdjustModal } from "./ImageAdjustModal";
 
 interface PostComposerProps {
-  onPostCreated: (content: string, visibility?: PostVisibility) => Promise<Post>;
+  onPostCreated: (
+    content: string,
+    visibility?: PostVisibility,
+    imageUrls?: string[]
+  ) => Promise<Post>;
   defaultVisibility?: PostVisibility;
 }
 
@@ -111,6 +118,20 @@ export function PostComposer({
   const [isAudienceOpen, setIsAudienceOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Media attachments state
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [adjustingIndex, setAdjustingIndex] = useState<number | null>(null);
+
+  // Auto-adjust modal for newly picked image before upload
+  const [pendingAdjust, setPendingAdjust] = useState<{
+    file: File;
+    objectUrl: string;
+    fileName: string;
+  } | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audienceRef = useRef<HTMLDivElement | null>(null);
 
@@ -142,11 +163,124 @@ export function PostComposer({
   const charCount = content.length;
   const isOverLimit = charCount > MAX_CHAR_COUNT;
   const isNearLimit = charCount >= 450 && !isOverLimit;
-  const canSubmit = content.trim().length > 0 && !isOverLimit && !isSubmitting;
+
+  // Can submit if there is text or at least one image attached
+  const hasText = content.trim().length > 0;
+  const hasImages = imageUrls.length > 0;
+  const canSubmit =
+    (hasText || hasImages) && !isOverLimit && !isSubmitting && !isUploading;
 
   const currentOption =
     AUDIENCE_OPTIONS.find((opt) => opt.value === visibility) ||
     AUDIENCE_OPTIONS[0];
+
+  const handleFilesSelected = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (imageUrls.length + files.length > 10) {
+      setError("You can attach a maximum of 10 images per post.");
+      e.target.value = "";
+      return;
+    }
+
+    if (files.length === 1) {
+      // Single image selected: immediately open adjuster modal so user can zoom, pan & adjust!
+      const file = files[0];
+      const objectUrl = URL.createObjectURL(file);
+      setPendingAdjust({
+        file,
+        objectUrl,
+        fileName: file.name,
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    // Multiple images: upload them all
+    setIsUploading(true);
+    setError(null);
+    try {
+      const newUrls = await mediaApi.uploadMultiple(Array.from(files), "posts");
+      setImageUrls((prev) => [...prev, ...newUrls]);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to upload image(s). Only JPG, PNG, WebP, and GIF under 10MB are supported."
+      );
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImageUrls((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleAdjustConfirm = async (croppedFile: File) => {
+    if (adjustingIndex === null) return;
+    const targetIdx = adjustingIndex;
+    setAdjustingIndex(null);
+    setIsUploading(true);
+    try {
+      const url = await mediaApi.upload(croppedFile, "posts");
+      setImageUrls((prev) =>
+        prev.map((item, i) => (i === targetIdx ? url : item))
+      );
+    } catch {
+      setError("Failed to upload adjusted image.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePendingAdjustConfirm = async (croppedFile: File) => {
+    if (!pendingAdjust) return;
+    const { objectUrl } = pendingAdjust;
+    URL.revokeObjectURL(objectUrl);
+    setPendingAdjust(null);
+
+    setIsUploading(true);
+    setError(null);
+    try {
+      const url = await mediaApi.upload(croppedFile, "posts");
+      setImageUrls((prev) => [...prev, url]);
+    } catch {
+      setError("Failed to upload adjusted image.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePendingSkipCrop = async () => {
+    if (!pendingAdjust) return;
+    const { file, objectUrl } = pendingAdjust;
+    URL.revokeObjectURL(objectUrl);
+    setPendingAdjust(null);
+
+    setIsUploading(true);
+    setError(null);
+    try {
+      const url = await mediaApi.upload(file, "posts");
+      setImageUrls((prev) => [...prev, url]);
+    } catch {
+      setError("Failed to upload image.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePendingCancel = () => {
+    if (pendingAdjust) {
+      URL.revokeObjectURL(pendingAdjust.objectUrl);
+    }
+    setPendingAdjust(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,14 +290,26 @@ export function PostComposer({
     setIsSubmitting(true);
 
     try {
-      await onPostCreated(content.trim(), visibility);
+      await onPostCreated(
+        content.trim(),
+        visibility,
+        imageUrls.length > 0 ? imageUrls : undefined
+      );
       setContent("");
+      setImageUrls([]);
       setVisibility(defaultVisibility);
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
-    } catch {
-      setError("Failed to create post. Please check your connection and try again.");
+    } catch (err: any) {
+      const resp = err.response?.data;
+      const message =
+        typeof resp === "string"
+          ? resp
+          : resp?.message ||
+            resp?.title ||
+            "Failed to create post. Please check your connection and try again.";
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -212,9 +358,18 @@ export function PostComposer({
             fontWeight: 700,
             fontSize: 16,
             flexShrink: 0,
+            overflow: "hidden",
           }}
         >
-          {authorInitial}
+          {user.avatarUrl ? (
+            <img
+              src={getMediaUrl(user.avatarUrl)}
+              alt={user.name}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            authorInitial
+          )}
         </div>
         <div>
           <div
@@ -274,7 +429,7 @@ export function PostComposer({
               </svg>
             </button>
 
-            {/* Audience Dropdown Popover */}
+            {/* Dropdown Menu */}
             {isAudienceOpen && (
               <div
                 style={{
@@ -286,7 +441,7 @@ export function PostComposer({
                   borderRadius: 8,
                   border: "1px solid #e4e6eb",
                   boxShadow: "0 6px 18px rgba(0, 0, 0, 0.15)",
-                  width: 250,
+                  width: 270,
                   zIndex: 30,
                   overflow: "hidden",
                   padding: "6px 0",
@@ -444,6 +599,172 @@ export function PostComposer({
           />
         </div>
 
+        {/* Attachment Previews Tray */}
+        {imageUrls.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginTop: 10,
+              padding: 8,
+              backgroundColor: "#f0f2f5",
+              borderRadius: 8,
+            }}
+          >
+            {imageUrls.map((url, idx) => (
+              <div
+                key={idx}
+                style={{
+                  position: "relative",
+                  width: 88,
+                  height: 88,
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  border: "1px solid #ccd0d5",
+                  backgroundColor: "#fff",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                }}
+              >
+                <img
+                  src={getMediaUrl(url)}
+                  alt={`Attachment ${idx + 1}`}
+                  onClick={() => setAdjustingIndex(idx)}
+                  title="Click to adjust & crop"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    cursor: "pointer",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setAdjustingIndex(idx)}
+                  title="Adjust (Zoom, Pan, Crop)"
+                  style={{
+                    position: "absolute",
+                    bottom: 4,
+                    left: 4,
+                    right: 4,
+                    height: 22,
+                    borderRadius: 4,
+                    backgroundColor: "rgba(0, 0, 0, 0.72)",
+                    color: "#fff",
+                    border: "none",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 3,
+                    cursor: "pointer",
+                    backdropFilter: "blur(2px)",
+                  }}
+                >
+                  <span>✂️</span>
+                  <span>Adjust</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(idx)}
+                  title="Remove image"
+                  style={{
+                    position: "absolute",
+                    top: 4,
+                    right: 4,
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(0, 0, 0, 0.72)",
+                    color: "#fff",
+                    border: "none",
+                    fontSize: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    lineHeight: 1,
+                    backdropFilter: "blur(2px)",
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Attachment Action Bar */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 10,
+            padding: "8px 12px",
+            borderRadius: 8,
+            border: "1px solid #e4e6eb",
+            backgroundColor: "#fff",
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#050505" }}>
+            Add to your post
+          </span>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleFilesSelected}
+              style={{ display: "none" }}
+            />
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading || isSubmitting || imageUrls.length >= 10}
+              title="Attach photos"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 10px",
+                borderRadius: 6,
+                border: "none",
+                backgroundColor: "transparent",
+                cursor: imageUrls.length >= 10 ? "not-allowed" : "pointer",
+                color: "#45bd62",
+                fontWeight: 600,
+                fontSize: 13,
+                transition: "background-color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                if (imageUrls.length < 10)
+                  e.currentTarget.style.backgroundColor = "#f0f2f5";
+              }}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "transparent")
+              }
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                style={{ color: "#45bd62" }}
+              >
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7-3 3.72L9 13l-3 4h12l-4-5z" />
+              </svg>
+              <span style={{ color: "#4b4f56" }}>
+                {isUploading ? "Uploading..." : "Photo/image"}
+              </span>
+            </button>
+          </div>
+        </div>
+
         {/* Error message */}
         {error && (
           <div
@@ -551,6 +872,32 @@ export function PostComposer({
           </button>
         </div>
       </form>
+      {/* Re-adjust Existing Attached Image Modal */}
+      <ImageAdjustModal
+        isOpen={adjustingIndex !== null}
+        imageSrc={
+          adjustingIndex !== null && imageUrls[adjustingIndex]
+            ? getMediaUrl(imageUrls[adjustingIndex])
+            : ""
+        }
+        fileName="post-image.jpg"
+        allowAspectChange={true}
+        title="Adjust Post Picture"
+        onConfirm={handleAdjustConfirm}
+        onCancel={() => setAdjustingIndex(null)}
+      />
+
+      {/* Adjust Newly Selected Picture Before Upload */}
+      <ImageAdjustModal
+        isOpen={pendingAdjust !== null}
+        imageSrc={pendingAdjust?.objectUrl || ""}
+        fileName={pendingAdjust?.fileName || "post-image.jpg"}
+        allowAspectChange={true}
+        title="Adjust & Position Picture"
+        onConfirm={handlePendingAdjustConfirm}
+        onSkipCrop={handlePendingSkipCrop}
+        onCancel={handlePendingCancel}
+      />
     </div>
   );
 }

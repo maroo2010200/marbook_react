@@ -8,21 +8,25 @@ export interface Post {
   visibility?: PostVisibility;
   userId: number;
   userName: string;
+  userAvatarUrl?: string | null;
   createdAt: string;
   updatedAt: string;
   likesCount?: number;
   commentsCount?: number;
   isLiked?: boolean;
+  imageUrls?: string[];
 }
 
 export interface PostCreateDto {
   content: string;
   visibility?: PostVisibility;
+  imageUrls?: string[];
 }
 
 export interface PostUpdateDto {
   content: string;
   visibility?: PostVisibility;
+  imageUrls?: string[];
 }
 
 export interface GetPostsParams {

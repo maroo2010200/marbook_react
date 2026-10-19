@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getMediaUrl } from "../utils/media";
 
 function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -77,9 +78,22 @@ function Navbar() {
                   justifyContent: "center",
                   fontSize: 13,
                   fontWeight: 700,
+                  overflow: "hidden",
                 }}
               >
-                {(user?.name || "U")[0].toUpperCase()}
+                {user?.avatarUrl ? (
+                  <img
+                    src={getMediaUrl(user.avatarUrl)}
+                    alt={user.name}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  (user?.name || "U")[0].toUpperCase()
+                )}
               </div>
               <span>{user?.name ?? "Profile"}</span>
             </Link>

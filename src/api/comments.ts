@@ -27,11 +27,14 @@ export const commentsApi = {
 
   createComment: async (
     postId: number,
-    content: string
+    content: string,
+    imageUrl?: string | null
   ): Promise<Comment> => {
+    const payload: { content: string; imageUrl?: string | null } = { content };
+    if (imageUrl) payload.imageUrl = imageUrl;
     const response = await api.post<Comment>(
       `/posts/${postId}/Comments`,
-      { content }
+      payload
     );
     return response.data;
   },
@@ -47,11 +50,14 @@ export const commentsApi = {
 
   createReply: async (
     commentId: number,
-    content: string
+    content: string,
+    imageUrl?: string | null
   ): Promise<Comment> => {
+    const payload: { content: string; imageUrl?: string | null } = { content };
+    if (imageUrl) payload.imageUrl = imageUrl;
     const response = await api.post<Comment>(
       `/comments/${commentId}/Replies`,
-      { content }
+      payload
     );
     return response.data;
   },
@@ -65,11 +71,14 @@ export const commentsApi = {
 
   updateComment: async (
     commentId: number,
-    content: string
+    content: string,
+    imageUrl?: string | null
   ): Promise<Comment> => {
-    const response = await api.put<Comment>(`/comments/${commentId}`, {
+    const payload: { content: string; imageUrl?: string | null } = {
       content,
-    });
+    };
+    if (imageUrl !== undefined) payload.imageUrl = imageUrl;
+    const response = await api.put<Comment>(`/comments/${commentId}`, payload);
     return response.data;
   },
 

@@ -4,6 +4,8 @@ export interface User {
   username: string | null;
   email: string;
   bio?: string | null;
+  avatarUrl?: string | null;
+  coverUrl?: string | null;
   isEmailVerified: boolean;
   birthdate: string;
   createdAt: string;
@@ -16,6 +18,8 @@ export interface UserProfile {
   username: string | null;
   email: string;
   bio: string | null;
+  avatarUrl?: string | null;
+  coverUrl?: string | null;
   birthdate: string;
   createdAt: string;
   followersCount: number;
@@ -29,6 +33,8 @@ export interface UserProfileUpdateDto {
   name: string;
   username?: string | null;
   bio?: string | null;
+  avatarUrl?: string | null;
+  coverUrl?: string | null;
   birthdate: string;
 }
 
@@ -36,4 +42,5 @@ export interface UserSummary {
   id: number;
   username: string | null;
   name: string;
+  avatarUrl?: string | null;
 }

@@ -6,6 +6,8 @@ export interface User {
   username: string | null;
   email: string;
   bio?: string | null;
+  avatarUrl?: string | null;
+  coverUrl?: string | null;
   isEmailVerified: boolean;
   birthdate: string;
   createdAt: string;

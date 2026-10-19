@@ -5,6 +5,7 @@ import { CommentItem } from "./comments/CommentItem";
 import { CommentInput } from "./comments/CommentInput";
 import type { Post } from "../types/posts";
 import type { Comment } from "../types/comments";
+import { getMediaUrl } from "../utils/media";
 
 interface CommentsModalProps {
   post: Post | null;
@@ -40,6 +41,10 @@ export function CommentsModal({
     sentinelRef,
     inputRef,
     setNewComment,
+    attachedImageUrl,
+    setAttachedImageUrl,
+    isUploadingImage,
+    setIsUploadingImage,
     loadInitialComments,
     loadMoreComments,
     handleContainerScroll,
@@ -128,9 +133,22 @@ export function CommentsModal({
                 justifyContent: "center",
                 fontWeight: 700,
                 fontSize: 15,
+                overflow: "hidden",
               }}
             >
-              {authorInitial}
+              {post.userAvatarUrl ? (
+                <img
+                  src={getMediaUrl(post.userAvatarUrl)}
+                  alt={post.userName}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                authorInitial
+              )}
             </div>
             <div>
               <div style={{ fontWeight: 600, fontSize: 14, color: "#262626" }}>
@@ -369,6 +387,10 @@ export function CommentsModal({
           onChangeComment={setNewComment}
           onCancelReply={handleCancelReply}
           onSubmit={handleSubmit}
+          attachedImageUrl={attachedImageUrl}
+          onAttachImage={setAttachedImageUrl}
+          isUploadingImage={isUploadingImage}
+          onUploadingChange={setIsUploadingImage}
         />
       </div>
     </div>

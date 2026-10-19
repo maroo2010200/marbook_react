@@ -40,6 +40,10 @@ export function useCommentsModal({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Attached image/GIF state
+  const [attachedImageUrl, setAttachedImageUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const [replyingTo, setReplyingTo] = useState<{
     commentId: number;
     userName: string;
@@ -74,6 +78,8 @@ export function useCommentsModal({
     setLoadMoreError(null);
     setSubmitError(null);
     setNewComment("");
+    setAttachedImageUrl(null);
+    setIsUploadingImage(false);
     setReplyingTo(null);
     setExpandedCommentIds(new Set());
     setLoadingRepliesCommentIds(new Set());
@@ -305,7 +311,13 @@ export function useCommentsModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const content = newComment.trim();
-    if (!content || submitting || !post) return;
+    if (
+      (!content && !attachedImageUrl) ||
+      submitting ||
+      !post ||
+      isUploadingImage
+    )
+      return;
 
     try {
       setSubmitting(true);
@@ -315,7 +327,8 @@ export function useCommentsModal({
         const targetParentId = replyingTo.commentId;
         const createdReply = await commentsApi.createReply(
           targetParentId,
-          content
+          content,
+          attachedImageUrl || undefined
         );
 
         const ancestors =
@@ -336,14 +349,20 @@ export function useCommentsModal({
         setComments(updated);
         commentsRef.current = updated;
         setNewComment("");
+        setAttachedImageUrl(null);
         setReplyingTo(null);
         onCommentAdded?.(createdReply);
       } else {
-        const created = await commentsApi.createComment(post.id, content);
+        const created = await commentsApi.createComment(
+          post.id,
+          content,
+          attachedImageUrl || undefined
+        );
         const updated = [created, ...commentsRef.current];
         setComments(updated);
         commentsRef.current = updated;
         setNewComment("");
+        setAttachedImageUrl(null);
         onCommentAdded?.(created);
       }
     } catch (err: any) {
@@ -356,12 +375,21 @@ export function useCommentsModal({
   };
 
   const handleEditComment = useCallback(
-    async (commentId: number, content: string): Promise<Comment> => {
-      const updated = await commentsApi.updateComment(commentId, content);
+    async (
+      commentId: number,
+      content: string,
+      imageUrl?: string | null
+    ): Promise<Comment> => {
+      const updated = await commentsApi.updateComment(
+        commentId,
+        content,
+        imageUrl
+      );
       setComments((prev) =>
         updateCommentInTree(prev, commentId, (c) => ({
           ...c,
           content: updated.content,
+          imageUrl: updated.imageUrl,
           updatedAt: updated.updatedAt,
         }))
       );
@@ -403,6 +431,10 @@ export function useCommentsModal({
     sentinelRef,
     inputRef,
     setNewComment,
+    attachedImageUrl,
+    setAttachedImageUrl,
+    isUploadingImage,
+    setIsUploadingImage,
     loadInitialComments,
     loadMoreComments,
     handleContainerScroll,

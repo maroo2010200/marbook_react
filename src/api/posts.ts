@@ -30,19 +30,34 @@ export const postsApi = {
 
   createPost: async (
     content: string,
-    visibility: PostVisibility = "Public"
+    visibility: PostVisibility = "Public",
+    imageUrls?: string[]
   ): Promise<Post> => {
-    const response = await api.post<Post>("/posts", { content, visibility });
+    const payload: {
+      content: string;
+      visibility: PostVisibility;
+      imageUrls?: string[];
+    } = { content, visibility };
+    if (imageUrls && imageUrls.length > 0) {
+      payload.imageUrls = imageUrls;
+    }
+    const response = await api.post<Post>("/posts", payload);
     return response.data;
   },
 
   updatePost: async (
     id: number,
     content: string,
-    visibility?: PostVisibility
+    visibility?: PostVisibility,
+    imageUrls?: string[]
   ): Promise<Post> => {
-    const payload: { content: string; visibility?: PostVisibility } = { content };
+    const payload: {
+      content: string;
+      visibility?: PostVisibility;
+      imageUrls?: string[];
+    } = { content };
     if (visibility) payload.visibility = visibility;
+    if (imageUrls !== undefined) payload.imageUrls = imageUrls;
     const response = await api.put<Post>(`/posts/${id}`, payload);
     return response.data;
   },

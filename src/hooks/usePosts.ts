@@ -205,9 +205,14 @@ export function usePosts(
   const createPost = useCallback(
     async (
       content: string,
-      visibility: PostVisibility = "Public"
+      visibility: PostVisibility = "Public",
+      imageUrls?: string[]
     ): Promise<Post> => {
-      const newPost = await postsApi.createPost(content, visibility);
+      const newPost = await postsApi.createPost(
+        content,
+        visibility,
+        imageUrls
+      );
       addPost(newPost);
       return newPost;
     },

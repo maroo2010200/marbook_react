@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import type { Comment } from "../../types/comments";
+import { mediaApi } from "../../api/media";
+import { getMediaUrl } from "../../utils/media";
+import { LightboxModal } from "../LightboxModal";
+import { parseRichText } from "../../utils/richText";
 
 export interface CommentItemProps {
   comment: Comment;
@@ -11,31 +15,15 @@ export interface CommentItemProps {
   onToggleLike: (commentId: number) => void;
   onStartReply: (commentId: number, userName: string) => void;
   currentUserId?: number;
-  onEditComment?: (commentId: number, content: string) => Promise<Comment | void>;
+  onEditComment?: (
+    commentId: number,
+    content: string,
+    imageUrl?: string | null
+  ) => Promise<Comment | void>;
   onDeleteComment?: (commentId: number) => Promise<void>;
 }
 
 const MAX_CHAR_COUNT = 300;
-
-/**
- * Parses content to highlight @username mentions in blue (e.g. "@JohnDoe Hello")
- */
-function renderCommentContent(content: string) {
-  const mentionMatch = content.match(
-    /^(@[\w\u0600-\u06FF]+)([\s\S]*)$/
-  );
-  if (mentionMatch) {
-    return (
-      <>
-        <span style={{ color: "#0095f6", fontWeight: 600 }}>
-          {mentionMatch[1]}
-        </span>
-        {mentionMatch[2]}
-      </>
-    );
-  }
-  return content;
-}
 
 export function CommentItem({
   comment,
@@ -54,9 +42,18 @@ export function CommentItem({
   // Edit state
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(
+    comment.imageUrl ?? null
+  );
+  const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Lightbox state
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
 
   // Dropdown menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -105,6 +102,18 @@ export function CommentItem({
   const avatarSize = depth === 0 ? 32 : 24;
   const avatarFontSize = depth === 0 ? 13 : 11;
 
+  // Parse mentions, autolinks, and media URLs from comment content
+  const richParsed = parseRichText(comment.content);
+  const allMediaUrls: string[] = [];
+  if (comment.imageUrl) {
+    allMediaUrls.push(comment.imageUrl);
+  }
+  for (const mUrl of richParsed.mediaUrls) {
+    if (!allMediaUrls.includes(mUrl)) {
+      allMediaUrls.push(mUrl);
+    }
+  }
+
   // Auto-resize edit textarea when entering edit mode
   useEffect(() => {
     if (isEditing && editTextareaRef.current) {
@@ -120,6 +129,7 @@ export function CommentItem({
   const handleStartEdit = () => {
     setIsMenuOpen(false);
     setEditContent(comment.content);
+    setEditImageUrl(comment.imageUrl ?? null);
     setEditError(null);
     setIsEditing(true);
   };
@@ -133,15 +143,44 @@ export function CommentItem({
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditContent(comment.content);
+    setEditImageUrl(comment.imageUrl ?? null);
     setEditError(null);
+  };
+
+  const handleEditFileSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingEditImage(true);
+    setEditError(null);
+    try {
+      const url = await mediaApi.upload(file, "comments");
+      setEditImageUrl(url);
+    } catch {
+      setEditError("Failed to upload image. Supported: JPG, PNG, WebP, GIF.");
+    } finally {
+      setIsUploadingEditImage(false);
+      if (editFileInputRef.current) editFileInputRef.current.value = "";
+    }
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = editContent.trim();
-    if (!trimmed || trimmed.length > MAX_CHAR_COUNT || isSaving) return;
+    if (
+      (!trimmed && !editImageUrl) ||
+      trimmed.length > MAX_CHAR_COUNT ||
+      isSaving ||
+      isUploadingEditImage
+    )
+      return;
 
-    if (trimmed === comment.content) {
+    const hasContentChanged = trimmed !== comment.content;
+    const hasImageChanged = editImageUrl !== (comment.imageUrl ?? null);
+
+    if (!hasContentChanged && !hasImageChanged) {
       setIsEditing(false);
       return;
     }
@@ -152,7 +191,7 @@ export function CommentItem({
     setEditError(null);
 
     try {
-      await onEditComment(comment.id, trimmed);
+      await onEditComment(comment.id, trimmed, editImageUrl);
       setIsEditing(false);
     } catch {
       setEditError("Failed to update comment.");
@@ -178,8 +217,14 @@ export function CommentItem({
 
   const editCharCount = editContent.length;
   const isEditOverLimit = editCharCount > MAX_CHAR_COUNT;
+  const hasContentChanged = editContent.trim() !== comment.content;
+  const hasImageChanged = editImageUrl !== (comment.imageUrl ?? null);
   const canSave =
-    editContent.trim().length > 0 && !isEditOverLimit && !isSaving;
+    (editContent.trim().length > 0 || Boolean(editImageUrl)) &&
+    !isEditOverLimit &&
+    !isSaving &&
+    !isUploadingEditImage &&
+    (hasContentChanged || hasImageChanged);
 
   return (
     <div style={{ position: "relative" }}>
@@ -212,11 +257,24 @@ export function CommentItem({
               flexShrink: 0,
               cursor: "pointer",
               transition: "opacity 0.15s ease",
+              overflow: "hidden",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
           >
-            {cInitial}
+            {comment.userAvatarUrl ? (
+              <img
+                src={getMediaUrl(comment.userAvatarUrl)}
+                alt={comment.userName}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              cInitial
+            )}
           </div>
         </Link>
 
@@ -320,37 +378,194 @@ export function CommentItem({
                   </button>
                 </div>
               </div>
+
+              {/* Edit image staging */}
+              {editImageUrl && (
+                <div
+                  style={{
+                    position: "relative",
+                    display: "inline-block",
+                    marginTop: 6,
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid #ccd0d5",
+                  }}
+                >
+                  <img
+                    src={getMediaUrl(editImageUrl)}
+                    alt=""
+                    style={{
+                      width: 50,
+                      height: 50,
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditImageUrl(null)}
+                    title="Remove image"
+                    style={{
+                      position: "absolute",
+                      top: 2,
+                      right: 2,
+                      width: 16,
+                      height: 16,
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(0,0,0,0.65)",
+                      color: "#fff",
+                      border: "none",
+                      fontSize: 9,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              <div style={{ marginTop: 4 }}>
+                <input
+                  ref={editFileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleEditFileSelect}
+                  style={{ display: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => editFileInputRef.current?.click()}
+                  disabled={isUploadingEditImage}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#45bd62",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: 0,
+                  }}
+                >
+                  📷{" "}
+                  {isUploadingEditImage
+                    ? "Uploading..."
+                    : editImageUrl
+                    ? "Change image"
+                    : "Attach image"}
+                </button>
+              </div>
             </form>
           ) : (
             /* Normal Comment Content */
-            <div
-              style={{
-                fontSize: depth === 0 ? 14 : 13,
-                lineHeight: 1.4,
-                color: "#262626",
-              }}
-            >
-              <Link
-                to={`/profile/${comment.userId}`}
+            <div>
+              <div
                 style={{
-                  fontWeight: 600,
-                  marginRight: 6,
+                  fontSize: depth === 0 ? 14 : 13,
+                  lineHeight: 1.4,
                   color: "#262626",
-                  textDecoration: "none",
-                  cursor: "pointer",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.textDecoration = "underline")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.textDecoration = "none")
-                }
               >
-                {comment.userName}
-              </Link>
-              <span style={{ wordBreak: "break-word" }}>
-                {renderCommentContent(comment.content)}
-              </span>
+                <Link
+                  to={`/profile/${comment.userId}`}
+                  style={{
+                    fontWeight: 600,
+                    marginRight: 6,
+                    color: "#262626",
+                    textDecoration: "none",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.textDecoration = "underline")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.textDecoration = "none")
+                  }
+                >
+                  {comment.userName}
+                </Link>
+                {richParsed.nodes.length > 0 && (
+                  <span style={{ wordBreak: "break-word" }}>
+                    {richParsed.nodes}
+                  </span>
+                )}
+              </div>
+
+              {/* Attached Image/GIF or Detected Link Media */}
+              {allMediaUrls.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    marginTop: 6,
+                  }}
+                >
+                  {allMediaUrls.map((mediaUrl, idx) => {
+                    const isGif =
+                      mediaUrl.toLowerCase().includes(".gif") ||
+                      mediaUrl.toLowerCase().includes("giphy") ||
+                      mediaUrl.toLowerCase().includes("tenor");
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          position: "relative",
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          maxWidth: depth === 0 ? 260 : 200,
+                          cursor: "pointer",
+                          backgroundColor: "#f0f2f5",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                        }}
+                        onClick={() => {
+                          setLightboxImages([mediaUrl]);
+                          setIsLightboxOpen(true);
+                        }}
+                      >
+                        <img
+                          src={getMediaUrl(mediaUrl)}
+                          alt="Comment media attachment"
+                          loading="lazy"
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: 220,
+                            borderRadius: 8,
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                        {isGif && (
+                          <span
+                            style={{
+                              position: "absolute",
+                              bottom: 6,
+                              left: 6,
+                              backgroundColor: "rgba(0,0,0,0.72)",
+                              color: "#fff",
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: "2px 5px",
+                              borderRadius: 4,
+                              letterSpacing: "0.5px",
+                              pointerEvents: "none",
+                              backdropFilter: "blur(2px)",
+                            }}
+                          >
+                            GIF
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -803,6 +1018,15 @@ export function CommentItem({
             </div>
           </div>
         </div>
+      )}
+      {/* Lightbox for comment image or detected GIF */}
+      {lightboxImages.length > 0 && (
+        <LightboxModal
+          isOpen={isLightboxOpen}
+          images={lightboxImages}
+          initialIndex={0}
+          onClose={() => setIsLightboxOpen(false)}
+        />
       )}
     </div>
   );

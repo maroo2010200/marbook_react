@@ -2,6 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import type { Post, PostVisibility } from "../types/posts";
 import { postsApi } from "../api/posts";
+import { mediaApi } from "../api/media";
+import { getMediaUrl } from "../utils/media";
+import { PostImagesGrid } from "./PostImagesGrid";
+import { LightboxModal } from "./LightboxModal";
+import { ImageAdjustModal } from "./ImageAdjustModal";
+import { parseRichText } from "../utils/richText";
 
 interface PostCardProps {
   post: Post;
@@ -143,6 +149,22 @@ export function PostCard({
   const [editError, setEditError] = useState<string | null>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Edit images state & Lightbox state
+  const [editImageUrls, setEditImageUrls] = useState<string[]>(
+    post.imageUrls || []
+  );
+  const [isUploadingEditImages, setIsUploadingEditImages] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [adjustingEditIndex, setAdjustingEditIndex] = useState<number | null>(
+    null
+  );
+  const [pendingEditAdjust, setPendingEditAdjust] = useState<{
+    file: File;
+    objectUrl: string;
+    fileName: string;
+  } | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   // Delete modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -232,6 +254,7 @@ export function PostCard({
     setIsMenuOpen(false);
     setEditContent(post.content);
     setEditVisibility(post.visibility || "Public");
+    setEditImageUrls(post.imageUrls || []);
     setIsEditAudienceOpen(false);
     setEditError(null);
     setIsEditing(true);
@@ -241,20 +264,131 @@ export function PostCard({
     setIsEditing(false);
     setEditContent(post.content);
     setEditVisibility(post.visibility || "Public");
+    setEditImageUrls(post.imageUrls || []);
     setIsEditAudienceOpen(false);
     setEditError(null);
+  };
+
+  const handleEditFilesSelected = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (editImageUrls.length + files.length > 10) {
+      setEditError("You can attach a maximum of 10 images per post.");
+      e.target.value = "";
+      return;
+    }
+
+    if (files.length === 1) {
+      const file = files[0];
+      const objectUrl = URL.createObjectURL(file);
+      setPendingEditAdjust({
+        file,
+        objectUrl,
+        fileName: file.name,
+      });
+      if (editFileInputRef.current) editFileInputRef.current.value = "";
+      return;
+    }
+
+    setIsUploadingEditImages(true);
+    setEditError(null);
+    try {
+      const newUrls = await mediaApi.uploadMultiple(Array.from(files), "posts");
+      setEditImageUrls((prev) => [...prev, ...newUrls]);
+    } catch (err: any) {
+      setEditError(
+        err.response?.data?.message ||
+          "Failed to upload image(s). Only JPG, PNG, WebP, and GIF under 10MB are supported."
+      );
+    } finally {
+      setIsUploadingEditImages(false);
+      if (editFileInputRef.current) {
+        editFileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleAdjustEditConfirm = async (croppedFile: File) => {
+    if (adjustingEditIndex === null) return;
+    const targetIdx = adjustingEditIndex;
+    setAdjustingEditIndex(null);
+    setIsUploadingEditImages(true);
+    try {
+      const url = await mediaApi.upload(croppedFile, "posts");
+      setEditImageUrls((prev) =>
+        prev.map((item, i) => (i === targetIdx ? url : item))
+      );
+    } catch {
+      setEditError("Failed to upload adjusted image.");
+    } finally {
+      setIsUploadingEditImages(false);
+    }
+  };
+
+  const handlePendingEditAdjustConfirm = async (croppedFile: File) => {
+    if (!pendingEditAdjust) return;
+    const { objectUrl } = pendingEditAdjust;
+    URL.revokeObjectURL(objectUrl);
+    setPendingEditAdjust(null);
+
+    setIsUploadingEditImages(true);
+    setEditError(null);
+    try {
+      const url = await mediaApi.upload(croppedFile, "posts");
+      setEditImageUrls((prev) => [...prev, url]);
+    } catch {
+      setEditError("Failed to upload adjusted image.");
+    } finally {
+      setIsUploadingEditImages(false);
+    }
+  };
+
+  const handlePendingEditSkipCrop = async () => {
+    if (!pendingEditAdjust) return;
+    const { file, objectUrl } = pendingEditAdjust;
+    URL.revokeObjectURL(objectUrl);
+    setPendingEditAdjust(null);
+
+    setIsUploadingEditImages(true);
+    setEditError(null);
+    try {
+      const url = await mediaApi.upload(file, "posts");
+      setEditImageUrls((prev) => [...prev, url]);
+    } catch {
+      setEditError("Failed to upload image.");
+    } finally {
+      setIsUploadingEditImages(false);
+    }
+  };
+
+  const handlePendingEditCancel = () => {
+    if (pendingEditAdjust) {
+      URL.revokeObjectURL(pendingEditAdjust.objectUrl);
+    }
+    setPendingEditAdjust(null);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = editContent.trim();
-    if (!trimmed || trimmed.length > MAX_CHAR_COUNT || isSaving) return;
+    if (
+      trimmed.length > MAX_CHAR_COUNT ||
+      isSaving ||
+      isUploadingEditImages
+    )
+      return;
+    if (!trimmed && editImageUrls.length === 0) return;
 
     const hasContentChanged = trimmed !== post.content;
     const hasVisibilityChanged =
       editVisibility !== (post.visibility || "Public");
+    const hasImagesChanged =
+      JSON.stringify(editImageUrls) !== JSON.stringify(post.imageUrls || []);
 
-    if (!hasContentChanged && !hasVisibilityChanged) {
+    if (!hasContentChanged && !hasVisibilityChanged && !hasImagesChanged) {
       setIsEditing(false);
       return;
     }
@@ -266,7 +400,8 @@ export function PostCard({
       const updated = await postsApi.updatePost(
         post.id,
         trimmed,
-        editVisibility
+        editVisibility,
+        editImageUrls
       );
       onPostUpdated(updated);
       setIsEditing(false);
@@ -303,11 +438,14 @@ export function PostCard({
   const hasContentChanged = editContent.trim() !== post.content;
   const hasVisibilityChanged =
     editVisibility !== (post.visibility || "Public");
+  const hasImagesChanged =
+    JSON.stringify(editImageUrls) !== JSON.stringify(post.imageUrls || []);
   const canSave =
-    editContent.trim().length > 0 &&
+    (editContent.trim().length > 0 || editImageUrls.length > 0) &&
     !isEditOverLimit &&
     !isSaving &&
-    (hasContentChanged || hasVisibilityChanged);
+    !isUploadingEditImages &&
+    (hasContentChanged || hasVisibilityChanged || hasImagesChanged);
 
   return (
     <article
@@ -350,11 +488,24 @@ export function PostCard({
                 fontSize: 16,
                 cursor: "pointer",
                 transition: "opacity 0.15s ease",
+                overflow: "hidden",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
             >
-              {authorInitial}
+              {post.userAvatarUrl ? (
+                <img
+                  src={getMediaUrl(post.userAvatarUrl)}
+                  alt={post.userName}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                authorInitial
+              )}
             </div>
           </Link>
           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -860,20 +1011,175 @@ export function PostCard({
               </button>
             </div>
           </div>
+          {/* Edit images staging tray */}
+          {editImageUrls.length > 0 && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                marginTop: 8,
+                padding: 8,
+                backgroundColor: "#f0f2f5",
+                borderRadius: 8,
+              }}
+            >
+              {editImageUrls.map((url, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    position: "relative",
+                    width: 80,
+                    height: 80,
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    border: "1px solid #ccd0d5",
+                    backgroundColor: "#fff",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <img
+                    src={getMediaUrl(url)}
+                    alt=""
+                    onClick={() => setAdjustingEditIndex(idx)}
+                    title="Click to adjust & crop"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      cursor: "pointer",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAdjustingEditIndex(idx)}
+                    title="Adjust (Zoom, Pan, Crop)"
+                    style={{
+                      position: "absolute",
+                      bottom: 3,
+                      left: 3,
+                      right: 3,
+                      height: 20,
+                      borderRadius: 4,
+                      backgroundColor: "rgba(0, 0, 0, 0.72)",
+                      color: "#fff",
+                      border: "none",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 2,
+                      backdropFilter: "blur(2px)",
+                    }}
+                  >
+                    <span>✂️</span>
+                    <span>Adjust</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditImageUrls((prev) =>
+                        prev.filter((_, i) => i !== idx)
+                      )
+                    }
+                    title="Remove image"
+                    style={{
+                      position: "absolute",
+                      top: 3,
+                      right: 3,
+                      width: 20,
+                      height: 20,
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(0,0,0,0.72)",
+                      color: "#fff",
+                      border: "none",
+                      fontSize: 11,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      lineHeight: 1,
+                      backdropFilter: "blur(2px)",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add image button in edit mode */}
+          <div style={{ marginTop: 8 }}>
+            <input
+              ref={editFileInputRef}
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleEditFilesSelected}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              onClick={() => editFileInputRef.current?.click()}
+              disabled={
+                isUploadingEditImages || editImageUrls.length >= 10
+              }
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 8px",
+                borderRadius: 6,
+                border: "1px solid #ccd0d5",
+                background: "#fff",
+                cursor:
+                  editImageUrls.length >= 10 ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#45bd62",
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7-3 3.72L9 13l-3 4h12l-4-5z" />
+              </svg>
+              <span style={{ color: "#4b4f56" }}>
+                {isUploadingEditImages ? "Uploading..." : "Add photos"}
+              </span>
+            </button>
+          </div>
         </form>
       ) : (
-        <p
-          style={{
-            margin: "8px 0 0",
-            fontSize: 15,
-            lineHeight: 1.5,
-            color: "#1c1e21",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          }}
-        >
-          {post.content}
-        </p>
+        <>
+          {post.content && (
+            <p
+              style={{
+                margin: "8px 0 0",
+                fontSize: 15,
+                lineHeight: 1.5,
+                color: "#1c1e21",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            >
+              {parseRichText(post.content, { linkColor: "#1877f2", hidePureMediaUrl: false }).nodes}
+            </p>
+          )}
+
+          {post.imageUrls && post.imageUrls.length > 0 && (
+            <PostImagesGrid
+              images={post.imageUrls}
+              onImageClick={(idx) => setLightboxIndex(idx)}
+            />
+          )}
+        </>
       )}
 
       {/* Post Actions: Like & Comment */}
@@ -1104,6 +1410,39 @@ export function PostCard({
           </div>
         </div>
       )}
+      <LightboxModal
+        isOpen={lightboxIndex !== null}
+        images={post.imageUrls || []}
+        initialIndex={lightboxIndex ?? 0}
+        onClose={() => setLightboxIndex(null)}
+      />
+
+      {/* Re-adjust Existing Attached Image in Edit Mode */}
+      <ImageAdjustModal
+        isOpen={adjustingEditIndex !== null}
+        imageSrc={
+          adjustingEditIndex !== null && editImageUrls[adjustingEditIndex]
+            ? getMediaUrl(editImageUrls[adjustingEditIndex])
+            : ""
+        }
+        fileName="post-image.jpg"
+        allowAspectChange={true}
+        title="Adjust Post Picture"
+        onConfirm={handleAdjustEditConfirm}
+        onCancel={() => setAdjustingEditIndex(null)}
+      />
+
+      {/* Adjust Newly Added Picture Before Uploading to Post */}
+      <ImageAdjustModal
+        isOpen={pendingEditAdjust !== null}
+        imageSrc={pendingEditAdjust?.objectUrl || ""}
+        fileName={pendingEditAdjust?.fileName || "post-image.jpg"}
+        allowAspectChange={true}
+        title="Adjust & Position Picture"
+        onConfirm={handlePendingEditAdjustConfirm}
+        onSkipCrop={handlePendingEditSkipCrop}
+        onCancel={handlePendingEditCancel}
+      />
     </article>
   );
 }
