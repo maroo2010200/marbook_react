@@ -28,7 +28,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
     display: "block",
   });
 
-  // 1 Image: Full width, natural feel with max-height
+  // 1 Image: Full natural visibility without cropping
   if (count === 1) {
     return (
       <div
@@ -36,9 +36,12 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
           marginTop: 10,
           borderRadius: 8,
           overflow: "hidden",
-          maxHeight: 500,
+          maxHeight: 650,
           backgroundColor: "#f0f2f5",
           cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
         onClick={() => handleClick(0)}
         onMouseEnter={() => setHoveredIdx(0)}
@@ -49,11 +52,14 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
           alt="Post attachment"
           loading="lazy"
           style={{
-            width: "100%",
-            maxHeight: 500,
-            objectFit: "cover",
+            maxWidth: "100%",
+            maxHeight: 650,
+            width: "auto",
+            height: "auto",
+            objectFit: "contain",
             display: "block",
-            filter: hoveredIdx === 0 ? "brightness(0.94)" : "none",
+            margin: "0 auto",
+            filter: hoveredIdx === 0 ? "brightness(0.95)" : "none",
             transition: "filter 0.15s ease",
           }}
         />
