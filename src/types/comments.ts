@@ -29,6 +29,7 @@ export interface CommentUpdateDto {
 }
 
 export interface ToggleCommentLikeResponse {
-  liked: boolean;
+  liked?: boolean;
+  isLiked?: boolean;
   likeCount: number;
 }
