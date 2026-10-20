@@ -231,11 +231,15 @@ export function useCommentsModal({
 
     try {
       const res = await commentsApi.toggleCommentLike(commentId);
+      const isLiked = res.liked ?? res.isLiked ?? nextLiked;
       setComments((prev) =>
         updateCommentInTree(prev, commentId, (c) => ({
           ...c,
-          liked: res.liked,
-          likeCount: res.likeCount,
+          liked: isLiked,
+          likeCount:
+            typeof res.likeCount === "number"
+              ? res.likeCount
+              : optimisticCount,
         }))
       );
     } catch {
