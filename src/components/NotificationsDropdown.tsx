@@ -170,11 +170,10 @@ export function NotificationsDropdown({
         right: 0,
         width: 375,
         maxHeight: 520,
-        backgroundColor: "#fff",
+        backgroundColor: "var(--bg-card)",
         borderRadius: 12,
-        boxShadow:
-          "0 12px 28px 0 rgba(0, 0, 0, 0.2), 0 2px 4px 0 rgba(0, 0, 0, 0.1)",
-        border: "1px solid #e4e6eb",
+        boxShadow: "var(--shadow-lg)",
+        border: "1px solid var(--border-color)",
         zIndex: 1000,
         display: "flex",
         flexDirection: "column",
@@ -187,7 +186,7 @@ export function NotificationsDropdown({
       <div
         style={{
           padding: "14px 16px 10px",
-          borderBottom: "1px solid #f0f2f5",
+          borderBottom: "1px solid var(--border-color)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -198,7 +197,7 @@ export function NotificationsDropdown({
             margin: 0,
             fontSize: 20,
             fontWeight: 700,
-            color: "#050505",
+            color: "var(--text-primary)",
             letterSpacing: "-0.4px",
           }}
         >
@@ -211,7 +210,7 @@ export function NotificationsDropdown({
           style={{
             background: "none",
             border: "none",
-            color: "#1877f2",
+            color: "var(--primary)",
             fontSize: 13,
             fontWeight: 600,
             cursor: "pointer",
@@ -220,7 +219,7 @@ export function NotificationsDropdown({
             transition: "background-color 0.15s ease",
           }}
           onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#e7f3ff")
+            (e.currentTarget.style.backgroundColor = "var(--primary-light)")
           }
           onMouseLeave={(e) =>
             (e.currentTarget.style.backgroundColor = "transparent")
@@ -236,7 +235,7 @@ export function NotificationsDropdown({
           display: "flex",
           gap: 8,
           padding: "8px 16px",
-          borderBottom: "1px solid #f0f2f5",
+          borderBottom: "1px solid var(--border-color)",
         }}
       >
         <button
@@ -249,8 +248,10 @@ export function NotificationsDropdown({
             fontSize: 14,
             fontWeight: 600,
             cursor: "pointer",
-            backgroundColor: activeTab === "all" ? "#e7f3ff" : "#f0f2f5",
-            color: activeTab === "all" ? "#1877f2" : "#65676b",
+            backgroundColor:
+              activeTab === "all" ? "var(--primary-light)" : "var(--bg-hover)",
+            color:
+              activeTab === "all" ? "var(--primary)" : "var(--text-secondary)",
             transition: "all 0.15s ease",
           }}
         >
@@ -266,8 +267,14 @@ export function NotificationsDropdown({
             fontSize: 14,
             fontWeight: 600,
             cursor: "pointer",
-            backgroundColor: activeTab === "unread" ? "#e7f3ff" : "#f0f2f5",
-            color: activeTab === "unread" ? "#1877f2" : "#65676b",
+            backgroundColor:
+              activeTab === "unread"
+                ? "var(--primary-light)"
+                : "var(--bg-hover)",
+            color:
+              activeTab === "unread"
+                ? "var(--primary)"
+                : "var(--text-secondary)",
             transition: "all 0.15s ease",
           }}
         >
@@ -345,7 +352,7 @@ export function NotificationsDropdown({
             style={{
               padding: "40px 20px",
               textAlign: "center",
-              color: "#65676b",
+              color: "var(--text-secondary)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -356,13 +363,13 @@ export function NotificationsDropdown({
                 width: 52,
                 height: 52,
                 borderRadius: "50%",
-                backgroundColor: "#f0f2f5",
+                backgroundColor: "var(--bg-hover)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 12,
                 fontSize: 22,
-                color: "#8a8d91",
+                color: "var(--text-tertiary)",
               }}
             >
               🔔
@@ -372,14 +379,14 @@ export function NotificationsDropdown({
                 margin: "0 0 4px",
                 fontWeight: 600,
                 fontSize: 15,
-                color: "#050505",
+                color: "var(--text-primary)",
               }}
             >
               {activeTab === "unread"
                 ? "No unread notifications"
                 : "No notifications yet"}
             </p>
-            <span style={{ fontSize: 13, color: "#65676b" }}>
+            <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
               {activeTab === "unread"
                 ? "You have caught up with all your alerts!"
                 : "When friends interact with your posts or profile, you'll see them here."}
@@ -404,20 +411,22 @@ export function NotificationsDropdown({
                   gap: 12,
                   padding: "10px 10px",
                   borderRadius: 8,
-                  backgroundColor: item.isRead ? "transparent" : "#e7f3ff33",
+                  backgroundColor: item.isRead
+                    ? "transparent"
+                    : "var(--primary-light)",
                   cursor: "pointer",
                   position: "relative",
                   transition: "background-color 0.15s ease",
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.backgroundColor = item.isRead
-                    ? "#f0f2f5"
-                    : "#e7f3ff88")
+                    ? "var(--bg-hover)"
+                    : "var(--primary-light-hover)")
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.backgroundColor = item.isRead
                     ? "transparent"
-                    : "#e7f3ff33")
+                    : "var(--primary-light)")
                 }
               >
                 {/* Avatar with Action Badge */}
@@ -427,7 +436,7 @@ export function NotificationsDropdown({
                       width: 44,
                       height: 44,
                       borderRadius: "50%",
-                      backgroundColor: "#1877f2",
+                      backgroundColor: "var(--primary)",
                       color: "#fff",
                       display: "flex",
                       alignItems: "center",
@@ -466,7 +475,7 @@ export function NotificationsDropdown({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      border: "2px solid #fff",
+                      border: "2px solid var(--bg-card)",
                     }}
                   >
                     {config.icon}
@@ -488,19 +497,27 @@ export function NotificationsDropdown({
                       margin: 0,
                       fontSize: 13.5,
                       lineHeight: 1.35,
-                      color: "#050505",
+                      color: "var(--text-primary)",
                       overflowWrap: "break-word",
                     }}
                   >
                     <strong style={{ fontWeight: 600 }}>{item.actorName}</strong>{" "}
-                    <span style={{ color: item.isRead ? "#65676b" : "#050505" }}>
+                    <span
+                      style={{
+                        color: item.isRead
+                          ? "var(--text-secondary)"
+                          : "var(--text-primary)",
+                      }}
+                    >
                       {config.label}
                     </span>
                   </p>
                   <span
                     style={{
                       fontSize: 12,
-                      color: item.isRead ? "#8a8d91" : "#1877f2",
+                      color: item.isRead
+                        ? "var(--text-tertiary)"
+                        : "var(--primary)",
                       fontWeight: item.isRead ? 400 : 600,
                     }}
                   >
@@ -524,7 +541,7 @@ export function NotificationsDropdown({
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        backgroundColor: "#1877f2",
+                        backgroundColor: "var(--primary)",
                       }}
                     />
                   )}
@@ -536,7 +553,7 @@ export function NotificationsDropdown({
                     style={{
                       background: "none",
                       border: "none",
-                      color: "#8a8d91",
+                      color: "var(--text-tertiary)",
                       cursor: "pointer",
                       padding: "4px",
                       borderRadius: "50%",
@@ -549,11 +566,12 @@ export function NotificationsDropdown({
                     onMouseEnter={(e) => {
                       e.currentTarget.style.opacity = "1";
                       e.currentTarget.style.color = "#e02424";
-                      e.currentTarget.style.backgroundColor = "#ffebe8";
+                      e.currentTarget.style.backgroundColor =
+                        "rgba(224, 36, 36, 0.12)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.opacity = "0.6";
-                      e.currentTarget.style.color = "#8a8d91";
+                      e.currentTarget.style.color = "var(--text-tertiary)";
                       e.currentTarget.style.backgroundColor = "transparent";
                     }}
                   >
@@ -585,20 +603,20 @@ export function NotificationsDropdown({
             style={{
               margin: "8px 0 4px",
               padding: "8px",
-              backgroundColor: "#f0f2f5",
+              backgroundColor: "var(--bg-hover)",
               border: "none",
               borderRadius: 8,
               fontSize: 13,
               fontWeight: 600,
-              color: "#1877f2",
+              color: "var(--primary)",
               cursor: "pointer",
               transition: "background-color 0.15s ease",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#e4e6eb")
+              (e.currentTarget.style.backgroundColor = "var(--bg-active)")
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#f0f2f5")
+              (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
             }
           >
             {loadingMore ? "Loading..." : "See previous notifications"}

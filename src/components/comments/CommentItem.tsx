@@ -247,8 +247,8 @@ export function CommentItem({
               width: avatarSize,
               height: avatarSize,
               borderRadius: "50%",
-              backgroundColor: "#e4e6eb",
-              color: "#333",
+              backgroundColor: "var(--primary)",
+              color: "#fff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -299,13 +299,13 @@ export function CommentItem({
                   boxSizing: "border-box",
                   border: isEditOverLimit
                     ? "1px solid #e02424"
-                    : "1px solid #1877f2",
+                    : "1px solid var(--border-color)",
                   borderRadius: 6,
                   padding: "6px 10px",
                   fontSize: depth === 0 ? 13 : 12,
                   lineHeight: 1.4,
-                  color: "#262626",
-                  backgroundColor: "#fff",
+                  color: "var(--text-primary)",
+                  backgroundColor: "var(--bg-input)",
                   outline: "none",
                   resize: "none",
                   fontFamily: "inherit",
@@ -335,7 +335,7 @@ export function CommentItem({
                 <span
                   style={{
                     fontSize: 11,
-                    color: isEditOverLimit ? "#e02424" : "#8e8e8e",
+                    color: isEditOverLimit ? "#e02424" : "var(--text-secondary)",
                   }}
                 >
                   {editCharCount}/{MAX_CHAR_COUNT}
@@ -347,13 +347,13 @@ export function CommentItem({
                     onClick={handleCancelEdit}
                     disabled={isSaving}
                     style={{
-                      background: "none",
-                      border: "1px solid #ccd0d5",
+                      background: "var(--bg-hover)",
+                      border: "1px solid var(--border-color)",
                       borderRadius: 4,
                       padding: "2px 8px",
                       fontSize: 11,
                       fontWeight: 600,
-                      color: "#65676b",
+                      color: "var(--text-secondary)",
                       cursor: "pointer",
                     }}
                   >
@@ -364,8 +364,8 @@ export function CommentItem({
                     type="submit"
                     disabled={!canSave}
                     style={{
-                      background: canSave ? "#1877f2" : "#e4e6eb",
-                      color: canSave ? "#fff" : "#bcc0c4",
+                      background: canSave ? "var(--primary)" : "var(--border-color)",
+                      color: canSave ? "#fff" : "var(--text-tertiary)",
                       border: "none",
                       borderRadius: 4,
                       padding: "2px 10px",
@@ -388,7 +388,7 @@ export function CommentItem({
                     marginTop: 6,
                     borderRadius: 6,
                     overflow: "hidden",
-                    border: "1px solid #ccd0d5",
+                    border: "1px solid var(--border-color)",
                   }}
                 >
                   <img
@@ -468,7 +468,7 @@ export function CommentItem({
                 style={{
                   fontSize: depth === 0 ? 14 : 13,
                   lineHeight: 1.4,
-                  color: "#262626",
+                  color: "var(--text-primary)",
                 }}
               >
                 <Link
@@ -476,7 +476,7 @@ export function CommentItem({
                   style={{
                     fontWeight: 600,
                     marginRight: 6,
-                    color: "#262626",
+                    color: "var(--text-primary)",
                     textDecoration: "none",
                     cursor: "pointer",
                   }}
@@ -521,8 +521,8 @@ export function CommentItem({
                           overflow: "hidden",
                           maxWidth: depth === 0 ? 260 : 200,
                           cursor: "pointer",
-                          backgroundColor: "#f0f2f5",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                          backgroundColor: "var(--bg-hover)",
+                          boxShadow: "var(--shadow-sm)",
                         }}
                         onClick={() => {
                           setLightboxImages([mediaUrl]);
@@ -579,13 +579,13 @@ export function CommentItem({
                 gap: 10,
                 marginTop: 4,
                 fontSize: depth === 0 ? 12 : 11,
-                color: "#8e8e8e",
+                color: "var(--text-secondary)",
               }}
             >
               <small>{cDate}</small>
 
               {isEdited && (
-                <span style={{ fontStyle: "italic", fontSize: 11 }}>
+                <span style={{ fontStyle: "italic", fontSize: 11, color: "var(--text-tertiary)" }}>
                   • Edited
                 </span>
               )}
@@ -604,7 +604,7 @@ export function CommentItem({
                   background: "none",
                   border: "none",
                   padding: 0,
-                  color: "#65676b",
+                  color: "var(--text-secondary)",
                   fontWeight: 600,
                   fontSize: depth === 0 ? 12 : 11,
                   cursor: "pointer",
@@ -631,7 +631,7 @@ export function CommentItem({
                       background: "none",
                       border: "none",
                       padding: "0 2px",
-                      color: isMenuOpen ? "#262626" : "#8e8e8e",
+                      color: isMenuOpen ? "var(--text-primary)" : "var(--text-secondary)",
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
@@ -640,10 +640,10 @@ export function CommentItem({
                       transition: "color 0.15s ease",
                     }}
                     onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "#262626")
+                      (e.currentTarget.style.color = "var(--text-primary)")
                     }
                     onMouseLeave={(e) => {
-                      if (!isMenuOpen) e.currentTarget.style.color = "#8e8e8e";
+                      if (!isMenuOpen) e.currentTarget.style.color = "var(--text-secondary)";
                     }}
                   >
                     <svg
@@ -665,10 +665,10 @@ export function CommentItem({
                         position: "absolute",
                         top: "100%",
                         left: 0,
-                        backgroundColor: "#fff",
-                        boxShadow: "0 4px 14px rgba(0, 0, 0, 0.15)",
+                        backgroundColor: "var(--bg-card)",
+                        boxShadow: "var(--shadow-md)",
                         borderRadius: 6,
-                        border: "1px solid #e4e6eb",
+                        border: "1px solid var(--border-color)",
                         minWidth: 105,
                         zIndex: 40,
                         overflow: "hidden",
@@ -688,11 +688,11 @@ export function CommentItem({
                           border: "none",
                           textAlign: "left",
                           fontSize: 12,
-                          color: "#1c1e21",
+                          color: "var(--text-primary)",
                           cursor: "pointer",
                         }}
                         onMouseEnter={(e) =>
-                          (e.currentTarget.style.backgroundColor = "#f0f2f5")
+                          (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
                         }
                         onMouseLeave={(e) =>
                           (e.currentTarget.style.backgroundColor = "transparent")
@@ -731,7 +731,7 @@ export function CommentItem({
                           cursor: "pointer",
                         }}
                         onMouseEnter={(e) =>
-                          (e.currentTarget.style.backgroundColor = "#fde8e8")
+                          (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
                         }
                         onMouseLeave={(e) =>
                           (e.currentTarget.style.backgroundColor = "transparent")
@@ -770,7 +770,7 @@ export function CommentItem({
             border: "none",
             cursor: "pointer",
             padding: "4px",
-            color: isCommentLiked ? "#ed4956" : "#8e8e8e",
+            color: isCommentLiked ? "#ed4956" : "var(--text-secondary)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -784,7 +784,7 @@ export function CommentItem({
             height={depth === 0 ? "15" : "13"}
             viewBox="0 0 24 24"
             fill={isCommentLiked ? "#ed4956" : "none"}
-            stroke={isCommentLiked ? "#ed4956" : "#8e8e8e"}
+            stroke={isCommentLiked ? "#ed4956" : "var(--text-secondary)"}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -810,8 +810,8 @@ export function CommentItem({
             style={{
               width: 22,
               height: 18,
-              borderLeft: "2px solid #8e8e8e",
-              borderBottom: "2px solid #8e8e8e",
+              borderLeft: "2px solid var(--text-tertiary)",
+              borderBottom: "2px solid var(--text-tertiary)",
               borderBottomLeftRadius: 10,
               marginRight: 8,
               marginLeft: depth === 0 ? 15 : 11,
@@ -826,7 +826,7 @@ export function CommentItem({
               background: "none",
               border: "none",
               padding: "3px 6px",
-              color: "#0095f6",
+              color: "var(--primary)",
               fontWeight: 600,
               fontSize: 12,
               cursor: "pointer",
@@ -836,7 +836,7 @@ export function CommentItem({
               borderRadius: 4,
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#f0f2f5")
+              (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
             }
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "transparent")
@@ -876,7 +876,7 @@ export function CommentItem({
           style={{
             position: "relative",
             marginLeft: depth === 0 ? 15 : 11,
-            borderLeft: "2px solid #e4e6eb",
+            borderLeft: "2px solid var(--divider)",
             paddingLeft: 14,
             display: "flex",
             flexDirection: "column",
@@ -911,7 +911,7 @@ export function CommentItem({
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            backgroundColor: "var(--modal-overlay)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -924,12 +924,13 @@ export function CommentItem({
         >
           <div
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: "var(--bg-card)",
               borderRadius: 10,
               maxWidth: 400,
               width: "100%",
               padding: "24px 24px 20px",
-              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.25)",
+              boxShadow: "var(--shadow-lg)",
+              border: "1px solid var(--border-color)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -938,7 +939,7 @@ export function CommentItem({
                 margin: "0 0 8px",
                 fontSize: 18,
                 fontWeight: 700,
-                color: "#1c1e21",
+                color: "var(--text-primary)",
               }}
             >
               Delete Comment?
@@ -947,7 +948,7 @@ export function CommentItem({
               style={{
                 margin: "0 0 20px",
                 fontSize: 14,
-                color: "#65676b",
+                color: "var(--text-secondary)",
                 lineHeight: 1.4,
               }}
             >
@@ -984,9 +985,9 @@ export function CommentItem({
                 style={{
                   padding: "8px 16px",
                   borderRadius: 6,
-                  border: "1px solid #ccd0d5",
-                  background: "#fff",
-                  color: "#4b4f56",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--bg-hover)",
+                  color: "var(--text-primary)",
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: isDeleting ? "not-allowed" : "pointer",

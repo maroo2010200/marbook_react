@@ -41,19 +41,19 @@ export function CommentInput({
     return (
       <div
         style={{
-          borderTop: "1px solid #efefef",
+          borderTop: "1px solid var(--divider)",
           padding: "16px 18px",
-          backgroundColor: "#fff",
+          backgroundColor: "var(--bg-card)",
           textAlign: "center",
           fontSize: 13,
-          color: "#8e8e8e",
+          color: "var(--text-secondary)",
         }}
       >
         Please{" "}
         <Link
           to="/login"
           style={{
-            color: "#0095f6",
+            color: "var(--primary)",
             fontWeight: 600,
             textDecoration: "none",
           }}
@@ -64,7 +64,7 @@ export function CommentInput({
         <Link
           to="/register"
           style={{
-            color: "#0095f6",
+            color: "var(--primary)",
             fontWeight: 600,
             textDecoration: "none",
           }}
@@ -103,9 +103,9 @@ export function CommentInput({
   return (
     <div
       style={{
-        borderTop: "1px solid #efefef",
+        borderTop: "1px solid var(--divider)",
         padding: "12px 18px",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--bg-card)",
       }}
     >
       <form onSubmit={onSubmit} style={{ margin: 0 }}>
@@ -117,16 +117,16 @@ export function CommentInput({
               alignItems: "center",
               justifyContent: "space-between",
               padding: "6px 12px",
-              backgroundColor: "#f0f2f5",
+              backgroundColor: "var(--bg-hover)",
               borderRadius: 8,
               marginBottom: 8,
               fontSize: 13,
-              color: "#65676b",
+              color: "var(--text-secondary)",
             }}
           >
             <span>
               Replying to{" "}
-              <strong style={{ color: "#1c1e21" }}>
+              <strong style={{ color: "var(--text-primary)" }}>
                 @{replyingTo.userName}
               </strong>
             </span>
@@ -138,7 +138,7 @@ export function CommentInput({
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                color: "#65676b",
+                color: "var(--text-secondary)",
                 fontWeight: 700,
                 fontSize: 14,
                 padding: "0 4px",
@@ -158,8 +158,8 @@ export function CommentInput({
               marginBottom: 8,
               borderRadius: 8,
               overflow: "hidden",
-              border: "1px solid #dbdbdb",
-              backgroundColor: "#f0f2f5",
+              border: "1px solid var(--border-color)",
+              backgroundColor: "var(--bg-hover)",
             }}
           >
             <img
@@ -233,7 +233,7 @@ export function CommentInput({
               border: "none",
               cursor: submitting || isUploadingImage ? "not-allowed" : "pointer",
               padding: "6px",
-              color: isUploadingImage ? "#94b8ea" : "#45bd62",
+              color: isUploadingImage ? "var(--text-tertiary)" : "#45bd62",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -241,7 +241,7 @@ export function CommentInput({
               transition: "background-color 0.15s ease",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#f0f2f5")
+              (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
             }
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "transparent")
@@ -280,7 +280,9 @@ export function CommentInput({
             disabled={submitting}
             style={{
               flex: 1,
-              border: "1px solid #dbdbdb",
+              border: "1px solid var(--border-color)",
+              backgroundColor: "var(--bg-input)",
+              color: "var(--text-primary)",
               borderRadius: 20,
               padding: "8px 14px",
               fontSize: 14,
@@ -294,7 +296,7 @@ export function CommentInput({
             style={{
               background: "none",
               border: "none",
-              color: !canSubmit ? "#b2dffc" : "#0095f6",
+              color: !canSubmit ? "var(--text-tertiary)" : "var(--primary)",
               fontWeight: 600,
               fontSize: 14,
               cursor: !canSubmit ? "default" : "pointer",

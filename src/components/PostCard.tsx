@@ -451,13 +451,14 @@ export function PostCard({
     <article
       id={`post-${post.id}`}
       style={{
-        backgroundColor: "#fff",
-        border: "1px solid #e4e6eb",
+        backgroundColor: "var(--bg-card)",
+        border: "1px solid var(--border-color)",
         borderRadius: 8,
         padding: "16px 20px",
         marginBottom: 16,
-        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+        boxShadow: "var(--shadow-sm)",
         position: "relative",
+        transition: "background-color 0.2s ease, border-color 0.2s ease",
       }}
     >
       {/* Header: Avatar, author name, timestamp, and optional author actions menu */}
@@ -480,7 +481,7 @@ export function PostCard({
                 width: 40,
                 height: 40,
                 borderRadius: "50%",
-                backgroundColor: "#1877f2",
+                backgroundColor: "var(--primary)",
                 color: "#fff",
                 display: "flex",
                 alignItems: "center",
@@ -515,7 +516,7 @@ export function PostCard({
               style={{
                 fontWeight: 600,
                 fontSize: 15,
-                color: "#050505",
+                color: "var(--text-primary)",
                 lineHeight: 1.25,
                 textDecoration: "none",
                 display: "inline-block",
@@ -532,7 +533,7 @@ export function PostCard({
             </Link>
             <small
               style={{
-                color: "#65676b",
+                color: "var(--text-secondary)",
                 fontSize: 12,
                 lineHeight: 1.3,
                 display: "flex",
@@ -542,7 +543,7 @@ export function PostCard({
               }}
             >
               <span>{postDate}</span>
-              <span style={{ margin: "0 2px", color: "#8a8d91" }}>•</span>
+              <span style={{ margin: "0 2px", color: "var(--text-tertiary)" }}>•</span>
               <span
                 title={
                   post.visibility === "Private"
@@ -555,7 +556,7 @@ export function PostCard({
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 3,
-                  color: "#65676b",
+                  color: "var(--text-secondary)",
                   cursor: "help",
                 }}
               >
@@ -578,7 +579,7 @@ export function PostCard({
                     }
                   )}`}
                   style={{
-                    color: "#8e8e8e",
+                    color: "var(--text-tertiary)",
                     fontStyle: "italic",
                     cursor: "help",
                   }}
@@ -603,14 +604,14 @@ export function PostCard({
                 cursor: "pointer",
                 padding: "6px 8px",
                 borderRadius: "50%",
-                color: "#65676b",
+                color: "var(--text-secondary)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 transition: "background-color 0.15s ease",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#f0f2f5")
+                (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "transparent")
@@ -630,10 +631,10 @@ export function PostCard({
                   position: "absolute",
                   right: 0,
                   top: "100%",
-                  backgroundColor: "#fff",
-                  boxShadow: "0 4px 14px rgba(0, 0, 0, 0.15)",
+                  backgroundColor: "var(--bg-card)",
+                  boxShadow: "var(--shadow-md)",
                   borderRadius: 8,
-                  border: "1px solid #e4e6eb",
+                  border: "1px solid var(--border-color)",
                   width: 150,
                   zIndex: 20,
                   overflow: "hidden",
@@ -653,11 +654,11 @@ export function PostCard({
                     border: "none",
                     textAlign: "left",
                     fontSize: 14,
-                    color: "#1c1e21",
+                    color: "var(--text-primary)",
                     cursor: "pointer",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#f0f2f5")
+                    (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.backgroundColor = "transparent")
@@ -696,7 +697,7 @@ export function PostCard({
                     cursor: "pointer",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#fde8e8")
+                    (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.backgroundColor = "transparent")
@@ -742,13 +743,13 @@ export function PostCard({
               boxSizing: "border-box",
               border: isEditOverLimit
                 ? "1.5px solid #e02424"
-                : "1.5px solid #1877f2",
+                : "1.5px solid var(--border-color)",
               borderRadius: 6,
               padding: "10px 12px",
               fontSize: 15,
               lineHeight: 1.5,
-              color: "#1c1e21",
-              backgroundColor: "#fff",
+              color: "var(--text-primary)",
+              backgroundColor: "var(--bg-input)",
               outline: "none",
               resize: "none",
               fontFamily: "inherit",
@@ -795,19 +796,19 @@ export function PostCard({
                     gap: 5,
                     fontSize: 12,
                     fontWeight: 600,
-                    color: "#4b4f56",
-                    backgroundColor: "#f0f2f5",
-                    border: "1px solid #dcdfe3",
+                    color: "var(--text-primary)",
+                    backgroundColor: "var(--bg-card)",
+                    border: "1px solid var(--border-color)",
                     padding: "4px 9px",
                     borderRadius: 6,
                     cursor: "pointer",
                     transition: "background-color 0.15s ease",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#e4e6eb")
+                    (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
                   }
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#f0f2f5")
+                    (e.currentTarget.style.backgroundColor = "var(--bg-card)")
                   }
                 >
                   <AudienceIcon visibility={editVisibility} size={12} />
@@ -841,10 +842,10 @@ export function PostCard({
                       bottom: "100%",
                       left: 0,
                       marginBottom: 6,
-                      backgroundColor: "#fff",
+                      backgroundColor: "var(--bg-card)",
                       borderRadius: 8,
-                      border: "1px solid #e4e6eb",
-                      boxShadow: "0 6px 18px rgba(0, 0, 0, 0.15)",
+                      border: "1px solid var(--border-color)",
+                      boxShadow: "var(--shadow-md)",
                       width: 250,
                       zIndex: 35,
                       overflow: "hidden",
@@ -856,10 +857,10 @@ export function PostCard({
                         padding: "6px 14px 8px",
                         fontSize: 11,
                         fontWeight: 700,
-                        color: "#65676b",
+                        color: "var(--text-secondary)",
                         textTransform: "uppercase",
                         letterSpacing: "0.5px",
-                        borderBottom: "1px solid #f0f2f5",
+                        borderBottom: "1px solid var(--divider)",
                       }}
                     >
                       Change audience
@@ -882,7 +883,7 @@ export function PostCard({
                             gap: 12,
                             padding: "9px 14px",
                             backgroundColor: isSelected
-                              ? "#e7f3ff"
+                              ? "var(--bg-hover)"
                               : "transparent",
                             border: "none",
                             textAlign: "left",
@@ -891,12 +892,12 @@ export function PostCard({
                           }}
                           onMouseEnter={(e) => {
                             if (!isSelected) {
-                              e.currentTarget.style.backgroundColor = "#f0f2f5";
+                              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
                             }
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.backgroundColor = isSelected
-                              ? "#e7f3ff"
+                              ? "var(--bg-hover)"
                               : "transparent";
                           }}
                         >
@@ -906,9 +907,9 @@ export function PostCard({
                               height: 28,
                               borderRadius: "50%",
                               backgroundColor: isSelected
-                                ? "#1877f2"
-                                : "#f0f2f5",
-                              color: isSelected ? "#fff" : "#050505",
+                                ? "var(--primary)"
+                                : "var(--bg-hover)",
+                              color: isSelected ? "#fff" : "var(--text-primary)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -923,7 +924,7 @@ export function PostCard({
                               style={{
                                 fontSize: 13,
                                 fontWeight: isSelected ? 700 : 600,
-                                color: isSelected ? "#1877f2" : "#050505",
+                                color: isSelected ? "var(--primary)" : "var(--text-primary)",
                                 lineHeight: 1.25,
                               }}
                             >
@@ -932,7 +933,7 @@ export function PostCard({
                             <div
                               style={{
                                 fontSize: 11,
-                                color: "#65676b",
+                                color: "var(--text-secondary)",
                                 lineHeight: 1.3,
                                 marginTop: 2,
                               }}
@@ -947,7 +948,7 @@ export function PostCard({
                               height="16"
                               viewBox="0 0 24 24"
                               fill="none"
-                              stroke="#1877f2"
+                              stroke="var(--primary)"
                               strokeWidth="3"
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -965,7 +966,7 @@ export function PostCard({
               <span
                 style={{
                   fontSize: 12,
-                  color: isEditOverLimit ? "#e02424" : "#65676b",
+                  color: isEditOverLimit ? "#e02424" : "var(--text-secondary)",
                 }}
               >
                 {editCharCount}/{MAX_CHAR_COUNT}
@@ -980,9 +981,9 @@ export function PostCard({
                 style={{
                   padding: "6px 14px",
                   borderRadius: 6,
-                  border: "1px solid #ccd0d5",
-                  background: "#fff",
-                  color: "#4b4f56",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--bg-hover)",
+                  color: "var(--text-primary)",
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -998,8 +999,8 @@ export function PostCard({
                   padding: "6px 16px",
                   borderRadius: 6,
                   border: "none",
-                  backgroundColor: canSave ? "#1877f2" : "#e4e6eb",
-                  color: canSave ? "#fff" : "#bcc0c4",
+                  backgroundColor: canSave ? "var(--primary)" : "var(--border-color)",
+                  color: canSave ? "#fff" : "var(--text-tertiary)",
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: canSave ? "pointer" : "not-allowed",
@@ -1021,7 +1022,7 @@ export function PostCard({
                 gap: 8,
                 marginTop: 8,
                 padding: 8,
-                backgroundColor: "#f0f2f5",
+                backgroundColor: "var(--bg-hover)",
                 borderRadius: 8,
               }}
             >
@@ -1034,9 +1035,9 @@ export function PostCard({
                     height: 80,
                     borderRadius: 8,
                     overflow: "hidden",
-                    border: "1px solid #ccd0d5",
-                    backgroundColor: "#fff",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-card)",
+                    boxShadow: "var(--shadow-sm)",
                   }}
                 >
                   <img
@@ -1134,8 +1135,8 @@ export function PostCard({
                 gap: 6,
                 padding: "4px 8px",
                 borderRadius: 6,
-                border: "1px solid #ccd0d5",
-                background: "#fff",
+                border: "1px solid var(--border-color)",
+                background: "var(--bg-hover)",
                 cursor:
                   editImageUrls.length >= 10 ? "not-allowed" : "pointer",
                 fontSize: 12,
@@ -1151,7 +1152,7 @@ export function PostCard({
               >
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7-3 3.72L9 13l-3 4h12l-4-5z" />
               </svg>
-              <span style={{ color: "#4b4f56" }}>
+              <span style={{ color: "var(--text-secondary)" }}>
                 {isUploadingEditImages ? "Uploading..." : "Add photos"}
               </span>
             </button>
@@ -1165,7 +1166,7 @@ export function PostCard({
                 margin: "8px 0 0",
                 fontSize: 15,
                 lineHeight: 1.5,
-                color: "#1c1e21",
+                color: "var(--text-primary)",
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
               }}
@@ -1191,7 +1192,7 @@ export function PostCard({
           gap: 22,
           marginTop: 14,
           paddingTop: 12,
-          borderTop: "1px solid #f0f2f5",
+          borderTop: "1px solid var(--divider)",
         }}
       >
         {/* Heart / Like Button */}
@@ -1207,7 +1208,7 @@ export function PostCard({
             display: "flex",
             alignItems: "center",
             gap: 7,
-            color: isLiked ? "#ed4956" : "#262626",
+            color: isLiked ? "#ed4956" : "var(--text-secondary)",
             transition: "transform 0.1s ease",
           }}
           onMouseDown={(e) =>
@@ -1222,7 +1223,7 @@ export function PostCard({
             height="22"
             viewBox="0 0 24 24"
             fill={isLiked ? "#ed4956" : "none"}
-            stroke={isLiked ? "#ed4956" : "#262626"}
+            stroke={isLiked ? "#ed4956" : "var(--text-secondary)"}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -1237,7 +1238,7 @@ export function PostCard({
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: isLiked ? "#ed4956" : "#262626",
+                color: isLiked ? "#ed4956" : "var(--text-secondary)",
               }}
             >
               {formatCount(likesCount)}
@@ -1258,7 +1259,7 @@ export function PostCard({
             display: "flex",
             alignItems: "center",
             gap: 7,
-            color: "#262626",
+            color: "var(--text-secondary)",
             transition: "transform 0.1s ease",
           }}
           onMouseDown={(e) =>
@@ -1273,7 +1274,7 @@ export function PostCard({
             height="22"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#262626"
+            stroke="var(--text-secondary)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -1285,7 +1286,7 @@ export function PostCard({
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: "#262626",
+                color: "var(--text-secondary)",
               }}
             >
               {formatCount(commentsCount)}
@@ -1303,7 +1304,7 @@ export function PostCard({
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            backgroundColor: "var(--modal-overlay)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1316,12 +1317,13 @@ export function PostCard({
         >
           <div
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: "var(--bg-card)",
               borderRadius: 10,
               maxWidth: 420,
               width: "100%",
               padding: "24px 24px 20px",
-              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+              boxShadow: "var(--shadow-lg)",
+              border: "1px solid var(--border-color)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1330,7 +1332,7 @@ export function PostCard({
                 margin: "0 0 8px",
                 fontSize: 18,
                 fontWeight: 700,
-                color: "#1c1e21",
+                color: "var(--text-primary)",
               }}
             >
               Delete Post?
@@ -1339,7 +1341,7 @@ export function PostCard({
               style={{
                 margin: "0 0 20px",
                 fontSize: 14,
-                color: "#65676b",
+                color: "var(--text-secondary)",
                 lineHeight: 1.4,
               }}
             >
@@ -1376,9 +1378,9 @@ export function PostCard({
                 style={{
                   padding: "8px 16px",
                   borderRadius: 6,
-                  border: "1px solid #ccd0d5",
-                  background: "#fff",
-                  color: "#4b4f56",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--bg-hover)",
+                  color: "var(--text-primary)",
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: isDeleting ? "not-allowed" : "pointer",

@@ -280,7 +280,7 @@ function FeedPage() {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: 20,
-          borderBottom: "1px solid #e4e6eb",
+          borderBottom: "1px solid var(--border-color)",
           paddingBottom: 16,
         }}
       >
@@ -290,12 +290,18 @@ function FeedPage() {
               margin: 0,
               fontSize: 24,
               fontWeight: 700,
-              color: "#1c1e21",
+              color: "var(--text-primary)",
             }}
           >
             Feed
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#65676b", fontSize: 14 }}>
+          <p
+            style={{
+              margin: "4px 0 0",
+              color: "var(--text-secondary)",
+              fontSize: 14,
+            }}
+          >
             Welcome back, <strong>{user?.name ?? "there"}</strong>!
           </p>
         </div>
@@ -305,9 +311,10 @@ function FeedPage() {
       <div
         style={{
           display: "flex",
-          backgroundColor: "#fff",
+          backgroundColor: "var(--bg-card)",
           borderRadius: 12,
-          boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+          boxShadow: "var(--shadow-sm)",
+          border: "1px solid var(--border-color)",
           padding: "4px",
           marginBottom: 16,
         }}
@@ -320,8 +327,12 @@ function FeedPage() {
             flex: 1,
             padding: "10px",
             border: "none",
-            backgroundColor: feedTab === "for-you" ? "#e7f3ff" : "transparent",
-            color: feedTab === "for-you" ? "#1877f2" : "#65676b",
+            backgroundColor:
+              feedTab === "for-you" ? "var(--primary-light)" : "transparent",
+            color:
+              feedTab === "for-you"
+                ? "var(--primary)"
+                : "var(--text-secondary)",
             fontWeight: feedTab === "for-you" ? 700 : 600,
             fontSize: 14,
             borderRadius: 8,
@@ -344,8 +355,14 @@ function FeedPage() {
             flex: 1,
             padding: "10px",
             border: "none",
-            backgroundColor: feedTab === "following" ? "#e7f3ff" : "transparent",
-            color: feedTab === "following" ? "#1877f2" : "#65676b",
+            backgroundColor:
+              feedTab === "following"
+                ? "var(--primary-light)"
+                : "transparent",
+            color:
+              feedTab === "following"
+                ? "var(--primary)"
+                : "var(--text-secondary)",
             fontWeight: feedTab === "following" ? 700 : 600,
             fontSize: 14,
             borderRadius: 8,
@@ -463,11 +480,11 @@ function FeedPage() {
           style={{
             textAlign: "center",
             padding: "48px 24px",
-            color: "#65676b",
-            background: "#fff",
-            border: "1px solid #e4e6eb",
+            color: "var(--text-secondary)",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-color)",
             borderRadius: 12,
-            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+            boxShadow: "var(--shadow-sm)",
           }}
         >
           <div style={{ fontSize: 40, marginBottom: 12 }}>
@@ -478,7 +495,7 @@ function FeedPage() {
               margin: "0 0 6px",
               fontSize: 18,
               fontWeight: 700,
-              color: "#1c1e21",
+              color: "var(--text-primary)",
             }}
           >
             {feedTab === "following"
@@ -489,7 +506,7 @@ function FeedPage() {
             style={{
               margin: 0,
               fontSize: 14,
-              color: "#65676b",
+              color: "var(--text-secondary)",
               lineHeight: 1.5,
               maxWidth: 400,
               marginLeft: "auto",
@@ -624,16 +641,22 @@ function FeedPage() {
           style={{
             textAlign: "center",
             padding: "24px 16px",
-            color: "#65676b",
-            borderTop: "1px solid #e4e6eb",
+            color: "var(--text-secondary)",
+            borderTop: "1px solid var(--border-color)",
             marginTop: 16,
           }}
         >
           <div style={{ fontSize: 18, marginBottom: 4 }}>✓</div>
-          <div style={{ fontWeight: 600, fontSize: 15, color: "#1c1e21" }}>
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 15,
+              color: "var(--text-primary)",
+            }}
+          >
             You're up to date
           </div>
-          <small style={{ color: "#65676b", fontSize: 13 }}>
+          <small style={{ color: "var(--text-secondary)", fontSize: 13 }}>
             You have seen all recent posts.
           </small>
         </div>

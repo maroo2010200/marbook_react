@@ -251,7 +251,7 @@ export function EditProfileModal({
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.65)",
+          backgroundColor: "var(--modal-overlay)",
           backdropFilter: "blur(2px)",
           display: "flex",
           alignItems: "center",
@@ -271,9 +271,10 @@ export function EditProfileModal({
             width: "100%",
             maxWidth: 480,
             maxHeight: "92vh",
-            backgroundColor: "#fff",
+            backgroundColor: "var(--bg-card)",
             borderRadius: 14,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.24)",
+            boxShadow: "var(--shadow-lg)",
+            border: "1px solid var(--border-color)",
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
@@ -286,7 +287,7 @@ export function EditProfileModal({
           <div
             style={{
               padding: "14px 20px",
-              borderBottom: "1px solid #e4e6eb",
+              borderBottom: "1px solid var(--divider)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -298,7 +299,7 @@ export function EditProfileModal({
                 margin: 0,
                 fontSize: 18,
                 fontWeight: 700,
-                color: "#1c1e21",
+                color: "var(--text-primary)",
               }}
             >
               Edit Profile
@@ -313,7 +314,7 @@ export function EditProfileModal({
                 border: "none",
                 fontSize: 20,
                 cursor: isSubmitting ? "not-allowed" : "pointer",
-                color: "#65676b",
+                color: "var(--text-secondary)",
                 padding: "4px 8px",
                 borderRadius: "50%",
                 display: "flex",
@@ -322,7 +323,7 @@ export function EditProfileModal({
                 lineHeight: 1,
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#f0f2f5")
+                (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "transparent")
@@ -360,8 +361,8 @@ export function EditProfileModal({
                 borderRadius: 10,
                 overflow: "hidden",
                 marginBottom: 20,
-                border: "1px solid #e4e6eb",
-                backgroundColor: "#f0f2f5",
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-hover)",
               }}
             >
               {/* Cover Photo Preview */}
@@ -490,9 +491,9 @@ export function EditProfileModal({
                     width: 68,
                     height: 68,
                     borderRadius: "50%",
-                    border: "3px solid #fff",
+                    border: "3px solid var(--bg-card)",
                     boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                    backgroundColor: "#1877f2",
+                    backgroundColor: "var(--primary)",
                     color: "#fff",
                     display: "flex",
                     alignItems: "center",
@@ -539,13 +540,13 @@ export function EditProfileModal({
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={isUploadingAvatar}
                     style={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #ccd0d5",
+                      backgroundColor: "var(--bg-hover)",
+                      border: "1px solid var(--border-color)",
                       borderRadius: 6,
                       padding: "5px 12px",
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "#1c1e21",
+                      color: "var(--text-primary)",
                       cursor: "pointer",
                     }}
                   >
@@ -568,13 +569,13 @@ export function EditProfileModal({
                           });
                         }}
                         style={{
-                          backgroundColor: "#f0f2f5",
-                          border: "1px solid #ccd0d5",
+                          backgroundColor: "var(--bg-hover)",
+                          border: "1px solid var(--border-color)",
                           borderRadius: 6,
                           padding: "5px 10px",
                           fontSize: 12,
                           fontWeight: 600,
-                          color: "#1c1e21",
+                          color: "var(--text-primary)",
                           cursor: "pointer",
                         }}
                       >
@@ -613,11 +614,11 @@ export function EditProfileModal({
               >
                 <label
                   htmlFor="edit-name-input"
-                  style={{ fontSize: 13, fontWeight: 600, color: "#1c1e21" }}
+                  style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}
                 >
                   Full Name <span style={{ color: "#e02424" }}>*</span>
                 </label>
-                <span style={{ fontSize: 11, color: "#65676b" }}>
+                <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
                   {name.length}/{MAX_NAME_LENGTH}
                 </span>
               </div>
@@ -635,8 +636,10 @@ export function EditProfileModal({
                   padding: "10px 12px",
                   fontSize: 14,
                   borderRadius: 8,
+                  backgroundColor: "var(--bg-input)",
+                  color: "var(--text-primary)",
                   border: isNameValid
-                    ? "1px solid #ccd0d5"
+                    ? "1px solid var(--border-color)"
                     : "1.5px solid #e02424",
                   outline: "none",
                   transition: "border-color 0.15s ease",
@@ -662,11 +665,11 @@ export function EditProfileModal({
               >
                 <label
                   htmlFor="edit-username-input"
-                  style={{ fontSize: 13, fontWeight: 600, color: "#1c1e21" }}
+                  style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}
                 >
                   Username (optional)
                 </label>
-                <span style={{ fontSize: 11, color: "#65676b" }}>
+                <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
                   {username.length}/{MAX_USERNAME_LENGTH}
                 </span>
               </div>
@@ -677,7 +680,7 @@ export function EditProfileModal({
                     left: 12,
                     top: "50%",
                     transform: "translateY(-50%)",
-                    color: "#8a8d91",
+                    color: "var(--text-tertiary)",
                     fontSize: 14,
                     fontWeight: 600,
                   }}
@@ -698,8 +701,10 @@ export function EditProfileModal({
                     padding: "10px 12px 10px 30px",
                     fontSize: 14,
                     borderRadius: 8,
+                    backgroundColor: "var(--bg-input)",
+                    color: "var(--text-primary)",
                     border: isUsernameValid
-                      ? "1px solid #ccd0d5"
+                      ? "1px solid var(--border-color)"
                       : "1.5px solid #e02424",
                     outline: "none",
                     transition: "border-color 0.15s ease",
@@ -726,11 +731,11 @@ export function EditProfileModal({
               >
                 <label
                   htmlFor="edit-bio-input"
-                  style={{ fontSize: 13, fontWeight: 600, color: "#1c1e21" }}
+                  style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}
                 >
                   Bio (optional)
                 </label>
-                <span style={{ fontSize: 11, color: "#65676b" }}>
+                <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
                   {bio.length}/{MAX_BIO_LENGTH}
                 </span>
               </div>
@@ -749,8 +754,10 @@ export function EditProfileModal({
                   fontSize: 14,
                   lineHeight: 1.4,
                   borderRadius: 8,
+                  backgroundColor: "var(--bg-input)",
+                  color: "var(--text-primary)",
                   border: isBioValid
-                    ? "1px solid #ccd0d5"
+                    ? "1px solid var(--border-color)"
                     : "1.5px solid #e02424",
                   outline: "none",
                   resize: "none",
@@ -768,7 +775,7 @@ export function EditProfileModal({
                   display: "block",
                   fontSize: 13,
                   fontWeight: 600,
-                  color: "#1c1e21",
+                  color: "var(--text-primary)",
                   marginBottom: 6,
                 }}
               >
@@ -787,7 +794,9 @@ export function EditProfileModal({
                   padding: "8px 12px",
                   fontSize: 14,
                   borderRadius: 8,
-                  border: "1px solid #ccd0d5",
+                  backgroundColor: "var(--bg-input)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)",
                   outline: "none",
                 }}
               />
@@ -800,7 +809,7 @@ export function EditProfileModal({
                 justifyContent: "flex-end",
                 gap: 10,
                 paddingTop: 12,
-                borderTop: "1px solid #e4e6eb",
+                borderTop: "1px solid var(--divider)",
               }}
             >
               <button
@@ -809,9 +818,9 @@ export function EditProfileModal({
                 disabled={isSubmitting}
                 style={{
                   padding: "8px 16px",
-                  backgroundColor: "#e4e6eb",
-                  color: "#050505",
-                  border: "none",
+                  backgroundColor: "var(--bg-hover)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)",
                   borderRadius: 6,
                   fontWeight: 600,
                   fontSize: 14,
@@ -826,8 +835,8 @@ export function EditProfileModal({
                 disabled={!canSubmit}
                 style={{
                   padding: "8px 20px",
-                  backgroundColor: canSubmit ? "#1877f2" : "#94b8ea",
-                  color: "#fff",
+                  backgroundColor: canSubmit ? "var(--primary)" : "var(--border-color)",
+                  color: canSubmit ? "#fff" : "var(--text-tertiary)",
                   border: "none",
                   borderRadius: 6,
                   fontWeight: 600,

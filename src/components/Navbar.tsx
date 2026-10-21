@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
+import { useTheme } from "../context/ThemeContext";
 import { getMediaUrl } from "../utils/media";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import type { NotificationItem } from "../types/notifications";
@@ -10,6 +11,7 @@ function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isDark, toggleTheme } = useTheme();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { unreadCount, setUnreadCount } = useNotifications();
 
@@ -57,12 +59,13 @@ function Navbar() {
         justifyContent: "space-between",
         alignItems: "center",
         padding: "10px 24px",
-        backgroundColor: "#fff",
-        borderBottom: "1px solid #e4e6eb",
+        backgroundColor: "var(--bg-card)",
+        borderBottom: "1px solid var(--border-color)",
         position: "sticky",
         top: 0,
         zIndex: 100,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+        boxShadow: "var(--shadow-sm)",
+        transition: "background-color 0.2s ease, border-color 0.2s ease",
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       }}
@@ -83,7 +86,69 @@ function Navbar() {
         Marbook
       </Link>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {/* Dark Mode Toggle Button */}
+        <button
+          type="button"
+          id="theme-toggle-btn"
+          onClick={toggleTheme}
+          aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: "50%",
+            backgroundColor: "var(--bg-hover)",
+            color: isDark ? "#facc15" : "var(--text-secondary)",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--bg-active)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+          }}
+        >
+          {isDark ? (
+            /* Sun Icon */
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            /* Moon Icon */
+            <svg
+              width="19"
+              height="19"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
+        </button>
+
         {isAuthenticated ? (
           <>
             {/* Notifications Bell */}
@@ -98,8 +163,12 @@ function Navbar() {
                   width: 38,
                   height: 38,
                   borderRadius: "50%",
-                  backgroundColor: isNotificationsOpen ? "#e7f3ff" : "#f0f2f5",
-                  color: isNotificationsOpen ? "#1877f2" : "#050505",
+                  backgroundColor: isNotificationsOpen
+                    ? "var(--primary-light)"
+                    : "var(--bg-hover)",
+                  color: isNotificationsOpen
+                    ? "var(--primary)"
+                    : "var(--text-primary)",
                   border: "none",
                   cursor: "pointer",
                   display: "flex",
@@ -110,12 +179,12 @@ function Navbar() {
                 }}
                 onMouseEnter={(e) => {
                   if (!isNotificationsOpen) {
-                    e.currentTarget.style.backgroundColor = "#e4e6eb";
+                    e.currentTarget.style.backgroundColor = "var(--bg-active)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isNotificationsOpen) {
-                    e.currentTarget.style.backgroundColor = "#f0f2f5";
+                    e.currentTarget.style.backgroundColor = "var(--bg-hover)";
                   }
                 }}
               >
@@ -144,7 +213,7 @@ function Navbar() {
                       height: 16,
                       lineHeight: "14px",
                       textAlign: "center",
-                      boxShadow: "0 0 0 2px #fff",
+                      boxShadow: "0 0 0 2px var(--bg-card)",
                       boxSizing: "border-box",
                     }}
                   >
@@ -167,20 +236,20 @@ function Navbar() {
                 textDecoration: "none",
                 fontWeight: 600,
                 fontSize: 14,
-                color: "#1c1e21",
+                color: "var(--text-primary)",
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
                 padding: "4px 10px 4px 6px",
                 borderRadius: 20,
-                backgroundColor: "#f0f2f5",
+                backgroundColor: "var(--bg-hover)",
                 transition: "background-color 0.15s ease",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#e4e6eb")
+                (e.currentTarget.style.backgroundColor = "var(--bg-active)")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#f0f2f5")
+                (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
               }
             >
               <div
@@ -188,7 +257,7 @@ function Navbar() {
                   width: 28,
                   height: 28,
                   borderRadius: "50%",
-                  backgroundColor: "#1877f2",
+                  backgroundColor: "var(--primary)",
                   color: "#fff",
                   display: "flex",
                   alignItems: "center",
@@ -220,24 +289,24 @@ function Navbar() {
               onClick={handleLogout}
               style={{
                 backgroundColor: "transparent",
-                border: "1px solid #ccd0d5",
+                border: "1px solid var(--border-color)",
                 borderRadius: 6,
                 padding: "6px 12px",
-                color: "#65676b",
+                color: "var(--text-secondary)",
                 fontWeight: 600,
                 fontSize: 13,
                 cursor: "pointer",
                 transition: "all 0.15s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#ffebe8";
+                e.currentTarget.style.backgroundColor = "rgba(224, 36, 36, 0.12)";
                 e.currentTarget.style.color = "#e02424";
                 e.currentTarget.style.borderColor = "#f97583";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.color = "#65676b";
-                e.currentTarget.style.borderColor = "#ccd0d5";
+                e.currentTarget.style.color = "var(--text-secondary)";
+                e.currentTarget.style.borderColor = "var(--border-color)";
               }}
             >
               Logout
