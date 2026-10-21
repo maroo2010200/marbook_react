@@ -29,6 +29,19 @@ function FeedPage() {
     followingOnly: feedTab === "following",
   });
 
+  // Reload feed and scroll to top when Marbook logo is clicked
+  useEffect(() => {
+    const handleRefresh = () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      fetchPosts();
+    };
+
+    window.addEventListener("marbook:refresh-feed", handleRefresh);
+    return () => {
+      window.removeEventListener("marbook:refresh-feed", handleRefresh);
+    };
+  }, [fetchPosts]);
+
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Likes state management

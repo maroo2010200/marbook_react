@@ -1,45 +1,27 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 import { getMediaUrl } from "../utils/media";
-import { notificationsApi } from "../api/notifications";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import type { NotificationItem } from "../types/notifications";
 
 function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const { unreadCount, setUnreadCount } = useNotifications();
 
-  // Poll unread count when logged in
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setUnreadCount(0);
-      return;
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (!isAuthenticated) return;
+
+    if (location.pathname === "/feed") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.dispatchEvent(new CustomEvent("marbook:refresh-feed"));
     }
-
-    let isMounted = true;
-
-    const fetchUnread = async () => {
-      try {
-        const count = await notificationsApi.getUnreadCount();
-        if (isMounted) {
-          setUnreadCount(count);
-        }
-      } catch {
-        // ignore network error
-      }
-    };
-
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 20000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [isAuthenticated]);
+  };
 
   const handleLogout = () => {
     logout();
@@ -87,12 +69,15 @@ function Navbar() {
     >
       <Link
         to={isAuthenticated ? "/feed" : "/"}
+        onClick={handleLogoClick}
+        title={isAuthenticated && location.pathname === "/feed" ? "Reload feed" : "Go to feed"}
         style={{
           textDecoration: "none",
           fontWeight: 800,
           fontSize: 22,
           color: "#1877f2",
           letterSpacing: "-0.5px",
+          cursor: "pointer",
         }}
       >
         Marbook

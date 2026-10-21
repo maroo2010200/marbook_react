@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { notificationsApi } from "../api/notifications";
+import { useNotifications } from "../context/NotificationContext";
 import type { NotificationItem } from "../types/notifications";
 import { getMediaUrl } from "../utils/media";
 import { formatRelativeTime } from "../utils/time";
@@ -17,6 +18,7 @@ export function NotificationsDropdown({
   onNotificationClick,
   onUnreadCountChanged,
 }: NotificationsDropdownProps) {
+  const { subscribeToNotifications } = useNotifications();
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -26,6 +28,22 @@ export function NotificationsDropdown({
   const [error, setError] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Subscribe to live incoming SignalR notifications
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const unsubscribe = subscribeToNotifications((incoming) => {
+      setNotifications((prev) => [
+        incoming,
+        ...prev.filter((n) => n.id !== incoming.id),
+      ]);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [isOpen, subscribeToNotifications]);
 
   // Close when clicking outside
   useEffect(() => {
