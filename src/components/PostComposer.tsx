@@ -328,12 +328,12 @@ export function PostComposer({
   return (
     <div
       style={{
-        backgroundColor: "#fff",
-        border: "1px solid #e4e6eb",
+        backgroundColor: "var(--bg-card)",
+        border: "1px solid var(--border-color)",
         borderRadius: 8,
         padding: "16px 20px",
         marginBottom: 20,
-        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+        boxShadow: "var(--shadow-sm)",
       }}
     >
       {/* Header: User avatar & details & Audience Switcher */}
@@ -350,7 +350,7 @@ export function PostComposer({
             width: 40,
             height: 40,
             borderRadius: "50%",
-            backgroundColor: "#1877f2",
+            backgroundColor: "var(--primary)",
             color: "#fff",
             display: "flex",
             alignItems: "center",
@@ -376,7 +376,7 @@ export function PostComposer({
             style={{
               fontWeight: 600,
               fontSize: 15,
-              color: "#050505",
+              color: "var(--text-primary)",
               lineHeight: 1.2,
             }}
           >
@@ -397,9 +397,9 @@ export function PostComposer({
                 gap: 5,
                 fontSize: 12,
                 fontWeight: 600,
-                color: "#4b4f56",
-                backgroundColor: "#f0f2f5",
-                border: "1px solid #dcdfe3",
+                color: "var(--text-secondary)",
+                backgroundColor: "var(--bg-input)",
+                border: "1px solid var(--border-color)",
                 padding: "3px 8px",
                 borderRadius: 6,
                 marginTop: 4,
@@ -407,10 +407,10 @@ export function PostComposer({
                 transition: "background-color 0.15s ease",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#e4e6eb")
+                (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#f0f2f5")
+                (e.currentTarget.style.backgroundColor = "var(--bg-input)")
               }
             >
               <AudienceIcon visibility={visibility} size={12} />
@@ -437,10 +437,10 @@ export function PostComposer({
                   top: "100%",
                   left: 0,
                   marginTop: 6,
-                  backgroundColor: "#fff",
+                  backgroundColor: "var(--bg-card)",
                   borderRadius: 8,
-                  border: "1px solid #e4e6eb",
-                  boxShadow: "0 6px 18px rgba(0, 0, 0, 0.15)",
+                  border: "1px solid var(--border-color)",
+                  boxShadow: "var(--shadow-md)",
                   width: 270,
                   zIndex: 30,
                   overflow: "hidden",
@@ -452,10 +452,10 @@ export function PostComposer({
                     padding: "6px 14px 8px",
                     fontSize: 11,
                     fontWeight: 700,
-                    color: "#65676b",
+                    color: "var(--text-secondary)",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
-                    borderBottom: "1px solid #f0f2f5",
+                    borderBottom: "1px solid var(--divider)",
                   }}
                 >
                   Who can see your post?
@@ -477,7 +477,9 @@ export function PostComposer({
                         alignItems: "center",
                         gap: 12,
                         padding: "10px 14px",
-                        backgroundColor: isSelected ? "#e7f3ff" : "transparent",
+                        backgroundColor: isSelected
+                          ? "var(--primary-light)"
+                          : "transparent",
                         border: "none",
                         textAlign: "left",
                         cursor: "pointer",
@@ -485,12 +487,13 @@ export function PostComposer({
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.backgroundColor = "#f0f2f5";
+                          e.currentTarget.style.backgroundColor =
+                            "var(--bg-hover)";
                         }
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = isSelected
-                          ? "#e7f3ff"
+                          ? "var(--primary-light)"
                           : "transparent";
                       }}
                     >
@@ -499,8 +502,10 @@ export function PostComposer({
                           width: 32,
                           height: 32,
                           borderRadius: "50%",
-                          backgroundColor: isSelected ? "#1877f2" : "#f0f2f5",
-                          color: isSelected ? "#fff" : "#050505",
+                          backgroundColor: isSelected
+                            ? "var(--primary)"
+                            : "var(--bg-hover)",
+                          color: isSelected ? "#fff" : "var(--text-primary)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -518,7 +523,9 @@ export function PostComposer({
                           style={{
                             fontSize: 14,
                             fontWeight: isSelected ? 700 : 600,
-                            color: isSelected ? "#1877f2" : "#050505",
+                            color: isSelected
+                              ? "var(--primary)"
+                              : "var(--text-primary)",
                             lineHeight: 1.25,
                           }}
                         >
@@ -527,7 +534,7 @@ export function PostComposer({
                         <div
                           style={{
                             fontSize: 11,
-                            color: "#65676b",
+                            color: "var(--text-secondary)",
                             lineHeight: 1.3,
                             marginTop: 2,
                           }}
@@ -542,7 +549,7 @@ export function PostComposer({
                           height="16"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#1877f2"
+                          stroke="var(--primary)"
                           strokeWidth="3"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -572,28 +579,31 @@ export function PostComposer({
             style={{
               width: "100%",
               boxSizing: "border-box",
-              border: isOverLimit ? "1.5px solid #e02424" : "1px solid #e4e6eb",
+              border: isOverLimit
+                ? "1.5px solid #e02424"
+                : "1px solid var(--border-color)",
               borderRadius: 8,
               padding: "12px 14px",
               fontSize: 15,
               lineHeight: 1.5,
-              color: "#1c1e21",
-              backgroundColor: "#f8f9fa",
+              color: "var(--text-primary)",
+              backgroundColor: "var(--bg-input)",
               outline: "none",
               resize: "none",
               fontFamily: "inherit",
-              transition: "border-color 0.15s ease, background-color 0.15s ease",
+              transition:
+                "border-color 0.15s ease, background-color 0.15s ease",
             }}
             onFocus={(e) => {
-              e.currentTarget.style.backgroundColor = "#fff";
+              e.currentTarget.style.backgroundColor = "var(--bg-card)";
               if (!isOverLimit) {
-                e.currentTarget.style.borderColor = "#1877f2";
+                e.currentTarget.style.borderColor = "var(--primary)";
               }
             }}
             onBlur={(e) => {
-              e.currentTarget.style.backgroundColor = "#f8f9fa";
+              e.currentTarget.style.backgroundColor = "var(--bg-input)";
               if (!isOverLimit) {
-                e.currentTarget.style.borderColor = "#e4e6eb";
+                e.currentTarget.style.borderColor = "var(--border-color)";
               }
             }}
           />
@@ -608,7 +618,7 @@ export function PostComposer({
               gap: 8,
               marginTop: 10,
               padding: 8,
-              backgroundColor: "#f0f2f5",
+              backgroundColor: "var(--bg-hover)",
               borderRadius: 8,
             }}
           >
@@ -621,9 +631,9 @@ export function PostComposer({
                   height: 88,
                   borderRadius: 8,
                   overflow: "hidden",
-                  border: "1px solid #ccd0d5",
-                  backgroundColor: "#fff",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--bg-card)",
+                  boxShadow: "var(--shadow-sm)",
                 }}
               >
                 <img
@@ -704,11 +714,12 @@ export function PostComposer({
             marginTop: 10,
             padding: "8px 12px",
             borderRadius: 8,
-            border: "1px solid #e4e6eb",
-            backgroundColor: "#fff",
+            border: "1px solid var(--border-color)",
+            backgroundColor: "var(--bg-card)",
+            transition: "background-color 0.2s ease, border-color 0.2s ease",
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#050505" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
             Add to your post
           </span>
 
@@ -743,7 +754,7 @@ export function PostComposer({
               }}
               onMouseEnter={(e) => {
                 if (imageUrls.length < 10)
-                  e.currentTarget.style.backgroundColor = "#f0f2f5";
+                  e.currentTarget.style.backgroundColor = "var(--bg-hover)";
               }}
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "transparent")
@@ -758,7 +769,7 @@ export function PostComposer({
               >
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7-3 3.72L9 13l-3 4h12l-4-5z" />
               </svg>
-              <span style={{ color: "#4b4f56" }}>
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
                 {isUploading ? "Uploading..." : "Photo/image"}
               </span>
             </button>
@@ -819,7 +830,7 @@ export function PostComposer({
                 ? "#e02424"
                 : isNearLimit
                 ? "#f59e0b"
-                : "#65676b",
+                : "var(--text-secondary)",
               transition: "color 0.15s ease",
             }}
           >
@@ -831,8 +842,8 @@ export function PostComposer({
             type="submit"
             disabled={!canSubmit}
             style={{
-              backgroundColor: canSubmit ? "#1877f2" : "#e4e6eb",
-              color: canSubmit ? "#fff" : "#bcc0c4",
+              backgroundColor: canSubmit ? "var(--primary)" : "var(--bg-hover)",
+              color: canSubmit ? "#fff" : "var(--text-tertiary)",
               border: "none",
               borderRadius: 6,
               padding: "8px 20px",

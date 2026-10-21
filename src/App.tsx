@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
+import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { NotificationToast } from "./components/NotificationToast";
@@ -14,9 +15,10 @@ import { ProfilePage } from "./pages/ProfilePage";
 
 function App() {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <BrowserRouter>
+    <ThemeProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <BrowserRouter>
           <Navbar />
           <NotificationToast />
           <Routes>
@@ -45,6 +47,7 @@ function App() {
       </BrowserRouter>
       </NotificationProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 

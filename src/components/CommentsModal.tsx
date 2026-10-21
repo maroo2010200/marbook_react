@@ -87,7 +87,7 @@ export function CommentsModal({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.65)",
+        backgroundColor: "var(--modal-overlay)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -98,14 +98,15 @@ export function CommentsModal({
     >
       <div
         style={{
-          backgroundColor: "#fff",
+          backgroundColor: "var(--bg-card)",
           borderRadius: 12,
           maxWidth: 620,
           width: "100%",
           maxHeight: "85vh",
           display: "flex",
           flexDirection: "column",
-          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+          boxShadow: "var(--shadow-lg)",
+          border: "1px solid var(--border-color)",
           overflow: "hidden",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -117,7 +118,7 @@ export function CommentsModal({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "14px 18px",
-            borderBottom: "1px solid #efefef",
+            borderBottom: "1px solid var(--divider)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -126,7 +127,7 @@ export function CommentsModal({
                 width: 36,
                 height: 36,
                 borderRadius: "50%",
-                backgroundColor: "#1877f2",
+                backgroundColor: "var(--primary)",
                 color: "#fff",
                 display: "flex",
                 alignItems: "center",
@@ -151,10 +152,10 @@ export function CommentsModal({
               )}
             </div>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: "#262626" }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>
                 {post.userName}
               </div>
-              <small style={{ color: "#8e8e8e", fontSize: 11 }}>
+              <small style={{ color: "var(--text-secondary)", fontSize: 11 }}>
                 {postDate}
               </small>
             </div>
@@ -169,7 +170,7 @@ export function CommentsModal({
               border: "none",
               fontSize: 22,
               cursor: "pointer",
-              color: "#8e8e8e",
+              color: "var(--text-secondary)",
               padding: "4px 8px",
               lineHeight: 1,
             }}
@@ -195,7 +196,7 @@ export function CommentsModal({
           <div
             style={{
               paddingBottom: 16,
-              borderBottom: "1px solid #efefef",
+              borderBottom: "1px solid var(--divider)",
             }}
           >
             <p
@@ -203,7 +204,7 @@ export function CommentsModal({
                 margin: 0,
                 fontSize: 15,
                 lineHeight: 1.5,
-                color: "#262626",
+                color: "var(--text-primary)",
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
               }}
@@ -219,7 +220,7 @@ export function CommentsModal({
               style={{
                 textAlign: "center",
                 padding: "30px 0",
-                color: "#8e8e8e",
+                color: "var(--text-secondary)",
               }}
             >
               <div
@@ -227,8 +228,8 @@ export function CommentsModal({
                   display: "inline-block",
                   width: 20,
                   height: 20,
-                  border: "2px solid #efefef",
-                  borderTopColor: "#1877f2",
+                  border: "2px solid var(--divider)",
+                  borderTopColor: "var(--primary)",
                   borderRadius: "50%",
                   animation: "spin 0.8s linear infinite",
                   marginBottom: 8,
@@ -274,7 +275,7 @@ export function CommentsModal({
               style={{
                 textAlign: "center",
                 padding: "30px 0",
-                color: "#8e8e8e",
+                color: "var(--text-secondary)",
                 fontSize: 14,
               }}
             >
@@ -311,7 +312,7 @@ export function CommentsModal({
               style={{
                 textAlign: "center",
                 padding: "12px 0",
-                color: "#8e8e8e",
+                color: "var(--text-secondary)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -322,8 +323,8 @@ export function CommentsModal({
                 style={{
                   width: 14,
                   height: 14,
-                  border: "2px solid #efefef",
-                  borderTopColor: "#1877f2",
+                  border: "2px solid var(--divider)",
+                  borderTopColor: "var(--primary)",
                   borderRadius: "50%",
                   animation: "spin 0.8s linear infinite",
                 }}
@@ -350,7 +351,7 @@ export function CommentsModal({
                   padding: "4px 10px",
                   borderRadius: 4,
                   border: "1px solid #e02424",
-                  background: "#fff",
+                  background: "var(--bg-hover)",
                   color: "#e02424",
                   cursor: "pointer",
                   fontSize: 11,
@@ -367,7 +368,7 @@ export function CommentsModal({
               style={{
                 textAlign: "center",
                 padding: "14px 0 6px",
-                color: "#8e8e8e",
+                color: "var(--text-secondary)",
                 fontSize: 12,
               }}
             >

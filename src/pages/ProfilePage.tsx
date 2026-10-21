@@ -366,13 +366,13 @@ export function ProfilePage() {
             display: "inline-block",
             width: 38,
             height: 38,
-            border: "3px solid #e4e6eb",
-            borderTopColor: "#1877f2",
+            border: "3px solid var(--border-color)",
+            borderTopColor: "var(--primary)",
             borderRadius: "50%",
             animation: "spin 0.8s linear infinite",
           }}
         />
-        <p style={{ marginTop: 14, color: "#65676b", fontSize: 15 }}>
+        <p style={{ marginTop: 14, color: "var(--text-secondary)", fontSize: 15 }}>
           Loading profile...
         </p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -388,18 +388,19 @@ export function ProfilePage() {
           margin: "40px auto",
           padding: "32px 20px",
           textAlign: "center",
-          backgroundColor: "#fff",
+          backgroundColor: "var(--bg-card)",
           borderRadius: 12,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          border: "1px solid var(--border-color)",
+          boxShadow: "var(--shadow-sm)",
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
         }}
       >
         <div style={{ fontSize: 48, marginBottom: 12 }}>👤</div>
-        <h2 style={{ margin: "0 0 8px", fontSize: 20, color: "#1c1e21" }}>
+        <h2 style={{ margin: "0 0 8px", fontSize: 20, color: "var(--text-primary)" }}>
           Profile Not Found
         </h2>
-        <p style={{ color: "#65676b", fontSize: 14, marginBottom: 20 }}>
+        <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 20 }}>
           {profileError ?? "The user you are looking for does not exist."}
         </p>
         <Link
@@ -407,7 +408,7 @@ export function ProfilePage() {
           style={{
             display: "inline-block",
             padding: "8px 18px",
-            backgroundColor: "#1877f2",
+            backgroundColor: "var(--primary)",
             color: "#fff",
             textDecoration: "none",
             borderRadius: 6,
@@ -436,11 +437,13 @@ export function ProfilePage() {
       {/* Profile Card Header */}
       <div
         style={{
-          backgroundColor: "#fff",
+          backgroundColor: "var(--bg-card)",
           borderRadius: 16,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 4px 16px rgba(0,0,0,0.04)",
+          boxShadow: "var(--shadow-sm)",
+          border: "1px solid var(--border-color)",
           overflow: "hidden",
           marginBottom: 20,
+          transition: "background-color 0.2s ease, border-color 0.2s ease",
         }}
       >
         {/* Cover Accent Banner */}
@@ -483,14 +486,14 @@ export function ProfilePage() {
                   width: 104,
                   height: 104,
                   borderRadius: "50%",
-                  backgroundColor: "#1877f2",
+                  backgroundColor: "var(--primary)",
                   color: "#fff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 40,
                   fontWeight: 700,
-                  border: "4px solid #fff",
+                  border: "4px solid var(--bg-card)",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                   userSelect: "none",
                   overflow: "hidden",
@@ -542,21 +545,22 @@ export function ProfilePage() {
                       width: 32,
                       height: 32,
                       borderRadius: "50%",
-                      backgroundColor: "#e4e6eb",
-                      border: "2px solid #fff",
+                      backgroundColor: "var(--bg-hover)",
+                      border: "2px solid var(--bg-card)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       cursor: "pointer",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                       fontSize: 14,
+                      color: "var(--text-primary)",
                       transition: "background-color 0.15s ease",
                     }}
                     onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#d8dadf")
+                      (e.currentTarget.style.backgroundColor = "var(--border-color)")
                     }
                     onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#e4e6eb")
+                      (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
                     }
                   >
                     📷
@@ -573,9 +577,9 @@ export function ProfilePage() {
                   id="profile-edit-btn"
                   onClick={() => setIsEditModalOpen(true)}
                   style={{
-                    backgroundColor: "#e4e6eb",
-                    color: "#050505",
-                    border: "none",
+                    backgroundColor: "var(--bg-hover)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border-color)",
                     borderRadius: 8,
                     padding: "8px 18px",
                     fontWeight: 600,
@@ -587,10 +591,10 @@ export function ProfilePage() {
                     transition: "background-color 0.15s ease",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#d8dadf")
+                    (e.currentTarget.style.backgroundColor = "var(--border-color)")
                   }
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#e4e6eb")
+                    (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
                   }
                 >
                   <span>✏️</span> Edit Profile
@@ -607,16 +611,18 @@ export function ProfilePage() {
                     backgroundColor: profile.isFollowing
                       ? isHoveringFollowBtn
                         ? "#ffebe8"
-                        : "#e4e6eb"
-                      : "#1877f2",
+                        : "var(--bg-hover)"
+                      : "var(--primary)",
                     color: profile.isFollowing
                       ? isHoveringFollowBtn
                         ? "#e02424"
-                        : "#050505"
+                        : "var(--text-primary)"
                       : "#fff",
                     border:
-                      profile.isFollowing && isHoveringFollowBtn
-                        ? "1px solid #f97583"
+                      profile.isFollowing
+                        ? isHoveringFollowBtn
+                          ? "1px solid #f97583"
+                          : "1px solid var(--border-color)"
                         : "none",
                     borderRadius: 8,
                     padding: "8px 22px",
@@ -646,7 +652,7 @@ export function ProfilePage() {
                 margin: 0,
                 fontSize: 24,
                 fontWeight: 700,
-                color: "#1c1e21",
+                color: "var(--text-primary)",
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
@@ -654,7 +660,7 @@ export function ProfilePage() {
             >
               {profile.name}
             </h1>
-            <div style={{ color: "#65676b", fontSize: 14, marginTop: 2 }}>
+            <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 2 }}>
               {profile.username ? `@${profile.username}` : "No @username set"}
             </div>
           </div>
@@ -664,14 +670,14 @@ export function ProfilePage() {
             <div
               style={{
                 marginTop: 14,
-                color: "#1c1e21",
+                color: "var(--text-primary)",
                 fontSize: 15,
                 lineHeight: 1.5,
                 whiteSpace: "pre-wrap",
-                backgroundColor: "#f7f8fa",
+                backgroundColor: "var(--bg-hover)",
                 padding: "10px 14px",
                 borderRadius: 8,
-                borderLeft: "3px solid #1877f2",
+                borderLeft: "3px solid var(--primary)",
               }}
             >
               {profile.bio}
@@ -684,7 +690,7 @@ export function ProfilePage() {
               display: "flex",
               alignItems: "center",
               gap: 16,
-              color: "#65676b",
+              color: "var(--text-secondary)",
               fontSize: 13,
               marginTop: 14,
               flexWrap: "wrap",
@@ -703,7 +709,7 @@ export function ProfilePage() {
               gap: 24,
               marginTop: 18,
               paddingTop: 16,
-              borderTop: "1px solid #e4e6eb",
+              borderTop: "1px solid var(--divider)",
             }}
           >
             <div>
@@ -711,13 +717,13 @@ export function ProfilePage() {
                 style={{
                   fontWeight: 700,
                   fontSize: 17,
-                  color: "#1c1e21",
+                  color: "var(--text-primary)",
                   marginRight: 5,
                 }}
               >
                 {profile.postsCount}
               </span>
-              <span style={{ color: "#65676b", fontSize: 14 }}>Posts</span>
+              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Posts</span>
             </div>
 
             <div>
@@ -725,13 +731,13 @@ export function ProfilePage() {
                 style={{
                   fontWeight: 700,
                   fontSize: 17,
-                  color: "#1c1e21",
+                  color: "var(--text-primary)",
                   marginRight: 5,
                 }}
               >
                 {profile.followersCount}
               </span>
-              <span style={{ color: "#65676b", fontSize: 14 }}>Followers</span>
+              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Followers</span>
             </div>
 
             <div>
@@ -739,13 +745,13 @@ export function ProfilePage() {
                 style={{
                   fontWeight: 700,
                   fontSize: 17,
-                  color: "#1c1e21",
+                  color: "var(--text-primary)",
                   marginRight: 5,
                 }}
               >
                 {profile.followingCount}
               </span>
-              <span style={{ color: "#65676b", fontSize: 14 }}>Following</span>
+              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Following</span>
             </div>
           </div>
 
@@ -771,9 +777,10 @@ export function ProfilePage() {
       <div
         style={{
           display: "flex",
-          backgroundColor: "#fff",
+          backgroundColor: "var(--bg-card)",
           borderRadius: 12,
-          boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+          boxShadow: "var(--shadow-sm)",
+          border: "1px solid var(--border-color)",
           padding: "4px",
           marginBottom: 16,
         }}
@@ -785,8 +792,8 @@ export function ProfilePage() {
             flex: 1,
             padding: "10px",
             border: "none",
-            backgroundColor: activeTab === "posts" ? "#e7f3ff" : "transparent",
-            color: activeTab === "posts" ? "#1877f2" : "#65676b",
+            backgroundColor: activeTab === "posts" ? "var(--bg-hover)" : "transparent",
+            color: activeTab === "posts" ? "var(--primary)" : "var(--text-secondary)",
             fontWeight: activeTab === "posts" ? 700 : 600,
             fontSize: 14,
             borderRadius: 8,
@@ -803,8 +810,8 @@ export function ProfilePage() {
             flex: 1,
             padding: "10px",
             border: "none",
-            backgroundColor: activeTab === "about" ? "#e7f3ff" : "transparent",
-            color: activeTab === "about" ? "#1877f2" : "#65676b",
+            backgroundColor: activeTab === "about" ? "var(--bg-hover)" : "transparent",
+            color: activeTab === "about" ? "var(--primary)" : "var(--text-secondary)",
             fontWeight: activeTab === "about" ? 700 : 600,
             fontSize: 14,
             borderRadius: 8,
@@ -859,18 +866,19 @@ export function ProfilePage() {
           ) : posts.length === 0 ? (
             <div
               style={{
-                backgroundColor: "#fff",
+                backgroundColor: "var(--bg-card)",
                 borderRadius: 12,
                 padding: "48px 24px",
                 textAlign: "center",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+                boxShadow: "var(--shadow-sm)",
+                border: "1px solid var(--border-color)",
               }}
             >
               <div style={{ fontSize: 42, marginBottom: 10 }}>📝</div>
-              <h3 style={{ margin: "0 0 6px", fontSize: 18, color: "#1c1e21" }}>
+              <h3 style={{ margin: "0 0 6px", fontSize: 18, color: "var(--text-primary)" }}>
                 No Posts Yet
               </h3>
-              <p style={{ margin: 0, color: "#65676b", fontSize: 14 }}>
+              <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>
                 {isMe
                   ? "You haven't shared any posts yet. Use the composer above to share your first post!"
                   : `${profile.name} hasn't posted anything yet.`}
@@ -904,8 +912,8 @@ export function ProfilePage() {
                       display: "inline-block",
                       width: 24,
                       height: 24,
-                      border: "3px solid #e4e6eb",
-                      borderTopColor: "#1877f2",
+                      border: "3px solid var(--border-color)",
+                      borderTopColor: "var(--primary)",
                       borderRadius: "50%",
                       animation: "spin 0.8s linear infinite",
                     }}
@@ -924,7 +932,7 @@ export function ProfilePage() {
                     onClick={loadMore}
                     style={{
                       backgroundColor: "transparent",
-                      color: "#1877f2",
+                      color: "var(--primary)",
                       border: "none",
                       fontWeight: 600,
                       cursor: "pointer",
@@ -941,7 +949,7 @@ export function ProfilePage() {
                 <div
                   style={{
                     textAlign: "center",
-                    color: "#8e8e8e",
+                    color: "var(--text-secondary)",
                     fontSize: 13,
                     padding: "20px 0 10px",
                   }}
@@ -958,9 +966,10 @@ export function ProfilePage() {
       {activeTab === "about" && (
         <div
           style={{
-            backgroundColor: "#fff",
+            backgroundColor: "var(--bg-card)",
             borderRadius: 12,
-            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+            boxShadow: "var(--shadow-sm)",
+            border: "1px solid var(--border-color)",
             padding: "24px",
           }}
         >
@@ -969,7 +978,7 @@ export function ProfilePage() {
               margin: "0 0 18px",
               fontSize: 18,
               fontWeight: 700,
-              color: "#1c1e21",
+              color: "var(--text-primary)",
             }}
           >
             About {profile.name}
@@ -981,11 +990,11 @@ export function ProfilePage() {
                 display: "flex",
                 justifyContent: "space-between",
                 paddingBottom: 12,
-                borderBottom: "1px solid #f0f2f5",
+                borderBottom: "1px solid var(--divider)",
               }}
             >
-              <span style={{ color: "#65676b", fontSize: 14 }}>Full Name</span>
-              <span style={{ fontWeight: 600, color: "#1c1e21", fontSize: 14 }}>
+              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Full Name</span>
+              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                 {profile.name}
               </span>
             </div>
@@ -995,11 +1004,11 @@ export function ProfilePage() {
                 display: "flex",
                 justifyContent: "space-between",
                 paddingBottom: 12,
-                borderBottom: "1px solid #f0f2f5",
+                borderBottom: "1px solid var(--divider)",
               }}
             >
-              <span style={{ color: "#65676b", fontSize: 14 }}>Username</span>
-              <span style={{ fontWeight: 600, color: "#1c1e21", fontSize: 14 }}>
+              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Username</span>
+              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                 {profile.username ? `@${profile.username}` : "None"}
               </span>
             </div>
@@ -1009,11 +1018,11 @@ export function ProfilePage() {
                 display: "flex",
                 justifyContent: "space-between",
                 paddingBottom: 12,
-                borderBottom: "1px solid #f0f2f5",
+                borderBottom: "1px solid var(--divider)",
               }}
             >
-              <span style={{ color: "#65676b", fontSize: 14 }}>Email</span>
-              <span style={{ fontWeight: 600, color: "#1c1e21", fontSize: 14 }}>
+              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Email</span>
+              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                 {profile.email}
               </span>
             </div>
@@ -1023,11 +1032,11 @@ export function ProfilePage() {
                 display: "flex",
                 justifyContent: "space-between",
                 paddingBottom: 12,
-                borderBottom: "1px solid #f0f2f5",
+                borderBottom: "1px solid var(--divider)",
               }}
             >
-              <span style={{ color: "#65676b", fontSize: 14 }}>Birthday</span>
-              <span style={{ fontWeight: 600, color: "#1c1e21", fontSize: 14 }}>
+              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Birthday</span>
+              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                 {formatBirthdate(profile.birthdate)}
               </span>
             </div>
@@ -1037,11 +1046,11 @@ export function ProfilePage() {
                 display: "flex",
                 justifyContent: "space-between",
                 paddingBottom: 12,
-                borderBottom: "1px solid #f0f2f5",
+                borderBottom: "1px solid var(--divider)",
               }}
             >
-              <span style={{ color: "#65676b", fontSize: 14 }}>Member Since</span>
-              <span style={{ fontWeight: 600, color: "#1c1e21", fontSize: 14 }}>
+              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Member Since</span>
+              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                 {formatMemberDate(profile.createdAt)}
               </span>
             </div>
@@ -1051,7 +1060,7 @@ export function ProfilePage() {
                 <span
                   style={{
                     display: "block",
-                    color: "#65676b",
+                    color: "var(--text-secondary)",
                     fontSize: 14,
                     marginBottom: 6,
                   }}
@@ -1061,10 +1070,10 @@ export function ProfilePage() {
                 <p
                   style={{
                     margin: 0,
-                    color: "#1c1e21",
+                    color: "var(--text-primary)",
                     fontSize: 14,
                     lineHeight: 1.6,
-                    backgroundColor: "#f7f8fa",
+                    backgroundColor: "var(--bg-hover)",
                     padding: "12px 16px",
                     borderRadius: 8,
                   }}

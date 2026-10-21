@@ -64,13 +64,24 @@ function RegisterPage() {
 
   if (success) {
     return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        <h1 style={{ color: "green" }}>Registration successful!</h1>
+      <div
+        style={{
+          maxWidth: 480,
+          margin: "40px auto",
+          padding: "32px 28px",
+          backgroundColor: "var(--bg-card)",
+          borderRadius: 12,
+          border: "1px solid var(--border-color)",
+          boxShadow: "var(--shadow-md)",
+          textAlign: "center",
+        }}
+      >
+        <h1 style={{ color: "#2b8a3e", margin: "0 0 14px", fontSize: 24 }}>Registration successful!</h1>
 
         {/* 1. Only show the original message if resendMessage hasn't been set yet */}
         {!resendMessage && (
-          <p style={{ color: "green" }}>
-            We've sent a verification email to <strong>{email}</strong>. Please
+          <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.5 }}>
+            We've sent a verification email to <strong style={{ color: "var(--text-primary)" }}>{email}</strong>. Please
             check your inbox and click the verification link to activate your
             account.
           </p>
@@ -78,24 +89,25 @@ function RegisterPage() {
 
         {/* 2. Display the message once the button is clicked (Green for success, Red for error) */}
         {resendMessage && (
-          <p style={{ color: isResendError ? "red" : "green", marginTop: "8px" }}>{resendMessage}</p>
+          <p style={{ color: isResendError ? "#e02424" : "#2b8a3e", marginTop: "8px", fontSize: 14 }}>{resendMessage}</p>
         )}
 
         {/* 3. Button Container to keep spacing uniform and prevent alignment breaks */}
-        <div style={{ marginTop: "24px", display: "flex", justifyContent: "center", gap: "8px" }}>
+        <div style={{ marginTop: "24px", display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
           {email && (
             <button
               type="button"
               onClick={handleResend}
               disabled={resendLoading}
               style={{
-                backgroundColor: resendLoading ? "#cccccc" : "orange",
+                backgroundColor: resendLoading ? "var(--bg-hover)" : "orange",
                 color: "white",
                 border: "none",
                 padding: "8px 16px",
-                borderRadius: "4px",
+                borderRadius: "6px",
                 cursor: resendLoading ? "not-allowed" : "pointer",
                 opacity: resendLoading ? 0.7 : 1,
+                fontWeight: 600,
               }}
             >
               {resendLoading ? "Resending..." : "Resend verification email"}
@@ -112,12 +124,13 @@ function RegisterPage() {
               navigate("/login");
             }}
             style={{
-              backgroundColor: "#6c757d",
-              color: "white",
-              border: "none",
+              backgroundColor: "var(--bg-hover)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border-color)",
               padding: "8px 16px",
-              borderRadius: "4px",
+              borderRadius: "6px",
               cursor: "pointer",
+              fontWeight: 600,
             }}
           >
             Back to login
@@ -128,48 +141,98 @@ function RegisterPage() {
   }
 
   return (
-    <div>
-      <h1>Register</h1>
+    <div
+      style={{
+        maxWidth: 480,
+        margin: "40px auto",
+        padding: "32px 28px",
+        backgroundColor: "var(--bg-card)",
+        borderRadius: 12,
+        border: "1px solid var(--border-color)",
+        boxShadow: "var(--shadow-md)",
+      }}
+    >
+      <h1
+        style={{
+          margin: "0 0 20px",
+          fontSize: 26,
+          fontWeight: 700,
+          color: "var(--text-primary)",
+          textAlign: "center",
+        }}
+      >
+        Create a New Account
+      </h1>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && (
+        <div
+          style={{
+            backgroundColor: "#ffebe8",
+            color: "#e02424",
+            padding: "10px 14px",
+            borderRadius: 8,
+            fontSize: 13,
+            marginBottom: 16,
+          }}
+        >
+          {error}
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: 14 }}
+      >
         <input
           type="email"
-          placeholder="Email"
+          placeholder="Email *"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
         <input
           type="text"
-          placeholder="Name"
+          placeholder="Full Name *"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          required
         />
 
         <input
           type="text"
-          placeholder="Username"
+          placeholder="Username (optional)"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
 
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Password *"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
         <input
           type="date"
-          placeholder="Birthdate"
+          placeholder="Birthdate *"
           value={birthdate}
           onChange={(e) => setBirthdate(e.target.value)}
+          required
         />
 
-        <button type="submit">Register</button>
+        <button
+          type="submit"
+          style={{
+            marginTop: 6,
+            padding: "12px",
+            fontSize: 15,
+            fontWeight: 700,
+          }}
+        >
+          Sign Up
+        </button>
       </form>
     </div>
   );

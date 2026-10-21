@@ -53,11 +53,10 @@ export function NotificationToast() {
         bottom: 24,
         right: 24,
         zIndex: 2000,
-        backgroundColor: "#fff",
+        backgroundColor: "var(--bg-card)",
         borderRadius: 12,
-        boxShadow:
-          "0 12px 28px 0 rgba(0, 0, 0, 0.22), 0 2px 4px 0 rgba(0, 0, 0, 0.12)",
-        border: "1px solid #e4e6eb",
+        boxShadow: "var(--shadow-lg)",
+        border: "1px solid var(--border-color)",
         maxWidth: 380,
         width: "calc(100vw - 48px)",
         display: "flex",
@@ -91,7 +90,7 @@ export function NotificationToast() {
             width: 44,
             height: 44,
             borderRadius: "50%",
-            backgroundColor: "#1877f2",
+            backgroundColor: "var(--primary)",
             color: "#fff",
             display: "flex",
             alignItems: "center",
@@ -130,7 +129,7 @@ export function NotificationToast() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            border: "2px solid #fff",
+            border: "2px solid var(--bg-card)",
           }}
         >
           {config.icon}
@@ -143,7 +142,7 @@ export function NotificationToast() {
           style={{
             fontSize: 11,
             fontWeight: 700,
-            color: "#1877f2",
+            color: "var(--primary)",
             textTransform: "uppercase",
             letterSpacing: "0.5px",
             marginBottom: 2,
@@ -156,7 +155,7 @@ export function NotificationToast() {
             margin: 0,
             fontSize: 13.5,
             lineHeight: 1.35,
-            color: "#050505",
+            color: "var(--text-primary)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             display: "-webkit-box",
@@ -166,7 +165,9 @@ export function NotificationToast() {
         >
           <strong>{toastNotification.actorName}</strong> {config.label}
         </p>
-        <span style={{ fontSize: 11.5, color: "#8a8d91" }}>Just now</span>
+        <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>
+          Just now
+        </span>
       </div>
 
       {/* Dismiss Button */}
@@ -180,7 +181,7 @@ export function NotificationToast() {
         style={{
           background: "none",
           border: "none",
-          color: "#8a8d91",
+          color: "var(--text-tertiary)",
           cursor: "pointer",
           padding: "4px",
           borderRadius: "50%",
@@ -191,7 +192,7 @@ export function NotificationToast() {
           transition: "background-color 0.15s ease",
         }}
         onMouseEnter={(e) =>
-          (e.currentTarget.style.backgroundColor = "#f0f2f5")
+          (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
         }
         onMouseLeave={(e) =>
           (e.currentTarget.style.backgroundColor = "transparent")

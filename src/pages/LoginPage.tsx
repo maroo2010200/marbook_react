@@ -46,17 +46,54 @@ function LoginPage() {
   };
 
   return (
-    <div>
-      <h1>Login</h1>
+    <div
+      style={{
+        maxWidth: 440,
+        margin: "40px auto",
+        padding: "32px 28px",
+        backgroundColor: "var(--bg-card)",
+        borderRadius: 12,
+        border: "1px solid var(--border-color)",
+        boxShadow: "var(--shadow-md)",
+      }}
+    >
+      <h1
+        style={{
+          margin: "0 0 20px",
+          fontSize: 26,
+          fontWeight: 700,
+          color: "var(--text-primary)",
+          textAlign: "center",
+        }}
+      >
+        Log In to Marbook
+      </h1>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && (
+        <div
+          style={{
+            backgroundColor: "#ffebe8",
+            color: "#e02424",
+            padding: "10px 14px",
+            borderRadius: 8,
+            fontSize: 13,
+            marginBottom: 16,
+          }}
+        >
+          {error}
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: 14 }}
+      >
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
         <input
@@ -64,21 +101,53 @@ function LoginPage() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
-        <button type="submit">Login</button>
+        <button
+          type="submit"
+          style={{
+            marginTop: 6,
+            padding: "12px",
+            fontSize: 15,
+            fontWeight: 700,
+          }}
+        >
+          Log In
+        </button>
       </form>
 
       {email && (
-        <button
-          type="button"
-          onClick={handleResend}
-          style={{ marginTop: "12px" }}
-        >
-          Didn't receive the email? Resend
-        </button>
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button
+            type="button"
+            onClick={handleResend}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--primary)",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            Didn't receive verification email? Resend
+          </button>
+        </div>
       )}
-      {resendError && <p style={{ color: "green" }}>{resendError}</p>}
+      {resendError && (
+        <p
+          style={{
+            color: "#2b8a3e",
+            fontSize: 13,
+            textAlign: "center",
+            marginTop: 10,
+          }}
+        >
+          {resendError}
+        </p>
+      )}
     </div>
   );
 }
