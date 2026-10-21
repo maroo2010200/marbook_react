@@ -15,15 +15,18 @@ export interface ParsedRichText {
  * Standard regex to find http/https URLs in text.
  * Stops before common trailing sentence punctuation like .,!?:;)"'
  */
-export const URL_REGEX = /(https?:\/\/[^\s<]+[^<.,:;!?"')\]\s])/g;
+export const URL_REGEX = /((?:https?:\/\/|www\.)[^\s<]+[^<.,:;!?"')\]\s])/gi;
 
 /**
- * Checks if a URL points to Giphy, Tenor, or a direct image/gif file,
- * and converts Giphy page links into direct CDN gif URLs.
+ * Checks if a URL points to Giphy, Tenor, Imgur, or a direct image/gif file,
+ * and converts Giphy/Imgur page links into direct CDN gif URLs.
  */
 export function extractMediaUrlFromLink(rawUrl: string): MediaDetection | null {
   try {
-    const cleanUrl = rawUrl.trim().replace(/[.,;!?]+$/, "");
+    let cleanUrl = rawUrl.trim().replace(/[.,;!?]+$/, "");
+    if (cleanUrl.toLowerCase().startsWith("www.")) {
+      cleanUrl = `https://${cleanUrl}`;
+    }
 
     // 1. Giphy page URL: https://giphy.com/gifs/optional-slug-GIPHYID or https://giphy.com/gifs/GIPHYID
     const giphyPageMatch = cleanUrl.match(
@@ -45,28 +48,42 @@ export function extractMediaUrlFromLink(rawUrl: string): MediaDetection | null {
       };
     }
 
-    // 3. Direct GIF file (case-insensitive, allows query params like ?cid=...)
-    if (/^https?:\/\/[^\s]+?\.(gif)(\?[^\s]*)?$/i.test(cleanUrl)) {
+    // 3. Tenor media URLs: https://media.tenor.com/... or https://c.tenor.com/...
+    if (/^https?:\/\/(?:media\d*|c)\.tenor\.com\/.+/i.test(cleanUrl)) {
       return {
         mediaUrl: cleanUrl,
         isGif: true,
       };
     }
 
-    // 4. Direct Image files (png, jpg, jpeg, webp)
-    if (/^https?:\/\/[^\s]+?\.(png|jpe?g|webp)(\?[^\s]*)?$/i.test(cleanUrl)) {
-      const isWebp = cleanUrl.toLowerCase().includes(".webp");
+    // 4. Imgur links: https://i.imgur.com/abc.gif or https://imgur.com/abc
+    const imgurMatch = cleanUrl.match(
+      /^https?:\/\/(?:i\.)?imgur\.com\/([a-zA-Z0-9]+)(?:\.(gifv?|png|jpe?g|webp))?$/i
+    );
+    if (imgurMatch && imgurMatch[1]) {
+      const id = imgurMatch[1];
+      const ext = imgurMatch[2]?.toLowerCase() || "gif";
+      const actualExt = ext === "gifv" ? "gif" : ext;
+      return {
+        mediaUrl: `https://i.imgur.com/${id}.${actualExt}`,
+        isGif: actualExt === "gif",
+      };
+    }
+
+    // 5. Direct URL matching file extensions before query params or hash
+    const urlWithoutQuery = cleanUrl.split("?")[0].split("#")[0];
+    if (/\.(gif)$/i.test(urlWithoutQuery)) {
+      return {
+        mediaUrl: cleanUrl,
+        isGif: true,
+      };
+    }
+
+    if (/\.(png|jpe?g|webp|svg|bmp)$/i.test(urlWithoutQuery)) {
+      const isWebp = urlWithoutQuery.toLowerCase().endsWith(".webp");
       return {
         mediaUrl: cleanUrl,
         isGif: isWebp,
-      };
-    }
-
-    // 5. Tenor media URLs: https://media.tenor.com/...
-    if (/^https?:\/\/media\.tenor\.com\/.+/i.test(cleanUrl)) {
-      return {
-        mediaUrl: cleanUrl,
-        isGif: true,
       };
     }
 
@@ -77,10 +94,28 @@ export function extractMediaUrlFromLink(rawUrl: string): MediaDetection | null {
 }
 
 /**
+ * Formats a message snippet for the sidebar or dropdown list:
+ * replaces pure GIF or image URLs with a user-friendly label.
+ */
+export function formatMessageSnippet(content: string): string {
+  if (!content) return "";
+  const trimmed = content.trim();
+  const isSingleUrl = Boolean(trimmed.match(/^(?:https?:\/\/|www\.)[^\s]+$/i));
+  if (isSingleUrl) {
+    const media = extractMediaUrlFromLink(trimmed);
+    if (media) {
+      return media.isGif ? "Sent a GIF 🎬" : "Sent a photo 🖼️";
+    }
+    return "Sent a link 🔗";
+  }
+  return content;
+}
+
+/**
  * Parses user text:
  * - Highlights leading @mention (e.g. "@JohnDoe") in blue
- * - Turns all http/https links into clickable <a> tags
- * - Detects Giphy/image media links for embedded rendering
+ * - Turns all http/https/www links into clickable <a> tags
+ * - Detects Giphy/Tenor/image media links for embedded rendering
  */
 export function parseRichText(
   content: string,
@@ -129,11 +164,13 @@ export function parseRichText(
       }
     }
 
+    const href = url.toLowerCase().startsWith("www.") ? `https://${url}` : url;
+
     // Render clickable link
     parts.push(
       <a
         key={`link-${startIndex}`}
-        href={url}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -144,7 +181,7 @@ export function parseRichText(
         }}
         onClick={(e) => e.stopPropagation()}
         onMouseEnter={(e) =>
-          (e.currentTarget.style.color = "#0077c5")
+          (e.currentTarget.style.color = "#38bdf8")
         }
         onMouseLeave={(e) =>
           (e.currentTarget.style.color = linkColor)
@@ -162,11 +199,11 @@ export function parseRichText(
     parts.push(remainingText.substring(lastIndex));
   }
 
-  // 3. Determine if the text is purely a media URL (ignoring mention and whitespace)
+  // 3. Determine if the text is purely a media URL
   const trimmedRemaining = remainingText.trim();
   const isSingleUrl = Boolean(
     trimmedRemaining &&
-    trimmedRemaining.match(/^https?:\/\/[^\s]+$/) &&
+    trimmedRemaining.match(/^(?:https?:\/\/|www\.)[^\s]+$/i) &&
     detectedMediaList.length > 0
   );
 
@@ -187,9 +224,7 @@ export function parseRichText(
   }
 
   if (isPureMedia && hidePureMediaUrl) {
-    // If the comment is literally just the GIF URL, we don't need to display the raw URL text,
-    // since the embedded GIF player will be rendered right below!
-    // (If there was a mention, the mention is already pushed above)
+    // Hide raw link if only sending a media embed
   } else {
     nodes.push(...parts);
   }

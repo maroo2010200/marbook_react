@@ -14,6 +14,8 @@ import { PostComposer } from "../components/PostComposer";
 import { LightboxModal } from "../components/LightboxModal";
 import { ImageAdjustModal } from "../components/ImageAdjustModal";
 import { mediaApi } from "../api/media";
+import { chatApi } from "../api/chat";
+import { ChatIcon } from "../components/ChatIcon";
 import { getMediaUrl } from "../utils/media";
 
 function formatMemberDate(dateString: string): string {
@@ -314,6 +316,21 @@ export function ProfilePage() {
     return newPost;
   };
 
+  const [isStartingChat, setIsStartingChat] = useState(false);
+
+  const handleStartChat = async () => {
+    if (!profile || isStartingChat) return;
+    setIsStartingChat(true);
+    try {
+      const conv = await chatApi.startConversation(profile.id);
+      navigate(`/messages?conversationId=${conv.id}`);
+    } catch (err) {
+      console.error("Failed to start conversation:", err);
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
+
   const isMe = profile?.isMe || (currentUser?.id && profile?.id === currentUser.id);
 
   // Avatar file selection -> Opens ImageAdjustModal for zooming/panning
@@ -570,7 +587,7 @@ export function ProfilePage() {
             </div>
 
             {/* Action Buttons */}
-            <div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               {isMe ? (
                 <button
                   type="button"
@@ -600,47 +617,79 @@ export function ProfilePage() {
                   <span>✏️</span> Edit Profile
                 </button>
               ) : (
-                <button
-                  type="button"
-                  id="profile-follow-btn"
-                  onClick={handleToggleFollow}
-                  disabled={isFollowLoading}
-                  onMouseEnter={() => setIsHoveringFollowBtn(true)}
-                  onMouseLeave={() => setIsHoveringFollowBtn(false)}
-                  style={{
-                    backgroundColor: profile.isFollowing
-                      ? isHoveringFollowBtn
-                        ? "#ffebe8"
-                        : "var(--bg-hover)"
-                      : "var(--primary)",
-                    color: profile.isFollowing
-                      ? isHoveringFollowBtn
-                        ? "#e02424"
-                        : "var(--text-primary)"
-                      : "#fff",
-                    border:
-                      profile.isFollowing
+                <>
+                  <button
+                    type="button"
+                    id="profile-message-btn"
+                    onClick={handleStartChat}
+                    disabled={isStartingChat}
+                    style={{
+                      backgroundColor: "var(--bg-hover)",
+                      color: "var(--text-primary)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: 8,
+                      padding: "8px 18px",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      cursor: isStartingChat ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      transition: "background-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "var(--border-color)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+                    }
+                  >
+                    <ChatIcon size={16} />
+                    {isStartingChat ? "Opening..." : "Message"}
+                  </button>
+
+                  <button
+                    type="button"
+                    id="profile-follow-btn"
+                    onClick={handleToggleFollow}
+                    disabled={isFollowLoading}
+                    onMouseEnter={() => setIsHoveringFollowBtn(true)}
+                    onMouseLeave={() => setIsHoveringFollowBtn(false)}
+                    style={{
+                      backgroundColor: profile.isFollowing
                         ? isHoveringFollowBtn
-                          ? "1px solid #f97583"
-                          : "1px solid var(--border-color)"
-                        : "none",
-                    borderRadius: 8,
-                    padding: "8px 22px",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    cursor: isFollowLoading ? "not-allowed" : "pointer",
-                    opacity: isFollowLoading ? 0.7 : 1,
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  {isFollowLoading
-                    ? "Updating..."
-                    : profile.isFollowing
-                    ? isHoveringFollowBtn
-                      ? "Unfollow"
-                      : "Following"
-                    : "+ Follow"}
-                </button>
+                          ? "#ffebe8"
+                          : "var(--bg-hover)"
+                        : "var(--primary)",
+                      color: profile.isFollowing
+                        ? isHoveringFollowBtn
+                          ? "#e02424"
+                          : "var(--text-primary)"
+                        : "#fff",
+                      border:
+                        profile.isFollowing
+                          ? isHoveringFollowBtn
+                            ? "1px solid #f97583"
+                            : "1px solid var(--border-color)"
+                          : "none",
+                      borderRadius: 8,
+                      padding: "8px 22px",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      cursor: isFollowLoading ? "not-allowed" : "pointer",
+                      opacity: isFollowLoading ? 0.7 : 1,
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {isFollowLoading
+                      ? "Updating..."
+                      : profile.isFollowing
+                      ? isHoveringFollowBtn
+                        ? "Unfollow"
+                        : "Following"
+                      : "+ Follow"}
+                  </button>
+                </>
               )}
             </div>
           </div>

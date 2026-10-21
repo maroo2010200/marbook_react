@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
+import { useChat } from "../context/ChatContext";
 import { useTheme } from "../context/ThemeContext";
 import { getMediaUrl } from "../utils/media";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { MessagesDropdown } from "./MessagesDropdown";
+import { ChatIcon } from "./ChatIcon";
 import type { NotificationItem } from "../types/notifications";
 
 function Navbar() {
@@ -13,7 +16,17 @@ function Navbar() {
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const { unreadCount, setUnreadCount } = useNotifications();
+  const { unreadChatCount } = useChat();
+
+  const handleCloseMessages = useCallback(() => {
+    setIsMessagesOpen(false);
+  }, []);
+
+  const handleCloseNotifications = useCallback(() => {
+    setIsNotificationsOpen(false);
+  }, []);
 
   const handleLogoClick = (e: React.MouseEvent) => {
     if (!isAuthenticated) return;
@@ -151,12 +164,90 @@ function Navbar() {
 
         {isAuthenticated ? (
           <>
+            {/* Messenger */}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                id="navbar-messenger-btn"
+                onClick={() => {
+                  setIsNotificationsOpen(false);
+                  setIsMessagesOpen((prev) => !prev);
+                }}
+                aria-label="Messages"
+                title="Messages"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  backgroundColor: isMessagesOpen
+                    ? "var(--primary-light)"
+                    : "var(--bg-hover)",
+                  color: isMessagesOpen
+                    ? "var(--primary)"
+                    : "var(--text-primary)",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isMessagesOpen) {
+                    e.currentTarget.style.backgroundColor = "var(--bg-active)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isMessagesOpen) {
+                    e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+                  }
+                }}
+              >
+                <ChatIcon size={20} />
+
+                {unreadChatCount.totalUnreadMessages > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -2,
+                      right: -3,
+                      backgroundColor: "#e41e3f",
+                      color: "#fff",
+                      borderRadius: 10,
+                      padding: "1px 5px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      minWidth: 16,
+                      height: 16,
+                      lineHeight: "14px",
+                      textAlign: "center",
+                      boxShadow: "0 0 0 2px var(--bg-card)",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {unreadChatCount.totalUnreadMessages > 99
+                      ? "99+"
+                      : unreadChatCount.totalUnreadMessages}
+                  </span>
+                )}
+              </button>
+
+              <MessagesDropdown
+                isOpen={isMessagesOpen}
+                onClose={handleCloseMessages}
+              />
+            </div>
+
             {/* Notifications Bell */}
             <div style={{ position: "relative" }}>
               <button
                 type="button"
                 id="notifications-bell-btn"
-                onClick={() => setIsNotificationsOpen((prev) => !prev)}
+                onClick={() => {
+                  setIsMessagesOpen(false);
+                  setIsNotificationsOpen((prev) => !prev);
+                }}
                 aria-label="Notifications"
                 title="Notifications"
                 style={{
@@ -224,7 +315,7 @@ function Navbar() {
 
               <NotificationsDropdown
                 isOpen={isNotificationsOpen}
-                onClose={() => setIsNotificationsOpen(false)}
+                onClose={handleCloseNotifications}
                 onNotificationClick={handleNotificationClick}
                 onUnreadCountChanged={(count) => setUnreadCount(count)}
               />
