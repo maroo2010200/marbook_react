@@ -449,6 +449,7 @@ export function PostCard({
 
   return (
     <article
+      id={`post-${post.id}`}
       style={{
         backgroundColor: "#fff",
         border: "1px solid #e4e6eb",
