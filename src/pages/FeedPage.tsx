@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { usePosts } from "../hooks/usePosts";
 import { likesApi } from "../api/likes";
+import api from "../api/api";
 import { CommentsModal } from "../components/CommentsModal";
 import { PostComposer } from "../components/PostComposer";
 import { PostCard } from "../components/PostCard";
@@ -88,6 +89,69 @@ function FeedPage() {
     setIsCommentsOpen(false);
     setSelectedPostForComments(null);
   };
+
+  // Handle deep-linking from notifications (?postId=123&openComments=true)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const targetPostIdParam = searchParams.get("postId");
+  const openCommentsParam = searchParams.get("openComments");
+
+  useEffect(() => {
+    if (!targetPostIdParam) return;
+    const targetPostId = Number(targetPostIdParam);
+    if (!targetPostId || isNaN(targetPostId)) return;
+
+    const foundPost = posts.find((p) => p.id === targetPostId);
+
+    if (foundPost) {
+      const el = document.getElementById(`post-${targetPostId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.style.transition = "box-shadow 0.3s ease";
+        el.style.boxShadow =
+          "0 0 0 2px #1877f2, 0 4px 12px rgba(24, 119, 242, 0.25)";
+        setTimeout(() => {
+          el.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.05)";
+        }, 2500);
+      }
+
+      if (openCommentsParam === "true") {
+        handleOpenComments(foundPost);
+      }
+
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("postId");
+          next.delete("openComments");
+          return next;
+        },
+        { replace: true }
+      );
+    } else if (!loading) {
+      // If the post is not in the first page of feed, fetch it directly
+      api
+        .get<Post>(`/posts/${targetPostId}`)
+        .then((res) => {
+          if (openCommentsParam === "true") {
+            handleOpenComments(res.data);
+          }
+        })
+        .catch(() => {
+          // ignore if post was deleted or not accessible
+        })
+        .finally(() => {
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev);
+              next.delete("postId");
+              next.delete("openComments");
+              return next;
+            },
+            { replace: true }
+          );
+        });
+    }
+  }, [targetPostIdParam, openCommentsParam, posts, loading, setSearchParams]);
 
   // Toggle Like / Unlike (Instagram-style)
   const handleToggleLike = async (postId: number) => {

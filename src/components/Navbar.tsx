@@ -1,14 +1,71 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getMediaUrl } from "../utils/media";
+import { notificationsApi } from "../api/notifications";
+import { NotificationsDropdown } from "./NotificationsDropdown";
+import type { NotificationItem } from "../types/notifications";
 
 function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  // Poll unread count when logged in
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchUnread = async () => {
+      try {
+        const count = await notificationsApi.getUnreadCount();
+        if (isMounted) {
+          setUnreadCount(count);
+        }
+      } catch {
+        // ignore network error
+      }
+    };
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 20000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleNotificationClick = (item: NotificationItem) => {
+    setIsNotificationsOpen(false);
+
+    if (item.type === "UserFollowed") {
+      navigate(`/profile/${item.actorUserId}`);
+      return;
+    }
+
+    if (item.targetPostId) {
+      const openComments =
+        item.type === "CommentCreated" ||
+        item.type === "ReplyCreated" ||
+        item.type === "CommentLiked";
+
+      navigate(
+        `/feed?postId=${item.targetPostId}${
+          openComments ? "&openComments=true" : ""
+        }`
+      );
+    }
   };
 
   return (
@@ -44,6 +101,81 @@ function Navbar() {
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         {isAuthenticated ? (
           <>
+            {/* Notifications Bell */}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                id="notifications-bell-btn"
+                onClick={() => setIsNotificationsOpen((prev) => !prev)}
+                aria-label="Notifications"
+                title="Notifications"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  backgroundColor: isNotificationsOpen ? "#e7f3ff" : "#f0f2f5",
+                  color: isNotificationsOpen ? "#1877f2" : "#050505",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isNotificationsOpen) {
+                    e.currentTarget.style.backgroundColor = "#e4e6eb";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isNotificationsOpen) {
+                    e.currentTarget.style.backgroundColor = "#f0f2f5";
+                  }
+                }}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z" />
+                </svg>
+
+                {unreadCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -2,
+                      right: -3,
+                      backgroundColor: "#e41e3f",
+                      color: "#fff",
+                      borderRadius: 10,
+                      padding: "1px 5px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      minWidth: 16,
+                      height: 16,
+                      lineHeight: "14px",
+                      textAlign: "center",
+                      boxShadow: "0 0 0 2px #fff",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              <NotificationsDropdown
+                isOpen={isNotificationsOpen}
+                onClose={() => setIsNotificationsOpen(false)}
+                onNotificationClick={handleNotificationClick}
+                onUnreadCountChanged={(count) => setUnreadCount(count)}
+              />
+            </div>
+
             <Link
               to="/profile/me"
               style={{
