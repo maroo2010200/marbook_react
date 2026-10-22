@@ -60,6 +60,11 @@ export default function MessagesPage() {
   const [editText, setEditText] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
+  // Delete message confirmation modal state
+  const [messageToDeleteId, setMessageToDeleteId] = useState<number | null>(null);
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
+  const [deleteMessageError, setDeleteMessageError] = useState<string | null>(null);
+
   // Typing state of the other participant
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -445,20 +450,25 @@ export default function MessagesPage() {
     }
   };
 
-  // Delete message
-  const handleDeleteMessage = async (messageId: number) => {
-    if (!selectedId) return;
+  // Open delete message confirmation modal
+  const handlePromptDeleteMessage = (messageId: number) => {
+    setDeleteMessageError(null);
+    setMessageToDeleteId(messageId);
+  };
 
-    if (!window.confirm("Are you sure you want to delete this message?")) {
-      return;
-    }
+  // Confirm delete message
+  const handleConfirmDeleteMessage = async () => {
+    if (!selectedId || !messageToDeleteId) return;
+
+    setIsDeletingMessage(true);
+    setDeleteMessageError(null);
 
     try {
-      await chatApi.deleteMessage(selectedId, messageId);
+      await chatApi.deleteMessage(selectedId, messageToDeleteId);
 
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === messageId
+          m.id === messageToDeleteId
             ? {
                 ...m,
                 content: "This message was deleted",
@@ -468,8 +478,12 @@ export default function MessagesPage() {
             : m
         )
       );
-    } catch (err) {
+      setMessageToDeleteId(null);
+    } catch (err: unknown) {
       console.error("Failed to delete message:", err);
+      setDeleteMessageError("Failed to delete message. Please try again.");
+    } finally {
+      setIsDeletingMessage(false);
     }
   };
 
@@ -1324,7 +1338,7 @@ export default function MessagesPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteMessage(msg.id)}
+                              onClick={() => handlePromptDeleteMessage(msg.id)}
                               title="Delete message"
                               style={{
                                 border: "none",
@@ -1559,6 +1573,120 @@ export default function MessagesPage() {
           setLightboxImages([]);
         }}
       />
+
+      {/* Delete Message Confirmation Modal */}
+      {messageToDeleteId !== null && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "var(--modal-overlay)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 16,
+          }}
+          onClick={() => !isDeletingMessage && setMessageToDeleteId(null)}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--bg-card)",
+              borderRadius: 10,
+              maxWidth: 420,
+              width: "100%",
+              padding: "24px 24px 20px",
+              boxShadow: "var(--shadow-lg)",
+              border: "1px solid var(--border-color)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              style={{
+                margin: "0 0 8px",
+                fontSize: 18,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              Delete Message?
+            </h3>
+            <p
+              style={{
+                margin: "0 0 20px",
+                fontSize: 14,
+                color: "var(--text-secondary)",
+                lineHeight: 1.4,
+              }}
+            >
+              Are you sure you want to delete this message? This action cannot be
+              undone and will replace the message with &ldquo;This message was deleted&rdquo;.
+            </p>
+
+            {deleteMessageError && (
+              <div
+                style={{
+                  backgroundColor: "#fde8e8",
+                  color: "#9b1c1c",
+                  padding: "8px 12px",
+                  borderRadius: 6,
+                  fontSize: 13,
+                  marginBottom: 16,
+                }}
+              >
+                {deleteMessageError}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 10,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setMessageToDeleteId(null)}
+                disabled={isDeletingMessage}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 6,
+                  border: "1px solid var(--border-color)",
+                  background: "var(--bg-hover)",
+                  color: "var(--text-primary)",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: isDeletingMessage ? "not-allowed" : "pointer",
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmDeleteMessage}
+                disabled={isDeletingMessage}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 6,
+                  border: "none",
+                  backgroundColor: "#e02424",
+                  color: "#fff",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: isDeletingMessage ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                {isDeletingMessage ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
