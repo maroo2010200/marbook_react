@@ -43,6 +43,8 @@ export interface UserSummary {
   username: string | null;
   name: string;
   avatarUrl?: string | null;
+  isFollowing?: boolean;
+  isMe?: boolean;
 }
 
 export interface UserSearchResult {

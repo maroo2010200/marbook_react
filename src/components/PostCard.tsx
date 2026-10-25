@@ -453,12 +453,12 @@ export function PostCard({
       style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border-color)",
-        borderRadius: 8,
-        padding: "16px 20px",
+        borderRadius: "var(--radius-lg)",
+        padding: "18px 20px",
         marginBottom: 16,
-        boxShadow: "var(--shadow-sm)",
+        boxShadow: "var(--shadow-card)",
         position: "relative",
-        transition: "background-color 0.2s ease, border-color 0.2s ease",
+        transition: "all 0.2s ease",
       }}
     >
       {/* Header: Avatar, author name, timestamp, and optional author actions menu */}

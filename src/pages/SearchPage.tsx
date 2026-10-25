@@ -8,6 +8,7 @@ import { likesApi } from "../api/likes";
 import { PostCard } from "../components/PostCard";
 import { CommentsModal } from "../components/CommentsModal";
 import { UserCard } from "../components/UserCard";
+import { MainLayout } from "../components/layout/MainLayout";
 import type { UserSearchResult } from "../types/user";
 import type { Post } from "../types/posts";
 
@@ -323,15 +324,7 @@ export default function SearchPage() {
   const isInitialLoading = (isLoadingUsers || isLoadingPosts) && users.length === 0 && posts.length === 0;
 
   return (
-    <div
-      style={{
-        maxWidth: 820,
-        margin: "0 auto",
-        padding: "24px 16px 60px",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-      }}
-    >
+    <MainLayout>
       {/* Header Banner */}
       <div
         style={{
@@ -820,6 +813,6 @@ export default function SearchPage() {
           }}
         />
       )}
-    </div>
+    </MainLayout>
   );
 }

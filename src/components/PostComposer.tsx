@@ -158,6 +158,17 @@ export function PostComposer({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isAudienceOpen]);
 
+  // Focus textarea when triggered from sidebar
+  useEffect(() => {
+    const handleFocusComposer = () => {
+      textareaRef.current?.focus();
+    };
+    window.addEventListener("marbook:focus-composer", handleFocusComposer);
+    return () => {
+      window.removeEventListener("marbook:focus-composer", handleFocusComposer);
+    };
+  }, []);
+
   if (!user) return null;
 
   const charCount = content.length;
@@ -330,10 +341,10 @@ export function PostComposer({
       style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border-color)",
-        borderRadius: 8,
-        padding: "16px 20px",
+        borderRadius: "var(--radius-lg)",
+        padding: "18px 20px",
         marginBottom: 20,
-        boxShadow: "var(--shadow-sm)",
+        boxShadow: "var(--shadow-card)",
       }}
     >
       {/* Header: User avatar & details & Audience Switcher */}

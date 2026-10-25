@@ -7,6 +7,7 @@ import api from "../api/api";
 import { CommentsModal } from "../components/CommentsModal";
 import { PostComposer } from "../components/PostComposer";
 import { PostCard } from "../components/PostCard";
+import { MainLayout } from "../components/layout/MainLayout";
 import type { Post } from "../types/posts";
 
 function FeedPage() {
@@ -264,15 +265,7 @@ function FeedPage() {
   }, [loading, loadingMore, hasMore, loadMoreError, loadMore]);
 
   return (
-    <div
-      style={{
-        maxWidth: 680,
-        margin: "0 auto",
-        padding: "24px 16px",
-        fontFamily:
-          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      }}
-    >
+    <MainLayout>
       {/* Header */}
       <div
         style={{
@@ -702,7 +695,7 @@ function FeedPage() {
           }
         }}
       />
-    </div>
+    </MainLayout>
   );
 }
 

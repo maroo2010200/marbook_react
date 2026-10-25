@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { notificationsApi } from "../api/notifications";
 import { useNotifications } from "../context/NotificationContext";
 import type { NotificationItem } from "../types/notifications";
@@ -18,6 +19,7 @@ export function NotificationsDropdown({
   onNotificationClick,
   onUnreadCountChanged,
 }: NotificationsDropdownProps) {
+  const navigate = useNavigate();
   const { subscribeToNotifications } = useNotifications();
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -590,6 +592,44 @@ export function NotificationsDropdown({
             {loadingMore ? "Loading..." : "See previous notifications"}
           </button>
         )}
+      </div>
+
+      {/* Footer: Show All Notifications */}
+      <div
+        style={{
+          borderTop: "1px solid var(--border-color)",
+          padding: "10px 16px",
+          textAlign: "center",
+          backgroundColor: "var(--bg-card)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            navigate("/notifications");
+          }}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--primary)",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+            padding: "6px 12px",
+            borderRadius: 6,
+            transition: "background-color 0.15s ease",
+            width: "100%",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = "transparent")
+          }
+        >
+          Show all
+        </button>
       </div>
     </div>
   );

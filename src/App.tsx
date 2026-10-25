@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ChatProvider } from "./context/ChatContext";
 import { NotificationToast } from "./components/NotificationToast";
+import { FloatingChatDock } from "./components/chat/FloatingChatDock";
 import RegisterPage from "./pages/RegisterPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FeedPage from "./pages/FeedPage";
@@ -15,6 +16,7 @@ import VerifyPage from "./pages/VerifyPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import MessagesPage from "./pages/MessagesPage";
 import SearchPage from "./pages/SearchPage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 function App() {
   return (
@@ -25,6 +27,7 @@ function App() {
             <BrowserRouter>
               <Navbar />
               <NotificationToast />
+              <FloatingChatDock />
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -35,6 +38,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <FeedPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notifications"
+                  element={
+                    <ProtectedRoute>
+                      <NotificationsPage />
                     </ProtectedRoute>
                   }
                 />

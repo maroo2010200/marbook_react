@@ -14,7 +14,7 @@ interface MessagesDropdownProps {
 
 export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
   const { user: currentUser } = useAuth();
-  const { conversations, refreshConversations } = useChat();
+  const { conversations, refreshConversations, openFloatingChat } = useChat();
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -53,7 +53,7 @@ export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
 
   const handleSelectConversation = (conversation: ConversationSummary) => {
     onClose();
-    navigate(`/messages?conversationId=${conversation.id}`);
+    openFloatingChat(conversation.id);
   };
 
   return (
@@ -249,6 +249,44 @@ export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
             );
           })
         )}
+      </div>
+
+      {/* Footer: Show All Messages */}
+      <div
+        style={{
+          borderTop: "1px solid var(--border-color)",
+          padding: "10px 16px",
+          textAlign: "center",
+          backgroundColor: "var(--bg-card)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            navigate("/messages");
+          }}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--primary)",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+            padding: "6px 12px",
+            borderRadius: 6,
+            transition: "background-color 0.15s ease",
+            width: "100%",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = "transparent")
+          }
+        >
+          Show all
+        </button>
       </div>
     </div>
   );

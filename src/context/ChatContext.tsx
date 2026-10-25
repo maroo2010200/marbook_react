@@ -27,6 +27,12 @@ interface ChatContextType {
   setUnreadChatCount: React.Dispatch<React.SetStateAction<ChatUnreadCount>>;
   activeConversationId: number | null;
   setActiveConversationId: (id: number | null) => void;
+  floatingConversationId: number | null;
+  setFloatingConversationId: (id: number | null) => void;
+  isFloatingMinimized: boolean;
+  setIsFloatingMinimized: React.Dispatch<React.SetStateAction<boolean>>;
+  openFloatingChat: (id: number) => void;
+  closeFloatingChat: () => void;
   conversations: ConversationSummary[];
   setConversations: React.Dispatch<React.SetStateAction<ConversationSummary[]>>;
   refreshConversations: () => Promise<void>;
@@ -69,6 +75,20 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [activeConversationId, setActiveConversationId] = useState<
     number | null
   >(null);
+  const [floatingConversationId, setFloatingConversationId] = useState<
+    number | null
+  >(null);
+  const [isFloatingMinimized, setIsFloatingMinimized] = useState(false);
+
+  const openFloatingChat = useCallback((id: number) => {
+    setFloatingConversationId(id);
+    setIsFloatingMinimized(false);
+  }, []);
+
+  const closeFloatingChat = useCallback(() => {
+    setFloatingConversationId(null);
+    setIsFloatingMinimized(false);
+  }, []);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [connectionState, setConnectionState] = useState<HubConnectionState>(
     HubConnectionState.Disconnected
@@ -492,6 +512,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setUnreadChatCount,
       activeConversationId,
       setActiveConversationId,
+      floatingConversationId,
+      setFloatingConversationId,
+      isFloatingMinimized,
+      setIsFloatingMinimized,
+      openFloatingChat,
+      closeFloatingChat,
       conversations,
       setConversations,
       refreshConversations,
@@ -510,6 +536,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [
       unreadChatCount,
       activeConversationId,
+      floatingConversationId,
+      isFloatingMinimized,
+      openFloatingChat,
+      closeFloatingChat,
       conversations,
       connectionState,
       refreshConversations,
