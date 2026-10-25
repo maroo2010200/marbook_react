@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useChat } from "../context/ChatContext";
 import { usersApi } from "../api/users";
 import { followsApi } from "../api/follows";
 import { likesApi } from "../api/likes";
-import type { UserProfile } from "../types/user";
+import type { UserProfile, UserSummary } from "../types/user";
 import type { Post, PostVisibility } from "../types/posts";
 import { usePosts } from "../hooks/usePosts";
 import { PostCard } from "../components/PostCard";
@@ -17,7 +18,8 @@ import { mediaApi } from "../api/media";
 import { chatApi } from "../api/chat";
 import { ChatIcon } from "../components/ChatIcon";
 import { Avatar } from "../components/Avatar";
-import { getMediaUrl } from "../utils/media";
+import { MainLayout } from "../components/layout/MainLayout";
+import { getMediaUrl, getPostOptimizedUrl } from "../utils/media";
 
 function formatMemberDate(dateString: string): string {
   try {
@@ -50,20 +52,39 @@ function formatBirthdate(dateString?: string): string {
 export function ProfilePage() {
   const { id: rawId } = useParams<{ id: string }>();
   const { user: currentUser, isAuthenticated, updateUser } = useAuth();
+  const { openFloatingChat } = useChat();
   const navigate = useNavigate();
 
-  // Determine target user ID: if route is /profile/me or id missing, use currentUser.id
   const targetUserId =
     rawId === "me" || !rawId
       ? currentUser?.id
       : Number.parseInt(rawId, 10);
 
+  const isMe = Boolean(
+    (currentUser?.id && targetUserId && currentUser.id === targetUserId) ||
+    rawId === "me" ||
+    !rawId
+  );
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  // Active Tab: 'posts' | 'about'
-  const [activeTab, setActiveTab] = useState<"posts" | "about">("posts");
+  // Active Tab: 'posts' | 'about' | 'followers' | 'following' | 'photos'
+  type ProfileTab = "posts" | "about" | "followers" | "following" | "photos";
+  const [activeTab, setActiveTab] = useState<ProfileTab>("posts");
+
+  // Followers & Following lists
+  const [followersList, setFollowersList] = useState<UserSummary[]>([]);
+  const [isFollowersLoading, setIsFollowersLoading] = useState(false);
+  const [followersLoaded, setFollowersLoaded] = useState(false);
+
+  const [followingList, setFollowingList] = useState<UserSummary[]>([]);
+  const [isFollowingLoading, setIsFollowingLoading] = useState(false);
+  const [followingLoaded, setFollowingLoaded] = useState(false);
+
+  const [cardFollowMap, setCardFollowMap] = useState<Record<number, boolean>>({});
+  const [cardFollowLoading, setCardFollowLoading] = useState<Record<number, boolean>>({});
 
   // Follow state
   const [isFollowLoading, setIsFollowLoading] = useState(false);
@@ -89,6 +110,7 @@ export function ProfilePage() {
 
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Fetch Profile data
   const fetchProfile = useCallback(async () => {
@@ -151,6 +173,106 @@ export function ProfilePage() {
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasMore, postsLoading, loadingMore, loadMore, activeTab]);
+
+  // Photos extracted from posts
+  const profilePhotos = useMemo(() => {
+    const list: string[] = [];
+    for (const p of posts) {
+      if (p.imageUrls && p.imageUrls.length > 0) {
+        for (const url of p.imageUrls) {
+          if (!list.includes(url)) list.push(url);
+        }
+      }
+    }
+    return list;
+  }, [posts]);
+
+  // Fetch followers and following when tabs are switched
+  useEffect(() => {
+    if (activeTab === "followers" && !followersLoaded && profile) {
+      setIsFollowersLoading(true);
+      followsApi
+        .getFollowers(profile.id, 1, 50)
+        .then((res) => {
+          const items = res.items || [];
+          setFollowersList(items);
+          setCardFollowMap((prev) => {
+            const next = { ...prev };
+            for (const item of items) {
+              if (next[item.id] === undefined && item.isFollowing !== undefined) {
+                next[item.id] = item.isFollowing;
+              }
+            }
+            return next;
+          });
+          setFollowersLoaded(true);
+        })
+        .catch(() => { })
+        .finally(() => setIsFollowersLoading(false));
+    }
+  }, [activeTab, followersLoaded, profile]);
+
+  useEffect(() => {
+    if (activeTab === "following" && !followingLoaded && profile) {
+      setIsFollowingLoading(true);
+      followsApi
+        .getFollowing(profile.id, 1, 50)
+        .then((res) => {
+          const items = res.items || [];
+          setFollowingList(items);
+          setCardFollowMap((prev) => {
+            const next = { ...prev };
+            for (const item of items) {
+              if (next[item.id] === undefined) {
+                next[item.id] = isMe ? true : (item.isFollowing ?? false);
+              }
+            }
+            return next;
+          });
+          setFollowingLoaded(true);
+        })
+        .catch(() => { })
+        .finally(() => setIsFollowingLoading(false));
+    }
+  }, [activeTab, followingLoaded, profile, isMe]);
+
+  useEffect(() => {
+    setFollowersLoaded(false);
+    setFollowingLoaded(false);
+  }, [targetUserId]);
+
+  const handleToggleCardFollow = async (
+    targetId: number,
+    currentlyFollowing: boolean
+  ) => {
+    const nextState = !currentlyFollowing;
+    setCardFollowLoading((prev) => ({ ...prev, [targetId]: true }));
+    setCardFollowMap((prev) => ({ ...prev, [targetId]: nextState }));
+
+    try {
+      if (currentlyFollowing) {
+        await followsApi.unfollow(targetId);
+        if (isMe) {
+          setProfile((prev) =>
+            prev
+              ? { ...prev, followingCount: Math.max(0, prev.followingCount - 1) }
+              : null
+          );
+        }
+      } else {
+        await followsApi.follow(targetId);
+        if (isMe) {
+          setProfile((prev) =>
+            prev ? { ...prev, followingCount: prev.followingCount + 1 } : null
+          );
+        }
+      }
+    } catch {
+      setCardFollowMap((prev) => ({ ...prev, [targetId]: currentlyFollowing }));
+    } finally {
+      setCardFollowLoading((prev) => ({ ...prev, [targetId]: false }));
+    }
+  };
 
   // Likes state for posts
   const [likedPostIds, setLikedPostIds] = useState<Set<number>>(() => {
@@ -256,13 +378,13 @@ export function ProfilePage() {
     setProfile((prev) =>
       prev
         ? {
-            ...prev,
-            isFollowing: nextFollowing,
-            followersCount: Math.max(
-              0,
-              prev.followersCount + (nextFollowing ? 1 : -1)
-            ),
-          }
+          ...prev,
+          isFollowing: nextFollowing,
+          followersCount: Math.max(
+            0,
+            prev.followersCount + (nextFollowing ? 1 : -1)
+          ),
+        }
         : null
     );
 
@@ -277,13 +399,13 @@ export function ProfilePage() {
       setProfile((prev) =>
         prev
           ? {
-              ...prev,
-              isFollowing: currentlyFollowing,
-              followersCount: Math.max(
-                0,
-                prev.followersCount + (currentlyFollowing ? 1 : -1)
-              ),
-            }
+            ...prev,
+            isFollowing: currentlyFollowing,
+            followersCount: Math.max(
+              0,
+              prev.followersCount + (currentlyFollowing ? 1 : -1)
+            ),
+          }
           : null
       );
       setFollowError(
@@ -324,15 +446,13 @@ export function ProfilePage() {
     setIsStartingChat(true);
     try {
       const conv = await chatApi.startConversation(profile.id);
-      navigate(`/messages?conversationId=${conv.id}`);
+      openFloatingChat(conv.id);
     } catch (err) {
       console.error("Failed to start conversation:", err);
     } finally {
       setIsStartingChat(false);
     }
   };
-
-  const isMe = profile?.isMe || (currentUser?.id && profile?.id === currentUser.id);
 
   // Avatar file selection -> Opens ImageAdjustModal for zooming/panning
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -441,60 +561,148 @@ export function ProfilePage() {
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 720,
-        margin: "24px auto 60px",
-        padding: "0 16px",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-      }}
-    >
-      {/* Profile Card Header */}
+    <MainLayout>
+      {/* Profile Card Header (Matching Socialio / Screenshot) */}
       <div
         style={{
           backgroundColor: "var(--bg-card)",
           borderRadius: 16,
-          boxShadow: "var(--shadow-sm)",
+          boxShadow: "var(--shadow-card)",
           border: "1px solid var(--border-color)",
           overflow: "hidden",
           marginBottom: 20,
-          transition: "background-color 0.2s ease, border-color 0.2s ease",
         }}
       >
         {/* Cover Accent Banner */}
         <div
+          className="profile-cover-wrap"
           style={{
-            height: 180,
-            width: "100%",
-            position: "relative",
             background: profile.coverUrl
               ? `url(${getMediaUrl(profile.coverUrl)}) center/cover no-repeat`
-              : "linear-gradient(135deg, #1877f2 0%, #00c6ff 100%)",
+              : "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%)",
             cursor: profile.coverUrl ? "pointer" : "default",
           }}
           onClick={() => {
             if (profile.coverUrl) {
               setLightboxImages([profile.coverUrl]);
+              setLightboxIndex(0);
               setIsLightboxOpen(true);
             }
           }}
-        />
-
-        {/* Profile Details Area */}
-        <div style={{ padding: "0 24px 24px", position: "relative" }}>
-          {/* Avatar floating above cover */}
+        >
+          {/* Dark gradient overlay for text contrast */}
           <div
             style={{
-              position: "relative",
-              top: -46,
-              marginBottom: -36,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-              flexWrap: "wrap",
-              gap: 12,
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%)",
+              pointerEvents: "none",
             }}
+          />
+
+          {/* User Name & Handle on Cover Banner (Beside Avatar) */}
+          <div className="profile-header-name-box">
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 26,
+                fontWeight: 700,
+                color: "#ffffff",
+                letterSpacing: "-0.3px",
+                textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                lineHeight: 1.2,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              {profile.name}
+            </h1>
+            {/* Followers and Following stats */}
+            <div className="profile-header-stats">
+              <button
+                type="button"
+                className={`profile-header-stats-btn ${activeTab === "followers" ? "active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTab("followers");
+                }}
+              >
+                <strong>{profile.followersCount ?? 0}</strong>
+                <span>{profile.followersCount === 1 ? "Follower" : "Followers"}</span>
+              </button>
+              <button
+                type="button"
+                className={`profile-header-stats-btn ${activeTab === "following" ? "active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTab("following");
+                }}
+              >
+                <strong>{profile.followingCount ?? 0}</strong>
+                <span>Following</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Edit Profile Button on bottom-right of Cover */}
+          {isMe && (
+            <button
+              type="button"
+              id="profile-edit-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditModalOpen(true);
+              }}
+              style={{
+                position: "absolute",
+                bottom: 18,
+                right: 20,
+                backgroundColor: "rgba(0, 0, 0, 0.55)",
+                backdropFilter: "blur(8px)",
+                color: "#ffffff",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
+                borderRadius: 8,
+                padding: "8px 16px",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                transition: "all 0.15s ease",
+                zIndex: 3,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.75)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.55)";
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span>Edit Profile</span>
+            </button>
+          )}
+
+          {/* Avatar overlapping bottom left */}
+          <div
+            className="profile-avatar-anchor"
+            onClick={(e) => e.stopPropagation()}
           >
             <div style={{ position: "relative" }}>
               <Avatar
@@ -504,12 +712,14 @@ export function ProfilePage() {
                 fontSize={40}
                 style={{
                   border: "4px solid var(--bg-card)",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  boxShadow: "0 4px 14px rgba(0, 0, 0, 0.18)",
                   cursor: profile.avatarUrl ? "pointer" : "default",
+                  backgroundColor: "var(--bg-card)",
                 }}
                 onClick={() => {
                   if (profile.avatarUrl) {
                     setLightboxImages([profile.avatarUrl]);
+                    setLightboxIndex(0);
                     setIsLightboxOpen(true);
                   }
                 }}
@@ -539,314 +749,185 @@ export function ProfilePage() {
                       width: 32,
                       height: 32,
                       borderRadius: "50%",
-                      backgroundColor: "var(--bg-hover)",
-                      border: "2px solid var(--bg-card)",
+                      backgroundColor: "var(--bg-card)",
+                      border: "2px solid var(--border-color)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       cursor: "pointer",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                      fontSize: 14,
+                      boxShadow: "var(--shadow-sm)",
+                      fontSize: 13,
                       color: "var(--text-primary)",
-                      transition: "background-color 0.15s ease",
+                      transition: "all 0.15s ease",
                     }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "var(--border-color)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
-                    }
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+                      e.currentTarget.style.transform = "scale(1.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--bg-card)";
+                      e.currentTarget.style.transform = "scale(1)";
+                    }}
                   >
                     📷
                   </button>
                 </>
               )}
             </div>
-
-            {/* Action Buttons */}
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              {isMe ? (
-                <button
-                  type="button"
-                  id="profile-edit-btn"
-                  onClick={() => setIsEditModalOpen(true)}
-                  style={{
-                    backgroundColor: "var(--bg-hover)",
-                    color: "var(--text-primary)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: 8,
-                    padding: "8px 18px",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    transition: "background-color 0.15s ease",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "var(--border-color)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
-                  }
-                >
-                  <span>✏️</span> Edit Profile
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    id="profile-message-btn"
-                    onClick={handleStartChat}
-                    disabled={isStartingChat}
-                    style={{
-                      backgroundColor: "var(--bg-hover)",
-                      color: "var(--text-primary)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: 8,
-                      padding: "8px 18px",
-                      fontWeight: 600,
-                      fontSize: 14,
-                      cursor: isStartingChat ? "not-allowed" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      transition: "background-color 0.15s ease",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "var(--border-color)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
-                    }
-                  >
-                    <ChatIcon size={16} />
-                    {isStartingChat ? "Opening..." : "Message"}
-                  </button>
-
-                  <button
-                    type="button"
-                    id="profile-follow-btn"
-                    onClick={handleToggleFollow}
-                    disabled={isFollowLoading}
-                    onMouseEnter={() => setIsHoveringFollowBtn(true)}
-                    onMouseLeave={() => setIsHoveringFollowBtn(false)}
-                    style={{
-                      backgroundColor: profile.isFollowing
-                        ? isHoveringFollowBtn
-                          ? "#ffebe8"
-                          : "var(--bg-hover)"
-                        : "var(--primary)",
-                      color: profile.isFollowing
-                        ? isHoveringFollowBtn
-                          ? "#e02424"
-                          : "var(--text-primary)"
-                        : "#fff",
-                      border:
-                        profile.isFollowing
-                          ? isHoveringFollowBtn
-                            ? "1px solid #f97583"
-                            : "1px solid var(--border-color)"
-                          : "none",
-                      borderRadius: 8,
-                      padding: "8px 22px",
-                      fontWeight: 600,
-                      fontSize: 14,
-                      cursor: isFollowLoading ? "not-allowed" : "pointer",
-                      opacity: isFollowLoading ? 0.7 : 1,
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    {isFollowLoading
-                      ? "Updating..."
-                      : profile.isFollowing
-                      ? isHoveringFollowBtn
-                        ? "Unfollow"
-                        : "Following"
-                      : "+ Follow"}
-                  </button>
-                </>
-              )}
-            </div>
           </div>
+        </div>
 
-          {/* User Name & Handle */}
-          <div style={{ marginTop: 12 }}>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 24,
-                fontWeight: 700,
-                color: "var(--text-primary)",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              {profile.name}
-            </h1>
-            <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 2 }}>
-              {profile.username ? `@${profile.username}` : "No @username set"}
-            </div>
-          </div>
-
-          {/* Bio */}
-          {profile.bio && (
-            <div
-              style={{
-                marginTop: 14,
-                color: "var(--text-primary)",
-                fontSize: 15,
-                lineHeight: 1.5,
-                whiteSpace: "pre-wrap",
-                backgroundColor: "var(--bg-hover)",
-                padding: "10px 14px",
-                borderRadius: 8,
-                borderLeft: "3px solid var(--primary)",
-              }}
-            >
-              {profile.bio}
-            </div>
-          )}
-
-          {/* Metadata Row */}
+        {/* Tab Navigation & Action Bar under Cover (Matching the screenshot) */}
+        <div className="profile-tabs-bar">
+          {/* Tabs: Timeline, About, Followers, Following, Photos (NO NUMBERS) */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 16,
-              color: "var(--text-secondary)",
-              fontSize: 13,
-              marginTop: 14,
-              flexWrap: "wrap",
+              gap: 2,
+              height: "100%",
             }}
           >
-            <span>📅 Joined {formatMemberDate(profile.createdAt)}</span>
-            {profile.birthdate && (
-              <span>🎂 Born {formatBirthdate(profile.birthdate)}</span>
+            {[
+              { key: "posts", label: "Timeline" },
+              { key: "about", label: "About" },
+              { key: "photos", label: "Photos" },
+            ].map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key as ProfileTab)}
+                  style={{
+                    position: "relative",
+                    background: "none",
+                    border: "none",
+                    padding: "16px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 14,
+                    fontWeight: isActive ? 700 : 600,
+                    color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
+                    cursor: "pointer",
+                    transition: "color 0.15s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.color = "var(--text-primary)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.color = "var(--text-secondary)";
+                  }}
+                >
+                  <span>{tab.label}</span>
+                  {/* Underline indicator */}
+                  {isActive && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 8,
+                        right: 8,
+                        height: 3,
+                        backgroundColor: "#1877f2",
+                        borderRadius: "3px 3px 0 0",
+                      }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right Action Buttons */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0" }}>
+            {!isMe && (
+              <>
+                <button
+                  type="button"
+                  id="profile-message-btn"
+                  onClick={handleStartChat}
+                  disabled={isStartingChat}
+                  style={{
+                    backgroundColor: "var(--bg-hover)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "var(--radius-full)",
+                    padding: "6px 14px",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: isStartingChat ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <ChatIcon size={14} />
+                  {isStartingChat ? "Opening..." : "Message"}
+                </button>
+
+                <button
+                  type="button"
+                  id="profile-follow-btn"
+                  onClick={handleToggleFollow}
+                  disabled={isFollowLoading}
+                  onMouseEnter={() => setIsHoveringFollowBtn(true)}
+                  onMouseLeave={() => setIsHoveringFollowBtn(false)}
+                  style={{
+                    backgroundColor: profile.isFollowing
+                      ? isHoveringFollowBtn
+                        ? "#fee2e2"
+                        : "var(--bg-hover)"
+                      : "var(--primary)",
+                    color: profile.isFollowing
+                      ? isHoveringFollowBtn
+                        ? "#ef4444"
+                        : "var(--text-primary)"
+                      : "#ffffff",
+                    border: profile.isFollowing
+                      ? isHoveringFollowBtn
+                        ? "1px solid #fca5a5"
+                        : "1px solid var(--border-color)"
+                      : "none",
+                    borderRadius: "var(--radius-full)",
+                    padding: "6px 18px",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: isFollowLoading ? "not-allowed" : "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {isFollowLoading
+                    ? "Updating..."
+                    : profile.isFollowing
+                      ? isHoveringFollowBtn
+                        ? "Unfollow"
+                        : "Following"
+                      : "+ Follow"}
+                </button>
+              </>
             )}
           </div>
+        </div>
 
-          {/* Stats Bar */}
+        {/* Follow error alert */}
+        {followError && (
           <div
             style={{
-              display: "flex",
-              gap: 24,
-              marginTop: 18,
-              paddingTop: 16,
-              borderTop: "1px solid var(--divider)",
+              margin: "12px 24px",
+              backgroundColor: "#ffebe8",
+              color: "#e02424",
+              padding: "8px 12px",
+              borderRadius: 6,
+              fontSize: 13,
             }}
           >
-            <div>
-              <span
-                style={{
-                  fontWeight: 700,
-                  fontSize: 17,
-                  color: "var(--text-primary)",
-                  marginRight: 5,
-                }}
-              >
-                {profile.postsCount}
-              </span>
-              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Posts</span>
-            </div>
-
-            <div>
-              <span
-                style={{
-                  fontWeight: 700,
-                  fontSize: 17,
-                  color: "var(--text-primary)",
-                  marginRight: 5,
-                }}
-              >
-                {profile.followersCount}
-              </span>
-              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Followers</span>
-            </div>
-
-            <div>
-              <span
-                style={{
-                  fontWeight: 700,
-                  fontSize: 17,
-                  color: "var(--text-primary)",
-                  marginRight: 5,
-                }}
-              >
-                {profile.followingCount}
-              </span>
-              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Following</span>
-            </div>
+            {followError}
           </div>
-
-          {/* Follow error alert */}
-          {followError && (
-            <div
-              style={{
-                marginTop: 12,
-                backgroundColor: "#ffebe8",
-                color: "#e02424",
-                padding: "8px 12px",
-                borderRadius: 6,
-                fontSize: 13,
-              }}
-            >
-              {followError}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Tabs Switcher */}
-      <div
-        style={{
-          display: "flex",
-          backgroundColor: "var(--bg-card)",
-          borderRadius: 12,
-          boxShadow: "var(--shadow-sm)",
-          border: "1px solid var(--border-color)",
-          padding: "4px",
-          marginBottom: 16,
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setActiveTab("posts")}
-          style={{
-            flex: 1,
-            padding: "10px",
-            border: "none",
-            backgroundColor: activeTab === "posts" ? "var(--bg-hover)" : "transparent",
-            color: activeTab === "posts" ? "var(--primary)" : "var(--text-secondary)",
-            fontWeight: activeTab === "posts" ? 700 : 600,
-            fontSize: 14,
-            borderRadius: 8,
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-          }}
-        >
-          Posts ({profile.postsCount})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("about")}
-          style={{
-            flex: 1,
-            padding: "10px",
-            border: "none",
-            backgroundColor: activeTab === "about" ? "var(--bg-hover)" : "transparent",
-            color: activeTab === "about" ? "var(--primary)" : "var(--text-secondary)",
-            fontWeight: activeTab === "about" ? 700 : 600,
-            fontSize: 14,
-            borderRadius: 8,
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-          }}
-        >
-          About
-        </button>
+        )}
       </div>
 
       {/* Tab: Posts */}
@@ -988,126 +1069,256 @@ export function ProfilePage() {
         </div>
       )}
 
-      {/* Tab: About */}
+      {/* Tab: About (Matching 2-column icon grid from screenshot) */}
       {activeTab === "about" && (
         <div
           style={{
             backgroundColor: "var(--bg-card)",
-            borderRadius: 12,
-            boxShadow: "var(--shadow-sm)",
+            borderRadius: 16,
+            boxShadow: "var(--shadow-card)",
             border: "1px solid var(--border-color)",
-            padding: "24px",
+            overflow: "hidden",
+            marginBottom: 20,
           }}
         >
-          <h2
+          {/* Card Header */}
+          <div
             style={{
-              margin: "0 0 18px",
-              fontSize: 18,
-              fontWeight: 700,
-              color: "var(--text-primary)",
+              padding: "18px 24px",
+              borderBottom: "1px solid var(--border-color)",
             }}
           >
-            About {profile.name}
-          </h2>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div
+            <h2
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 12,
-                borderBottom: "1px solid var(--divider)",
+                margin: 0,
+                fontSize: 18,
+                fontWeight: 700,
+                color: "var(--text-primary)",
               }}
             >
-              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Full Name</span>
-              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
-                {profile.name}
-              </span>
-            </div>
+              About
+            </h2>
+          </div>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 12,
-                borderBottom: "1px solid var(--divider)",
-              }}
-            >
-              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Username</span>
-              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
-                {profile.username ? `@${profile.username}` : "None"}
-              </span>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 12,
-                borderBottom: "1px solid var(--divider)",
-              }}
-            >
-              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Email</span>
-              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
-                {profile.email}
-              </span>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 12,
-                borderBottom: "1px solid var(--divider)",
-              }}
-            >
-              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Birthday</span>
-              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
-                {formatBirthdate(profile.birthdate)}
-              </span>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 12,
-                borderBottom: "1px solid var(--divider)",
-              }}
-            >
-              <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Member Since</span>
-              <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
-                {formatMemberDate(profile.createdAt)}
-              </span>
-            </div>
-
-            {profile.bio && (
-              <div>
-                <span
-                  style={{
-                    display: "block",
-                    color: "var(--text-secondary)",
-                    fontSize: 14,
-                    marginBottom: 6,
-                  }}
-                >
-                  Bio
-                </span>
-                <p
-                  style={{
-                    margin: 0,
-                    color: "var(--text-primary)",
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    backgroundColor: "var(--bg-hover)",
-                    padding: "12px 16px",
-                    borderRadius: 8,
-                  }}
-                >
-                  {profile.bio}
-                </p>
+          {/* 2-Column Info Grid */}
+          <div
+            style={{
+              padding: 24,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: 24,
+            }}
+          >
+            {/* 1. Name & Username */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(37, 99, 235, 0.12)",
+                  color: "#2563eb",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 700,
+                  fontSize: 16,
+                  flexShrink: 0,
+                }}
+              >
+                {profile.name
+                  .split(" ")
+                  .map((w) => w[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() || "U"}
               </div>
-            )}
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {profile.name}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  {profile.username ? `@${profile.username}` : "Marbook Member"}
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Joined Date */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(147, 51, 234, 0.12)",
+                  color: "#9333ea",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  flexShrink: 0,
+                }}
+              >
+                📅
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  Joined {formatMemberDate(profile.createdAt)}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  Member since registration
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Birthday */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(245, 158, 11, 0.12)",
+                  color: "#f59e0b",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  flexShrink: 0,
+                }}
+              >
+                🎂
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  Born {formatBirthdate(profile.birthdate)}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  {profile.birthdate ? "Date of birth" : "Not specified"}
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Email */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(16, 185, 129, 0.12)",
+                  color: "#10b981",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  flexShrink: 0,
+                }}
+              >
+                ✉️
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {profile.email}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  Verified email address
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Network Stats */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(236, 72, 153, 0.12)",
+                  color: "#ec4899",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  flexShrink: 0,
+                }}
+              >
+                👥
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {profile.followersCount} Followers · {profile.followingCount} Following
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  {profile.postsCount} posts shared
+                </div>
+              </div>
+            </div>
+
+            {/* 6. Bio */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(99, 102, 241, 0.12)",
+                  color: "#6366f1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  flexShrink: 0,
+                }}
+              >
+                💬
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {profile.bio || "No bio added yet"}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  Personal bio
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1137,12 +1348,12 @@ export function ProfilePage() {
             setSelectedPostForComments((prev) =>
               prev
                 ? {
-                    ...prev,
-                    commentsCount: Math.max(
-                      0,
-                      (prev.commentsCount ?? 0) - deletedCount
-                    ),
-                  }
+                  ...prev,
+                  commentsCount: Math.max(
+                    0,
+                    (prev.commentsCount ?? 0) - deletedCount
+                  ),
+                }
                 : null
             );
           }}
@@ -1159,10 +1370,592 @@ export function ProfilePage() {
         />
       )}
 
-      {/* Lightbox for profile photo / cover */}
+      {/* Tab: Followers */}
+      {activeTab === "followers" && (
+        <div
+          style={{
+            backgroundColor: "var(--bg-card)",
+            borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--border-color)",
+            boxShadow: "var(--shadow-card)",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 20,
+            }}
+          >
+            <div>
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  margin: 0,
+                }}
+              >
+                Followers
+              </h2>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-secondary)",
+                  margin: "4px 0 0",
+                }}
+              >
+                People who follow {profile.name}
+              </p>
+            </div>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "4px 10px",
+                borderRadius: "var(--radius-full)",
+                backgroundColor: "var(--bg-hover)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {profile.followersCount} {profile.followersCount === 1 ? "Follower" : "Followers"}
+            </span>
+          </div>
+
+          {isFollowersLoading && followersList.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 0" }}>
+              <div
+                style={{
+                  display: "inline-block",
+                  width: 32,
+                  height: 32,
+                  border: "3px solid var(--border-color)",
+                  borderTopColor: "var(--primary)",
+                  borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite",
+                }}
+              />
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 12 }}>
+                Loading followers...
+              </p>
+            </div>
+          ) : followersList.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "60px 20px",
+                color: "var(--text-secondary)",
+              }}
+            >
+              <div style={{ fontSize: 48, marginBottom: 12 }}>👥</div>
+              <h3
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  marginBottom: 6,
+                }}
+              >
+                No followers yet
+              </h3>
+              <p style={{ fontSize: 14, maxWidth: 360, margin: "0 auto" }}>
+                When someone follows {isMe ? "you" : profile.name}, they will appear here.
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: 14,
+              }}
+            >
+              {followersList.map((follower) => {
+                const isTargetMe = currentUser?.id === follower.id;
+                const isFollowing = cardFollowMap[follower.id] ?? (follower.isFollowing ?? false);
+                const isLoading = cardFollowLoading[follower.id] ?? false;
+
+                return (
+                  <div
+                    key={follower.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      padding: 12,
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--border-color)",
+                      backgroundColor: "var(--bg-primary)",
+                      transition: "box-shadow 0.15s ease",
+                    }}
+                  >
+                    <Link
+                      to={`/profile/${follower.id}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        textDecoration: "none",
+                        minWidth: 0,
+                        flex: 1,
+                      }}
+                    >
+                      <Avatar
+                        src={follower.avatarUrl}
+                        name={follower.name}
+                        size={46}
+                      />
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 14,
+                            color: "var(--text-primary)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {follower.name}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "var(--text-secondary)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          @{follower.username}
+                        </div>
+                      </div>
+                    </Link>
+
+                    {isAuthenticated && !isTargetMe && (
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => handleToggleCardFollow(follower.id, isFollowing)}
+                        style={{
+                          flexShrink: 0,
+                          padding: "6px 14px",
+                          borderRadius: "var(--radius-full)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: isLoading ? "not-allowed" : "pointer",
+                          border: isFollowing
+                            ? "1px solid var(--border-color)"
+                            : "none",
+                          backgroundColor: isFollowing
+                            ? "transparent"
+                            : "var(--primary)",
+                          color: isFollowing
+                            ? "var(--text-secondary)"
+                            : "#ffffff",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        {isLoading ? "..." : isFollowing ? "Following" : "Follow"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Following */}
+      {activeTab === "following" && (
+        <div
+          style={{
+            backgroundColor: "var(--bg-card)",
+            borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--border-color)",
+            boxShadow: "var(--shadow-card)",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 20,
+            }}
+          >
+            <div>
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  margin: 0,
+                }}
+              >
+                Following
+              </h2>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-secondary)",
+                  margin: "4px 0 0",
+                }}
+              >
+                Accounts followed by {profile.name}
+              </p>
+            </div>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "4px 10px",
+                borderRadius: "var(--radius-full)",
+                backgroundColor: "var(--bg-hover)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {profile.followingCount} Following
+            </span>
+          </div>
+
+          {isFollowingLoading && followingList.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 0" }}>
+              <div
+                style={{
+                  display: "inline-block",
+                  width: 32,
+                  height: 32,
+                  border: "3px solid var(--border-color)",
+                  borderTopColor: "var(--primary)",
+                  borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite",
+                }}
+              />
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 12 }}>
+                Loading following...
+              </p>
+            </div>
+          ) : followingList.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "60px 20px",
+                color: "var(--text-secondary)",
+              }}
+            >
+              <div style={{ fontSize: 48, marginBottom: 12 }}>✨</div>
+              <h3
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  marginBottom: 6,
+                }}
+              >
+                Not following anyone yet
+              </h3>
+              <p style={{ fontSize: 14, maxWidth: 360, margin: "0 auto" }}>
+                When {isMe ? "you follow" : `${profile.name} follows`} people, they will appear here.
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: 14,
+              }}
+            >
+              {followingList.map((followedUser) => {
+                const isTargetMe = currentUser?.id === followedUser.id;
+                const isFollowing = cardFollowMap[followedUser.id] ?? (isMe ? true : (followedUser.isFollowing ?? false));
+                const isLoading = cardFollowLoading[followedUser.id] ?? false;
+
+                return (
+                  <div
+                    key={followedUser.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      padding: 12,
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--border-color)",
+                      backgroundColor: "var(--bg-primary)",
+                      transition: "box-shadow 0.15s ease",
+                    }}
+                  >
+                    <Link
+                      to={`/profile/${followedUser.id}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        textDecoration: "none",
+                        minWidth: 0,
+                        flex: 1,
+                      }}
+                    >
+                      <Avatar
+                        src={followedUser.avatarUrl}
+                        name={followedUser.name}
+                        size={46}
+                      />
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 14,
+                            color: "var(--text-primary)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {followedUser.name}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "var(--text-secondary)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          @{followedUser.username}
+                        </div>
+                      </div>
+                    </Link>
+
+                    {isAuthenticated && !isTargetMe && (
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => handleToggleCardFollow(followedUser.id, isFollowing)}
+                        style={{
+                          flexShrink: 0,
+                          padding: "6px 14px",
+                          borderRadius: "var(--radius-full)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: isLoading ? "not-allowed" : "pointer",
+                          border: isFollowing
+                            ? "1px solid var(--border-color)"
+                            : "none",
+                          backgroundColor: isFollowing
+                            ? "transparent"
+                            : "var(--primary)",
+                          color: isFollowing
+                            ? "var(--text-secondary)"
+                            : "#ffffff",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        {isLoading ? "..." : isFollowing ? "Following" : "Follow"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Photos */}
+      {activeTab === "photos" && (
+        <div
+          style={{
+            backgroundColor: "var(--bg-card)",
+            borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--border-color)",
+            boxShadow: "var(--shadow-card)",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 20,
+            }}
+          >
+            <div>
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  margin: 0,
+                }}
+              >
+                Photos
+              </h2>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-secondary)",
+                  margin: "4px 0 0",
+                }}
+              >
+                Photos uploaded by {profile.name}
+              </p>
+            </div>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "4px 10px",
+                borderRadius: "var(--radius-full)",
+                backgroundColor: "var(--bg-hover)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {profilePhotos.length} {profilePhotos.length === 1 ? "Photo" : "Photos"}
+            </span>
+          </div>
+
+          {profilePhotos.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "60px 20px",
+                color: "var(--text-secondary)",
+              }}
+            >
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🖼️</div>
+              <h3
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  marginBottom: 6,
+                }}
+              >
+                No photos yet
+              </h3>
+              <p style={{ fontSize: 14, maxWidth: 360, margin: "0 auto" }}>
+                Photos attached to {isMe ? "your posts" : `${profile.name}'s posts`} will appear here in the gallery.
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))",
+                gap: 12,
+              }}
+            >
+              {profilePhotos.map((photoUrl, idx) => (
+                <div
+                  key={photoUrl}
+                  onClick={() => {
+                    setLightboxImages(profilePhotos);
+                    setLightboxIndex(idx);
+                    setIsLightboxOpen(true);
+                  }}
+                  style={{
+                    position: "relative",
+                    aspectRatio: "1 / 1",
+                    borderRadius: "var(--radius-md)",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    backgroundColor: "var(--bg-hover)",
+                    boxShadow: "var(--shadow-sm)",
+                  }}
+                  onMouseEnter={(e) => {
+                    const img = e.currentTarget.querySelector("img");
+                    if (img) img.style.transform = "scale(1.06)";
+                    const overlay = e.currentTarget.querySelector(
+                      ".photo-overlay"
+                    ) as HTMLElement | null;
+                    if (overlay) overlay.style.opacity = "1";
+                  }}
+                  onMouseLeave={(e) => {
+                    const img = e.currentTarget.querySelector("img");
+                    if (img) img.style.transform = "scale(1)";
+                    const overlay = e.currentTarget.querySelector(
+                      ".photo-overlay"
+                    ) as HTMLElement | null;
+                    if (overlay) overlay.style.opacity = "0";
+                  }}
+                >
+                  <img
+                    src={getPostOptimizedUrl(photoUrl, 400)}
+                    alt={`Photo ${idx + 1}`}
+                    loading="lazy"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      transition: "transform 0.25s ease",
+                      display: "block",
+                    }}
+                  />
+                  <div
+                    className="photo-overlay"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundColor: "rgba(0, 0, 0, 0.25)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: 0,
+                      transition: "opacity 0.2s ease",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: "50%",
+                        backgroundColor: "rgba(0, 0, 0, 0.55)",
+                        backdropFilter: "blur(4px)",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        <line x1="11" y1="8" x2="11" y2="14" />
+                        <line x1="8" y1="11" x2="14" y2="11" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lightbox for profile photo / cover / gallery */}
       <LightboxModal
         isOpen={isLightboxOpen}
         images={lightboxImages}
+        initialIndex={lightboxIndex}
         onClose={() => setIsLightboxOpen(false)}
       />
 
@@ -1179,6 +1972,6 @@ export function ProfilePage() {
           setAdjustModalState((prev) => ({ ...prev, isOpen: false }))
         }
       />
-    </div>
+    </MainLayout>
   );
 }

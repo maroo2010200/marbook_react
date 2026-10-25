@@ -18,6 +18,7 @@ function Navbar() {
   const { isDark, toggleTheme } = useTheme();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const { unreadCount, setUnreadCount } = useNotifications();
   const { unreadChatCount } = useChat();
 
@@ -355,30 +356,37 @@ function Navbar() {
 
             <button
               type="button"
-              onClick={handleLogout}
+              id="navbar-logout-btn"
+              onClick={() => setIsLogoutModalOpen(true)}
+              aria-label="Log Out"
+              title="Log Out"
               style={{
-                backgroundColor: "transparent",
-                border: "1px solid var(--border-color)",
-                borderRadius: 6,
-                padding: "6px 12px",
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                backgroundColor: "var(--bg-hover)",
                 color: "var(--text-secondary)",
-                fontWeight: 600,
-                fontSize: 13,
+                border: "none",
                 cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 transition: "all 0.15s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(224, 36, 36, 0.12)";
-                e.currentTarget.style.color = "#e02424";
-                e.currentTarget.style.borderColor = "#f97583";
+                e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.12)";
+                e.currentTarget.style.color = "#ef4444";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.backgroundColor = "var(--bg-hover)";
                 e.currentTarget.style.color = "var(--text-secondary)";
-                e.currentTarget.style.borderColor = "var(--border-color)";
               }}
             >
-              Logout
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
             </button>
           </>
         ) : (
@@ -411,6 +419,109 @@ function Navbar() {
           </>
         )}
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 3000,
+            backgroundColor: "var(--modal-overlay)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setIsLogoutModalOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--bg-card)",
+              borderRadius: "var(--radius-lg)",
+              padding: "24px 28px",
+              maxWidth: 400,
+              width: "100%",
+              boxShadow: "var(--shadow-lg)",
+              border: "1px solid var(--border-color)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(239, 68, 68, 0.12)",
+                  color: "#ef4444",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 20,
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
+                  Log Out
+                </h3>
+                <p style={{ margin: "2px 0 0", fontSize: 14, color: "var(--text-secondary)" }}>
+                  Are you sure you want to log out of Marbook?
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
+              <button
+                type="button"
+                onClick={() => setIsLogoutModalOpen(false)}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: "var(--radius-full)",
+                  backgroundColor: "var(--bg-hover)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogoutModalOpen(false);
+                  handleLogout();
+                }}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: "var(--radius-full)",
+                  backgroundColor: "#ef4444",
+                  color: "#fff",
+                  border: "none",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(239, 68, 68, 0.35)",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
