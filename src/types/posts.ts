@@ -17,6 +17,10 @@ export interface Post {
   imageUrls?: string[];
 }
 
+export interface PostSearchResult extends Post {
+  relevanceScore?: number;
+}
+
 export interface PostCreateDto {
   content: string;
   visibility?: PostVisibility;

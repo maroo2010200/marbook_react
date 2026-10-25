@@ -14,6 +14,7 @@ import FeedPage from "./pages/FeedPage";
 import VerifyPage from "./pages/VerifyPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import MessagesPage from "./pages/MessagesPage";
+import SearchPage from "./pages/SearchPage";
 
 function App() {
   return (
@@ -50,6 +51,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/search"
+                  element={
+                    <ProtectedRoute>
+                      <SearchPage />
                     </ProtectedRoute>
                   }
                 />

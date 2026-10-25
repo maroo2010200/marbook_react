@@ -1,5 +1,5 @@
 import api from "./api";
-import type { UserProfile, UserProfileUpdateDto, UserSummary } from "../types/user";
+import type { UserProfile, UserProfileUpdateDto, UserSearchResult } from "../types/user";
 import type { PagedResult } from "../types/posts";
 
 export const usersApi = {
@@ -22,8 +22,8 @@ export const usersApi = {
     search: string,
     pageNumber = 1,
     pageSize = 10
-  ): Promise<PagedResult<UserSummary>> => {
-    const response = await api.get<PagedResult<UserSummary>>("/users/search", {
+  ): Promise<PagedResult<UserSearchResult>> => {
+    const response = await api.get<PagedResult<UserSearchResult>>("/users/search", {
       params: { search, pageNumber, pageSize },
     });
     return response.data;

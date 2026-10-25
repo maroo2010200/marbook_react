@@ -44,3 +44,14 @@ export interface UserSummary {
   name: string;
   avatarUrl?: string | null;
 }
+
+export interface UserSearchResult {
+  id: number;
+  username: string | null;
+  name: string;
+  avatarUrl?: string | null;
+  bio?: string | null;
+  followersCount?: number;
+  isFollowing?: boolean;
+  isMe?: boolean;
+}

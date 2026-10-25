@@ -8,6 +8,7 @@ import { getMediaUrl } from "../utils/media";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { MessagesDropdown } from "./MessagesDropdown";
 import { ChatIcon } from "./ChatIcon";
+import { SearchBar } from "./SearchBar";
 import type { NotificationItem } from "../types/notifications";
 
 function Navbar() {
@@ -83,21 +84,26 @@ function Navbar() {
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       }}
     >
-      <Link
-        to={isAuthenticated ? "/feed" : "/"}
-        onClick={handleLogoClick}
-        title={isAuthenticated && location.pathname === "/feed" ? "Reload feed" : "Go to feed"}
-        style={{
-          textDecoration: "none",
-          fontWeight: 800,
-          fontSize: 22,
-          color: "#1877f2",
-          letterSpacing: "-0.5px",
-          cursor: "pointer",
-        }}
-      >
-        Marbook
-      </Link>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, maxWidth: 500 }}>
+        <Link
+          to={isAuthenticated ? "/feed" : "/"}
+          onClick={handleLogoClick}
+          title={isAuthenticated && location.pathname === "/feed" ? "Reload feed" : "Go to feed"}
+          style={{
+            textDecoration: "none",
+            fontWeight: 800,
+            fontSize: 22,
+            color: "#1877f2",
+            letterSpacing: "-0.5px",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          Marbook
+        </Link>
+
+        {isAuthenticated && <SearchBar />}
+      </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {/* Dark Mode Toggle Button */}
