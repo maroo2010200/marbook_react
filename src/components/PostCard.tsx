@@ -7,6 +7,7 @@ import { getMediaUrl } from "../utils/media";
 import { PostImagesGrid } from "./PostImagesGrid";
 import { LightboxModal } from "./LightboxModal";
 import { ImageAdjustModal } from "./ImageAdjustModal";
+import { Avatar } from "./Avatar";
 import { parseRichText } from "../utils/richText";
 
 interface PostCardProps {
@@ -213,7 +214,6 @@ export function PostCard({
     }
   }, [isEditing]);
 
-  const authorInitial = (post.userName || "U").charAt(0).toUpperCase();
   const createdDateObj = new Date(post.createdAt);
   const updatedDateObj = post.updatedAt ? new Date(post.updatedAt) : null;
 
@@ -476,39 +476,12 @@ export function PostCard({
             style={{ textDecoration: "none", flexShrink: 0 }}
             title={`View ${post.userName}'s profile`}
           >
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                backgroundColor: "var(--primary)",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 700,
-                fontSize: 16,
-                cursor: "pointer",
-                transition: "opacity 0.15s ease",
-                overflow: "hidden",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              {post.userAvatarUrl ? (
-                <img
-                  src={getMediaUrl(post.userAvatarUrl)}
-                  alt={post.userName}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              ) : (
-                authorInitial
-              )}
-            </div>
+            <Avatar
+              src={post.userAvatarUrl}
+              name={post.userName}
+              size={40}
+              style={{ cursor: "pointer", transition: "opacity 0.15s ease" }}
+            />
           </Link>
           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <Link

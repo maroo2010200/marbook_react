@@ -4,6 +4,7 @@ import { usersApi } from "../api/users";
 import { useAuth } from "../context/AuthContext";
 import { mediaApi } from "../api/media";
 import { getMediaUrl } from "../utils/media";
+import { Avatar } from "./Avatar";
 import { ImageAdjustModal } from "./ImageAdjustModal";
 
 interface EditProfileModalProps {
@@ -483,41 +484,20 @@ export function EditProfileModal({
                   gap: 12,
                 }}
               >
-                <div
+                <Avatar
+                  src={avatarUrl}
+                  name={name || profile.name}
+                  size={68}
+                  fontSize={26}
                   style={{
                     position: "relative",
                     top: -24,
                     marginBottom: -20,
-                    width: 68,
-                    height: 68,
-                    borderRadius: "50%",
                     border: "3px solid var(--bg-card)",
                     boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                    backgroundColor: "var(--primary)",
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 26,
-                    fontWeight: 700,
-                    overflow: "hidden",
                     flexShrink: 0,
                   }}
-                >
-                  {avatarUrl ? (
-                    <img
-                      src={getMediaUrl(avatarUrl)}
-                      alt=""
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    (profile.name || "U")[0].toUpperCase()
-                  )}
-                </div>
+                />
 
                 <div
                   style={{

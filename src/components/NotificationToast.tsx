@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useNotifications } from "../context/NotificationContext";
 import { notificationsApi } from "../api/notifications";
-import { getMediaUrl } from "../utils/media";
+import { Avatar } from "./Avatar";
 
 export function NotificationToast() {
   const { toastNotification, clearToast, setUnreadCount } = useNotifications();
@@ -9,9 +9,6 @@ export function NotificationToast() {
 
   if (!toastNotification) return null;
 
-  const actorInitial = (toastNotification.actorName || "U")
-    .charAt(0)
-    .toUpperCase();
   const config = getToastConfig(toastNotification.type);
 
   const handleClick = async () => {
@@ -85,35 +82,11 @@ export function NotificationToast() {
 
       {/* Avatar with Badge */}
       <div style={{ position: "relative", flexShrink: 0 }}>
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: "50%",
-            backgroundColor: "var(--primary)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 17,
-            fontWeight: 700,
-            overflow: "hidden",
-          }}
-        >
-          {toastNotification.actorAvatarUrl ? (
-            <img
-              src={getMediaUrl(toastNotification.actorAvatarUrl)}
-              alt={toastNotification.actorName}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          ) : (
-            actorInitial
-          )}
-        </div>
+        <Avatar
+          src={toastNotification.actorAvatarUrl}
+          name={toastNotification.actorName}
+          size={44}
+        />
 
         {/* Action Badge */}
         <div

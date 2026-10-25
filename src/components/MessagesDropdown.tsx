@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useChat } from "../context/ChatContext";
-import { getMediaUrl } from "../utils/media";
+import { Avatar } from "./Avatar";
 import { formatRelativeTime } from "../utils/time";
 import { formatMessageSnippet } from "../utils/richText";
 import type { ConversationSummary } from "../types/chat";
@@ -171,37 +171,7 @@ export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
                 }
               >
                 {/* Avatar */}
-                <div
-                  style={{
-                    position: "relative",
-                    width: 44,
-                    height: 44,
-                    borderRadius: "50%",
-                    backgroundColor: "var(--primary)",
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 16,
-                    fontWeight: 700,
-                    flexShrink: 0,
-                    overflow: "hidden",
-                  }}
-                >
-                  {other.avatarUrl ? (
-                    <img
-                      src={getMediaUrl(other.avatarUrl)}
-                      alt={other.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    (other.name || "U")[0].toUpperCase()
-                  )}
-                </div>
+                <Avatar src={other.avatarUrl} name={other.name} size={44} />
 
                 {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>

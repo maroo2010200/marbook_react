@@ -5,7 +5,7 @@ import { CommentItem } from "./comments/CommentItem";
 import { CommentInput } from "./comments/CommentInput";
 import type { Post } from "../types/posts";
 import type { Comment } from "../types/comments";
-import { getMediaUrl } from "../utils/media";
+import { Avatar } from "./Avatar";
 
 interface CommentsModalProps {
   post: Post | null;
@@ -73,7 +73,6 @@ export function CommentsModal({
 
   if (!isOpen || !post) return null;
 
-  const authorInitial = (post.userName || "U").charAt(0).toUpperCase();
   const postDate = new Date(post.createdAt).toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -122,35 +121,7 @@ export function CommentsModal({
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                backgroundColor: "var(--primary)",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 700,
-                fontSize: 15,
-                overflow: "hidden",
-              }}
-            >
-              {post.userAvatarUrl ? (
-                <img
-                  src={getMediaUrl(post.userAvatarUrl)}
-                  alt={post.userName}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              ) : (
-                authorInitial
-              )}
-            </div>
+            <Avatar src={post.userAvatarUrl} name={post.userName} size={36} />
             <div>
               <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>
                 {post.userName}

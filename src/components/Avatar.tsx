@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { getMediaUrl } from "../utils/media";
+import { getAvatarThumbnailUrl } from "../utils/media";
 
 export interface AvatarProps {
   src?: string | null;
@@ -9,6 +9,7 @@ export interface AvatarProps {
   borderRadius?: string | number;
   style?: React.CSSProperties;
   className?: string;
+  onClick?: () => void;
 }
 
 export function Avatar({
@@ -19,6 +20,7 @@ export function Avatar({
   borderRadius = "50%",
   style,
   className,
+  onClick,
 }: AvatarProps) {
   const [hasError, setHasError] = useState(false);
   const prevSrcRef = useRef(src);
@@ -30,11 +32,12 @@ export function Avatar({
 
   const initial = (name?.trim() || "U").charAt(0).toUpperCase();
   const calculatedFontSize = fontSize ?? Math.max(11, Math.round(size * 0.42));
-  const fullUrl = src ? getMediaUrl(src) : "";
+  const fullUrl = src ? getAvatarThumbnailUrl(src, size) : "";
 
   return (
     <div
       className={className}
+      onClick={onClick}
       style={{
         width: size,
         height: size,
