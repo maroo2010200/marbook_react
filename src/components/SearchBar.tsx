@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usersApi } from "../api/users";
 import { postsApi } from "../api/posts";
-import { getMediaUrl } from "../utils/media";
 import { formatRelativeTime } from "../utils/time";
+import { Avatar } from "./Avatar";
 import type { UserSearchResult } from "../types/user";
 import type { Post } from "../types/posts";
 
@@ -355,17 +355,10 @@ export function SearchBar({ onSearchSubmit, className, style }: SearchBarProps) 
                     (e.currentTarget.style.backgroundColor = "transparent")
                   }
                 >
-                  <img
-                    src={getMediaUrl(user.avatarUrl)}
-                    alt={user.name}
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      backgroundColor: "var(--bg-hover)",
-                      flexShrink: 0,
-                    }}
+                  <Avatar
+                    src={user.avatarUrl}
+                    name={user.name}
+                    size={36}
                   />
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div
@@ -441,17 +434,11 @@ export function SearchBar({ onSearchSubmit, className, style }: SearchBarProps) 
                     (e.currentTarget.style.backgroundColor = "transparent")
                   }
                 >
-                  <img
-                    src={getMediaUrl(post.userAvatarUrl)}
-                    alt={post.userName}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      marginTop: 2,
-                      flexShrink: 0,
-                    }}
+                  <Avatar
+                    src={post.userAvatarUrl}
+                    name={post.userName}
+                    size={28}
+                    style={{ marginTop: 2 }}
                   />
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div

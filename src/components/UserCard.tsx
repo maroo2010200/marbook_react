@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { getMediaUrl } from "../utils/media";
+import { Avatar } from "./Avatar";
 import type { UserSearchResult } from "../types/user";
 
 export interface UserCardProps {
@@ -52,15 +52,12 @@ export function UserCard({
           width: "100%",
         }}
       >
-        <img
-          src={getMediaUrl(user.avatarUrl)}
-          alt={user.name}
+        <Avatar
+          src={user.avatarUrl}
+          name={user.name}
+          size={68}
+          fontSize={24}
           style={{
-            width: 68,
-            height: 68,
-            borderRadius: "50%",
-            objectFit: "cover",
-            backgroundColor: "var(--bg-hover)",
             marginBottom: 10,
             border: "2px solid var(--border-color)",
           }}
