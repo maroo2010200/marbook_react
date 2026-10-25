@@ -1,5 +1,5 @@
 import api from "./api";
-import type { GetPostsParams, PagedResult, Post, PostVisibility } from "../types/posts";
+import type { GetPostsParams, PagedResult, Post, PostSearchResult, PostVisibility } from "../types/posts";
 
 export const postsApi = {
   getAll: async (
@@ -64,5 +64,16 @@ export const postsApi = {
 
   deletePost: async (id: number): Promise<void> => {
     await api.delete(`/posts/${id}`);
+  },
+
+  searchPosts: async (
+    search: string,
+    pageNumber = 1,
+    pageSize = 10
+  ): Promise<PagedResult<PostSearchResult>> => {
+    const response = await api.get<PagedResult<PostSearchResult>>("/posts/search", {
+      params: { search, pageNumber, pageSize },
+    });
+    return response.data;
   },
 };
