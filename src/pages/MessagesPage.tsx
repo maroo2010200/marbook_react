@@ -3,11 +3,11 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useChat } from "../context/ChatContext";
 import { chatApi } from "../api/chat";
-import { getMediaUrl } from "../utils/media";
 import { formatRelativeTime } from "../utils/time";
 import { parseRichText, formatMessageSnippet } from "../utils/richText";
 import { GifPicker } from "../components/chat/GifPicker";
 import { LightboxModal } from "../components/LightboxModal";
+import { Avatar } from "../components/Avatar";
 import type { Message, ConversationSummary, TypingEvent } from "../types/chat";
 
 export default function MessagesPage() {
@@ -671,37 +671,7 @@ export default function MessagesPage() {
                   }}
                 >
                   {/* User Avatar */}
-                  <div
-                    style={{
-                      position: "relative",
-                      width: 48,
-                      height: 48,
-                      borderRadius: "50%",
-                      backgroundColor: "var(--primary)",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 18,
-                      fontWeight: 700,
-                      flexShrink: 0,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {other.avatarUrl ? (
-                      <img
-                        src={getMediaUrl(other.avatarUrl)}
-                        alt={other.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      (other.name || "U")[0].toUpperCase()
-                    )}
-                  </div>
+                  <Avatar src={other.avatarUrl} name={other.name} size={48} />
 
                   {/* Info & Snippet */}
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -863,37 +833,13 @@ export default function MessagesPage() {
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <Link
                   to={`/profile/${activeConversation.otherParticipant.id}`}
-                  style={{
-                    position: "relative",
-                    width: 42,
-                    height: 42,
-                    borderRadius: "50%",
-                    backgroundColor: "var(--primary)",
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 16,
-                    fontWeight: 700,
-                    textDecoration: "none",
-                    overflow: "hidden",
-                  }}
+                  style={{ textDecoration: "none", flexShrink: 0 }}
                 >
-                  {activeConversation.otherParticipant.avatarUrl ? (
-                    <img
-                      src={getMediaUrl(
-                        activeConversation.otherParticipant.avatarUrl
-                      )}
-                      alt={activeConversation.otherParticipant.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    (activeConversation.otherParticipant.name || "U")[0].toUpperCase()
-                  )}
+                  <Avatar
+                    src={activeConversation.otherParticipant.avatarUrl}
+                    name={activeConversation.otherParticipant.name}
+                    size={42}
+                  />
                 </Link>
 
                 <div>
@@ -1050,36 +996,12 @@ export default function MessagesPage() {
                       >
                         {/* Other User Avatar snippet */}
                         {!isMine && (
-                          <div
-                            style={{
-                              width: 28,
-                              height: 28,
-                              borderRadius: "50%",
-                              backgroundColor: "var(--primary)",
-                              color: "#fff",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: 11,
-                              fontWeight: 700,
-                              flexShrink: 0,
-                              overflow: "hidden",
-                            }}
-                          >
-                            {msg.senderAvatarUrl ? (
-                              <img
-                                src={getMediaUrl(msg.senderAvatarUrl)}
-                                alt={msg.senderName}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                              />
-                            ) : (
-                              (msg.senderName || "U")[0].toUpperCase()
-                            )}
-                          </div>
+                          <Avatar
+                            src={msg.senderAvatarUrl}
+                            name={msg.senderName}
+                            size={28}
+                            fontSize={11}
+                          />
                         )}
 
                         {/* Message Bubble */}

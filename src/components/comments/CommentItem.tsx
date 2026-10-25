@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import type { Comment } from "../../types/comments";
 import { mediaApi } from "../../api/media";
-import { getMediaUrl } from "../../utils/media";
+import { getMediaUrl, getPostOptimizedUrl } from "../../utils/media";
 import { LightboxModal } from "../LightboxModal";
+import { Avatar } from "../Avatar";
 import { parseRichText } from "../../utils/richText";
 
 export interface CommentItemProps {
@@ -86,7 +87,6 @@ export function CommentItem({
   const hasReplies =
     replyCount > 0 || (comment.replies && comment.replies.length > 0);
 
-  const cInitial = (comment.userName || "U").charAt(0).toUpperCase();
   const cDate = new Date(comment.createdAt).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -242,40 +242,13 @@ export function CommentItem({
           style={{ textDecoration: "none", flexShrink: 0 }}
           title={`View ${comment.userName}'s profile`}
         >
-          <div
-            style={{
-              width: avatarSize,
-              height: avatarSize,
-              borderRadius: "50%",
-              backgroundColor: "var(--primary)",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 700,
-              fontSize: avatarFontSize,
-              flexShrink: 0,
-              cursor: "pointer",
-              transition: "opacity 0.15s ease",
-              overflow: "hidden",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-          >
-            {comment.userAvatarUrl ? (
-              <img
-                src={getMediaUrl(comment.userAvatarUrl)}
-                alt={comment.userName}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              cInitial
-            )}
-          </div>
+          <Avatar
+            src={comment.userAvatarUrl}
+            name={comment.userName}
+            size={avatarSize}
+            fontSize={avatarFontSize}
+            style={{ cursor: "pointer", transition: "opacity 0.15s ease" }}
+          />
         </Link>
 
         {/* Content Column */}
@@ -530,7 +503,7 @@ export function CommentItem({
                         }}
                       >
                         <img
-                          src={getMediaUrl(mediaUrl)}
+                          src={getPostOptimizedUrl(mediaUrl, 600)}
                           alt="Comment media attachment"
                           loading="lazy"
                           style={{

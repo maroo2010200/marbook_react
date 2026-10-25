@@ -16,6 +16,7 @@ import { ImageAdjustModal } from "../components/ImageAdjustModal";
 import { mediaApi } from "../api/media";
 import { chatApi } from "../api/chat";
 import { ChatIcon } from "../components/ChatIcon";
+import { Avatar } from "../components/Avatar";
 import { getMediaUrl } from "../utils/media";
 
 function formatMemberDate(dateString: string): string {
@@ -439,8 +440,6 @@ export function ProfilePage() {
     );
   }
 
-  const authorInitial = (profile.name || "U")[0].toUpperCase();
-
   return (
     <div
       style={{
@@ -498,22 +497,14 @@ export function ProfilePage() {
             }}
           >
             <div style={{ position: "relative" }}>
-              <div
+              <Avatar
+                src={profile.avatarUrl}
+                name={profile.name}
+                size={104}
+                fontSize={40}
                 style={{
-                  width: 104,
-                  height: 104,
-                  borderRadius: "50%",
-                  backgroundColor: "var(--primary)",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 40,
-                  fontWeight: 700,
                   border: "4px solid var(--bg-card)",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                  userSelect: "none",
-                  overflow: "hidden",
                   cursor: profile.avatarUrl ? "pointer" : "default",
                 }}
                 onClick={() => {
@@ -522,21 +513,7 @@ export function ProfilePage() {
                     setIsLightboxOpen(true);
                   }
                 }}
-              >
-                {profile.avatarUrl ? (
-                  <img
-                    src={getMediaUrl(profile.avatarUrl)}
-                    alt={profile.name}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                ) : (
-                  authorInitial
-                )}
-              </div>
+              />
 
               {isMe && (
                 <>

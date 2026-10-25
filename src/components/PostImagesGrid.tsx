@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getMediaUrl } from "../utils/media";
+import { getPostOptimizedUrl } from "../utils/media";
 
 export interface PostImagesGridProps {
   images: string[];
@@ -48,7 +48,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
         onMouseLeave={() => setHoveredIdx(null)}
       >
         <img
-          src={getMediaUrl(images[0])}
+          src={getPostOptimizedUrl(images[0])}
           alt="Post attachment"
           loading="lazy"
           style={{
@@ -91,7 +91,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
             onMouseLeave={() => setHoveredIdx(null)}
           >
             <img
-              src={getMediaUrl(img)}
+              src={getPostOptimizedUrl(img)}
               alt={`Attachment ${idx + 1}`}
               loading="lazy"
               style={imageStyle(idx)}
@@ -125,7 +125,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
           onMouseLeave={() => setHoveredIdx(null)}
         >
           <img
-            src={getMediaUrl(images[0])}
+            src={getPostOptimizedUrl(images[0])}
             alt="Attachment 1"
             loading="lazy"
             style={imageStyle(0)}
@@ -150,7 +150,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
               onMouseLeave={() => setHoveredIdx(null)}
             >
               <img
-                src={getMediaUrl(images[idx])}
+                src={getPostOptimizedUrl(images[idx])}
                 alt={`Attachment ${idx + 1}`}
                 loading="lazy"
                 style={imageStyle(idx)}
@@ -187,7 +187,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
             onMouseLeave={() => setHoveredIdx(null)}
           >
             <img
-              src={getMediaUrl(img)}
+              src={getPostOptimizedUrl(img)}
               alt={`Attachment ${idx + 1}`}
               loading="lazy"
               style={imageStyle(idx)}
@@ -223,7 +223,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
           onMouseLeave={() => setHoveredIdx(null)}
         >
           <img
-            src={getMediaUrl(images[idx])}
+            src={getPostOptimizedUrl(images[idx])}
             alt={`Attachment ${idx + 1}`}
             loading="lazy"
             style={imageStyle(idx)}
@@ -245,7 +245,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
         onMouseLeave={() => setHoveredIdx(null)}
       >
         <img
-          src={getMediaUrl(images[3])}
+          src={getPostOptimizedUrl(images[3])}
           alt="Attachment 4"
           loading="lazy"
           style={imageStyle(3)}

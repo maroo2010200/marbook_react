@@ -4,6 +4,7 @@ import type { Post, PostVisibility } from "../types/posts";
 import { mediaApi } from "../api/media";
 import { getMediaUrl } from "../utils/media";
 import { ImageAdjustModal } from "./ImageAdjustModal";
+import { Avatar } from "./Avatar";
 
 interface PostComposerProps {
   onPostCreated: (
@@ -159,7 +160,6 @@ export function PostComposer({
 
   if (!user) return null;
 
-  const authorInitial = (user.name || "U").charAt(0).toUpperCase();
   const charCount = content.length;
   const isOverLimit = charCount > MAX_CHAR_COUNT;
   const isNearLimit = charCount >= 450 && !isOverLimit;
@@ -345,32 +345,7 @@ export function PostComposer({
           marginBottom: 12,
         }}
       >
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            backgroundColor: "var(--primary)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 700,
-            fontSize: 16,
-            flexShrink: 0,
-            overflow: "hidden",
-          }}
-        >
-          {user.avatarUrl ? (
-            <img
-              src={getMediaUrl(user.avatarUrl)}
-              alt={user.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            authorInitial
-          )}
-        </div>
+        <Avatar src={user.avatarUrl} name={user.name} size={40} />
         <div>
           <div
             style={{

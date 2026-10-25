@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { notificationsApi } from "../api/notifications";
 import { useNotifications } from "../context/NotificationContext";
 import type { NotificationItem } from "../types/notifications";
-import { getMediaUrl } from "../utils/media";
+import { Avatar } from "./Avatar";
 import { formatRelativeTime } from "../utils/time";
 
 interface NotificationsDropdownProps {
@@ -397,10 +397,6 @@ export function NotificationsDropdown({
         {!loading &&
           notifications.map((item) => {
             const config = getActionBadgeConfig(item.type);
-            const actorInitial = (item.actorName || "U")
-              .charAt(0)
-              .toUpperCase();
-
             return (
               <div
                 key={item.id}
@@ -431,35 +427,7 @@ export function NotificationsDropdown({
               >
                 {/* Avatar with Action Badge */}
                 <div style={{ position: "relative", flexShrink: 0 }}>
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      backgroundColor: "var(--primary)",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 17,
-                      fontWeight: 700,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {item.actorAvatarUrl ? (
-                      <img
-                        src={getMediaUrl(item.actorAvatarUrl)}
-                        alt={item.actorName}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      actorInitial
-                    )}
-                  </div>
+                  <Avatar src={item.actorAvatarUrl} name={item.actorName} size={44} />
 
                   {/* Overlaid type icon badge */}
                   <div

@@ -4,11 +4,11 @@ import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useChat } from "../context/ChatContext";
 import { useTheme } from "../context/ThemeContext";
-import { getMediaUrl } from "../utils/media";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { MessagesDropdown } from "./MessagesDropdown";
 import { ChatIcon } from "./ChatIcon";
 import { SearchBar } from "./SearchBar";
+import { Avatar } from "./Avatar";
 import type { NotificationItem } from "../types/notifications";
 
 function Navbar() {
@@ -349,35 +349,7 @@ function Navbar() {
                 (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
               }
             >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  backgroundColor: "var(--primary)",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  overflow: "hidden",
-                }}
-              >
-                {user?.avatarUrl ? (
-                  <img
-                    src={getMediaUrl(user.avatarUrl)}
-                    alt={user.name}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                ) : (
-                  (user?.name || "U")[0].toUpperCase()
-                )}
-              </div>
+              <Avatar src={user?.avatarUrl} name={user?.name} size={28} />
               <span>{user?.name ?? "Profile"}</span>
             </Link>
 
