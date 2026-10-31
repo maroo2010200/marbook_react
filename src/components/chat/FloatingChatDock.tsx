@@ -257,9 +257,9 @@ export function FloatingChatDock() {
       style={{
         position: "fixed",
         bottom: 0,
-        right: 24,
+        right: "clamp(12px, 3vw, 24px)",
         zIndex: 1000,
-        width: 330,
+        width: "min(330px, calc(100vw - 24px))",
         height: 420,
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border-color)",

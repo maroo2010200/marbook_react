@@ -514,6 +514,8 @@ export default function MessagesPage() {
       style={{
         display: "flex",
         height: "calc(100vh - 61px)",
+        width: "100%",
+        maxWidth: "100vw",
         backgroundColor: "var(--bg-page)",
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -523,7 +525,7 @@ export default function MessagesPage() {
       {/* LEFT SIDEBAR: Conversations List */}
       <div
         style={{
-          width: 360,
+          width: "clamp(260px, 28vw, 360px)",
           borderRight: "1px solid var(--border-color)",
           backgroundColor: "var(--bg-card)",
           display: "flex",

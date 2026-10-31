@@ -153,7 +153,7 @@ export function SearchBar({ onSearchSubmit, className, style }: SearchBarProps) 
       style={{
         position: "relative",
         width: "100%",
-        maxWidth: isFocused ? 380 : 280,
+        maxWidth: isFocused ? "min(380px, 100%)" : "min(280px, 100%)",
         transition: "max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
         ...style,
       }}
@@ -284,7 +284,7 @@ export function SearchBar({ onSearchSubmit, className, style }: SearchBarProps) 
             top: "calc(100% + 8px)",
             left: 0,
             right: 0,
-            minWidth: 340,
+            minWidth: "min(340px, calc(100vw - 32px))",
             backgroundColor: "var(--bg-card)",
             borderRadius: 12,
             boxShadow: "var(--shadow-lg)",

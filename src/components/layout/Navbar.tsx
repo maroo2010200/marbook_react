@@ -73,7 +73,7 @@ function Navbar() {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: "10px 24px",
+        padding: "10px clamp(12px, 2vw, 24px)",
         backgroundColor: "var(--bg-card)",
         borderBottom: "1px solid var(--border-color)",
         position: "sticky",
@@ -85,11 +85,12 @@ function Navbar() {
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, maxWidth: 500 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px, 1.5vw, 16px)", flex: 1, maxWidth: 500, minWidth: 0 }}>
         <Link
           to={isAuthenticated ? "/feed" : "/"}
           onClick={handleLogoClick}
           title={isAuthenticated && location.pathname === "/feed" ? "Reload feed" : "Go to feed"}
+          className="navbar-brand-text"
           style={{
             textDecoration: "none",
             fontWeight: 800,
@@ -103,10 +104,14 @@ function Navbar() {
           Marbook
         </Link>
 
-        {isAuthenticated && <SearchBar />}
+        {isAuthenticated && (
+          <div className="navbar-search-wrap" style={{ flex: 1, minWidth: 0 }}>
+            <SearchBar />
+          </div>
+        )}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "clamp(6px, 1.2vw, 12px)", flexShrink: 0 }}>
         {/* Dark Mode Toggle Button */}
         <button
           type="button"
@@ -351,7 +356,7 @@ function Navbar() {
               }
             >
               <Avatar src={user?.avatarUrl} name={user?.name} size={28} />
-              <span>{user?.name ?? "Profile"}</span>
+              <span className="navbar-user-name">{user?.name ?? "Profile"}</span>
             </Link>
 
             <button
