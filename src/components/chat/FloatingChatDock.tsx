@@ -15,6 +15,7 @@ export function FloatingChatDock() {
     floatingConversationId,
     closeFloatingChat,
     conversations,
+    setConversations,
     refreshConversations,
     refreshUnreadCount,
     joinConversation,
@@ -73,9 +74,18 @@ export function FloatingChatDock() {
       .then((res) => {
         if (!isMounted) return;
         setMessages(res.items || []);
-        // Mark as read
-        chatApi.markAsRead(floatingConversationId).catch(() => {});
-        refreshUnreadCount().catch(() => {});
+        // Mark as read and synchronize unread states
+        chatApi
+          .markAsRead(floatingConversationId)
+          .then(() => {
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === floatingConversationId ? { ...c, unreadCount: 0 } : c
+              )
+            );
+            refreshUnreadCount().catch(() => {});
+          })
+          .catch(() => {});
       })
       .catch((err) => {
         console.error("Failed to load floating chat messages:", err);
@@ -90,14 +100,17 @@ export function FloatingChatDock() {
       isMounted = false;
       leaveConversation(floatingConversationId).catch(() => {});
     };
-  }, [floatingConversationId, joinConversation, leaveConversation, refreshUnreadCount]);
+  }, [floatingConversationId, joinConversation, leaveConversation, refreshUnreadCount, setConversations]);
 
-  // Scroll on messages change
+  // Scroll on messages change or when other user is typing
   useEffect(() => {
-    if (messages.length > 0) {
-      scrollToBottom();
+    if (messages.length > 0 || isOtherTyping) {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [messages.length]);
+  }, [messages.length, isOtherTyping]);
 
   // SignalR message & typing subscriptions
   useEffect(() => {
@@ -111,8 +124,17 @@ export function FloatingChatDock() {
           }
           return [...prev, msg];
         });
-        chatApi.markAsRead(floatingConversationId).catch(() => {});
-        refreshUnreadCount().catch(() => {});
+        chatApi
+          .markAsRead(floatingConversationId)
+          .then(() => {
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === floatingConversationId ? { ...c, unreadCount: 0 } : c
+              )
+            );
+            refreshUnreadCount().catch(() => {});
+          })
+          .catch(() => {});
       }
     });
 
@@ -166,6 +188,7 @@ export function FloatingChatDock() {
     onMessageDeleted,
     onUserTyping,
     refreshUnreadCount,
+    setConversations,
   ]);
 
   // Handle typing debounce

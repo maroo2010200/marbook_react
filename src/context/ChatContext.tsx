@@ -83,12 +83,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const openFloatingChat = useCallback((id: number) => {
     setFloatingConversationId(id);
     setIsFloatingMinimized(false);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
+    );
   }, []);
 
   const closeFloatingChat = useCallback(() => {
     setFloatingConversationId(null);
     setIsFloatingMinimized(false);
   }, []);
+
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [connectionState, setConnectionState] = useState<HubConnectionState>(
     HubConnectionState.Disconnected
@@ -97,6 +101,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const connectionRef = useRef<HubConnection | null>(null);
   const activeConversationIdRef = useRef<number | null>(null);
   activeConversationIdRef.current = activeConversationId;
+  const floatingConversationIdRef = useRef<number | null>(null);
+  floatingConversationIdRef.current = floatingConversationId;
+  const isFloatingMinimizedRef = useRef<boolean>(false);
+  isFloatingMinimizedRef.current = isFloatingMinimized;
   const joinedConversationIdRef = useRef<number | null>(null);
 
   // Listener sets
@@ -260,7 +268,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       });
 
       const isViewingThis =
-        activeConversationIdRef.current === msg.conversationId;
+        activeConversationIdRef.current === msg.conversationId ||
+        (floatingConversationIdRef.current === msg.conversationId &&
+          !isFloatingMinimizedRef.current);
 
       // 2. Update conversation list preview
       setConversations((prev) => {
@@ -369,6 +379,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     });
 
     connection.on("MessagesRead", (event: ReadReceiptEvent) => {
+      if (
+        currentUserRef.current &&
+        event.readerUserId === currentUserRef.current.id
+      ) {
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === event.conversationId ? { ...c, unreadCount: 0 } : c
+          )
+        );
+        refreshUnreadCount();
+      }
       messagesReadListeners.current.forEach((listener) => {
         try {
           listener(event);
@@ -570,3 +591,4 @@ export function useChat() {
   }
   return context;
 }
+

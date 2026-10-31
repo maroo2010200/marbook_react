@@ -279,6 +279,7 @@ export default function MessagesPage() {
       if (event.conversationId === selectedId) {
         if (event.isTyping) {
           setTypingUser(event.userName);
+          setTimeout(() => scrollToBottom(true), 50);
           if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
           }
