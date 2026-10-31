@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
-import type { Post, PostVisibility } from "../types/posts";
-import { mediaApi } from "../api/media";
-import { getMediaUrl } from "../utils/media";
-import { ImageAdjustModal } from "./ImageAdjustModal";
-import { Avatar } from "./Avatar";
+import { useAuth } from "../../context/AuthContext";
+import type { Post, PostVisibility } from "../../types/posts";
+import { mediaApi } from "../../api/media";
+import { getMediaUrl } from "../../utils/media";
+import { ImageAdjustModal } from "../ImageAdjustModal";
+import { Avatar } from "../Avatar";
 
 interface PostComposerProps {
   onPostCreated: (

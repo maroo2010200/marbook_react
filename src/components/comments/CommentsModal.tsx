@@ -1,11 +1,11 @@
 import { useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useCommentsModal } from "../hooks/useCommentsModal";
-import { CommentItem } from "./comments/CommentItem";
-import { CommentInput } from "./comments/CommentInput";
-import type { Post } from "../types/posts";
-import type { Comment } from "../types/comments";
-import { Avatar } from "./Avatar";
+import { useAuth } from "../../context/AuthContext";
+import { useCommentsModal } from "../../hooks/useCommentsModal";
+import { CommentItem } from "./CommentItem";
+import { CommentInput } from "./CommentInput";
+import type { Post } from "../../types/posts";
+import type { Comment } from "../../types/comments";
+import { Avatar } from "../Avatar";
 
 interface CommentsModalProps {
   post: Post | null;

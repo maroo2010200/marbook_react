@@ -15,6 +15,7 @@ export function FloatingChatDock() {
     floatingConversationId,
     closeFloatingChat,
     conversations,
+    setConversations,
     refreshConversations,
     refreshUnreadCount,
     joinConversation,
@@ -34,6 +35,7 @@ export function FloatingChatDock() {
   const [conversationDetails, setConversationDetails] = useState<ConversationSummary | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userTypingSendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -73,9 +75,18 @@ export function FloatingChatDock() {
       .then((res) => {
         if (!isMounted) return;
         setMessages(res.items || []);
-        // Mark as read
-        chatApi.markAsRead(floatingConversationId).catch(() => {});
-        refreshUnreadCount().catch(() => {});
+        // Mark as read and synchronize unread states
+        chatApi
+          .markAsRead(floatingConversationId)
+          .then(() => {
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === floatingConversationId ? { ...c, unreadCount: 0 } : c
+              )
+            );
+            refreshUnreadCount().catch(() => {});
+          })
+          .catch(() => {});
       })
       .catch((err) => {
         console.error("Failed to load floating chat messages:", err);
@@ -90,14 +101,17 @@ export function FloatingChatDock() {
       isMounted = false;
       leaveConversation(floatingConversationId).catch(() => {});
     };
-  }, [floatingConversationId, joinConversation, leaveConversation, refreshUnreadCount]);
+  }, [floatingConversationId, joinConversation, leaveConversation, refreshUnreadCount, setConversations]);
 
-  // Scroll on messages change
+  // Scroll on messages change or when other user is typing
   useEffect(() => {
-    if (messages.length > 0) {
-      scrollToBottom();
+    if (messages.length > 0 || isOtherTyping) {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [messages.length]);
+  }, [messages.length, isOtherTyping]);
 
   // SignalR message & typing subscriptions
   useEffect(() => {
@@ -111,8 +125,17 @@ export function FloatingChatDock() {
           }
           return [...prev, msg];
         });
-        chatApi.markAsRead(floatingConversationId).catch(() => {});
-        refreshUnreadCount().catch(() => {});
+        chatApi
+          .markAsRead(floatingConversationId)
+          .then(() => {
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === floatingConversationId ? { ...c, unreadCount: 0 } : c
+              )
+            );
+            refreshUnreadCount().catch(() => {});
+          })
+          .catch(() => {});
       }
     });
 
@@ -166,6 +189,7 @@ export function FloatingChatDock() {
     onMessageDeleted,
     onUserTyping,
     refreshUnreadCount,
+    setConversations,
   ]);
 
   // Handle typing debounce
@@ -195,6 +219,7 @@ export function FloatingChatDock() {
 
     setIsSending(true);
     setInputText("");
+    inputRef.current?.focus();
 
     try {
       if (userTypingSendTimeoutRef.current) {
@@ -215,6 +240,7 @@ export function FloatingChatDock() {
       console.error("Failed to send floating chat message:", err);
     } finally {
       setIsSending(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -439,11 +465,11 @@ export function FloatingChatDock() {
         }}
       >
         <input
+          ref={inputRef}
           type="text"
           value={inputText}
           onChange={handleInputChange}
           placeholder="Type a message..."
-          disabled={isSending}
           style={{
             flex: 1,
             padding: "8px 12px",
