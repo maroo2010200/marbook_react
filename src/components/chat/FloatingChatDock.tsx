@@ -35,6 +35,7 @@ export function FloatingChatDock() {
   const [conversationDetails, setConversationDetails] = useState<ConversationSummary | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userTypingSendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -218,6 +219,7 @@ export function FloatingChatDock() {
 
     setIsSending(true);
     setInputText("");
+    inputRef.current?.focus();
 
     try {
       if (userTypingSendTimeoutRef.current) {
@@ -238,6 +240,7 @@ export function FloatingChatDock() {
       console.error("Failed to send floating chat message:", err);
     } finally {
       setIsSending(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -462,11 +465,11 @@ export function FloatingChatDock() {
         }}
       >
         <input
+          ref={inputRef}
           type="text"
           value={inputText}
           onChange={handleInputChange}
           placeholder="Type a message..."
-          disabled={isSending}
           style={{
             flex: 1,
             padding: "8px 12px",

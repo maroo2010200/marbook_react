@@ -79,6 +79,7 @@ export default function MessagesPage() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Sync selectedId with URL params
   useEffect(() => {
@@ -327,6 +328,7 @@ export default function MessagesPage() {
 
     const textToSend = inputText.trim();
     setInputText("");
+    inputRef.current?.focus();
     setIsSending(true);
 
     // Stop typing notification
@@ -363,6 +365,7 @@ export default function MessagesPage() {
       setInputText(textToSend);
     } finally {
       setIsSending(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -400,6 +403,7 @@ export default function MessagesPage() {
       console.error("Failed to send GIF:", err);
     } finally {
       setIsSending(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -1381,11 +1385,12 @@ export default function MessagesPage() {
               )}
 
               <input
+                ref={inputRef}
                 type="text"
                 placeholder="Type a message or paste a link/GIF..."
                 value={inputText}
                 onChange={handleInputChange}
-                disabled={isSending}
+
                 style={{
                   flex: 1,
                   padding: "10px 16px",
