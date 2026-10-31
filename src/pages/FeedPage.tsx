@@ -4,9 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import { usePosts } from "../hooks/usePosts";
 import { likesApi } from "../api/likes";
 import api from "../api/api";
-import { CommentsModal } from "../components/CommentsModal";
-import { PostComposer } from "../components/PostComposer";
-import { PostCard } from "../components/PostCard";
+import { CommentsModal } from "../components/comments/CommentsModal";
+import { PostComposer } from "../components/posts/PostComposer";
+import { PostCard } from "../components/posts/PostCard";
 import { MainLayout } from "../components/layout/MainLayout";
 import type { Post } from "../types/posts";
 

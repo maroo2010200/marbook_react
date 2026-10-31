@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import type { Post, PostVisibility } from "../types/posts";
-import { postsApi } from "../api/posts";
-import { mediaApi } from "../api/media";
-import { getMediaUrl } from "../utils/media";
+import type { Post, PostVisibility } from "../../types/posts";
+import { postsApi } from "../../api/posts";
+import { mediaApi } from "../../api/media";
+import { getMediaUrl } from "../../utils/media";
 import { PostImagesGrid } from "./PostImagesGrid";
-import { LightboxModal } from "./LightboxModal";
-import { ImageAdjustModal } from "./ImageAdjustModal";
-import { Avatar } from "./Avatar";
-import { parseRichText } from "../utils/richText";
+import { LightboxModal } from "../LightboxModal";
+import { ImageAdjustModal } from "../ImageAdjustModal";
+import { Avatar } from "../Avatar";
+import { parseRichText } from "../../utils/richText";
 
 interface PostCardProps {
   post: Post;

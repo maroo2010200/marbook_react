@@ -1,15 +1,15 @@
 import { useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { useNotifications } from "../context/NotificationContext";
-import { useChat } from "../context/ChatContext";
-import { useTheme } from "../context/ThemeContext";
-import { NotificationsDropdown } from "./NotificationsDropdown";
-import { MessagesDropdown } from "./MessagesDropdown";
-import { ChatIcon } from "./ChatIcon";
-import { SearchBar } from "./SearchBar";
-import { Avatar } from "./Avatar";
-import type { NotificationItem } from "../types/notifications";
+import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
+import { useChat } from "../../context/ChatContext";
+import { useTheme } from "../../context/ThemeContext";
+import { NotificationsDropdown } from "../NotificationsDropdown";
+import { MessagesDropdown } from "../MessagesDropdown";
+import { ChatIcon } from "../ChatIcon";
+import { SearchBar } from "../SearchBar";
+import { Avatar } from "../Avatar";
+import type { NotificationItem } from "../../types/notifications";
 
 function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();

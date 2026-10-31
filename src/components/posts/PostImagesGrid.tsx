@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getPostOptimizedUrl } from "../utils/media";
+import { getPostOptimizedUrl } from "../../utils/media";
 
 export interface PostImagesGridProps {
   images: string[];
