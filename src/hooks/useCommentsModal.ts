@@ -47,6 +47,7 @@ export function useCommentsModal({
   const [replyingTo, setReplyingTo] = useState<{
     commentId: number;
     userName: string;
+    userUsername?: string | null;
   } | null>(null);
   const [expandedCommentIds, setExpandedCommentIds] = useState<Set<number>>(
     new Set()
@@ -289,14 +290,22 @@ export function useCommentsModal({
   };
 
   // Set active reply target
-  const handleStartReply = (commentId: number, userName: string) => {
+  const handleStartReply = (
+    commentId: number,
+    userName: string,
+    userUsername?: string | null
+  ) => {
     if (!isAuthenticated) {
       setSubmitError("Please log in to reply to comments.");
       setTimeout(() => setSubmitError(null), 3500);
       return;
     }
-    setReplyingTo({ commentId, userName });
-    setNewComment(`@${userName} `);
+    const mentionHandle = userUsername
+      ? userUsername.trim()
+      : userName.replace(/\s+/g, "");
+
+    setReplyingTo({ commentId, userName, userUsername });
+    setNewComment(`@${mentionHandle} `);
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
