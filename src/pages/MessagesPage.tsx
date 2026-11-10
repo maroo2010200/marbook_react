@@ -1,3 +1,5 @@
+import { useConversationReadReceipt } from "../hooks/useConversationReadReceipt";
+import { MessageStatus } from "../components/chat/MessageStatus";
 ﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -28,7 +30,6 @@ export default function MessagesPage() {
     onMessageEdited,
     onMessageDeleted,
     onUserTyping,
-    onMessagesRead,
   } = useChat();
 
   const [selectedId, setSelectedId] = useState<number | null>(
@@ -73,8 +74,9 @@ export default function MessagesPage() {
   );
 
   // Read status for own last message
-  const [lastReadTimestamp, setLastReadTimestamp] = useState<string | null>(
-    null
+  const { isMessageSeen } = useConversationReadReceipt(
+    selectedId,
+    activeConversation?.otherParticipantLastReadAt
   );
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -117,17 +119,7 @@ export default function MessagesPage() {
     }
   }, [selectedId, conversations]);
 
-  // Sync lastReadTimestamp from activeConversation summary
-  useEffect(() => {
-    if (activeConversation?.otherParticipantLastReadAt) {
-      setLastReadTimestamp((prev) => {
-        if (!prev) return activeConversation.otherParticipantLastReadAt!;
-        return new Date(activeConversation.otherParticipantLastReadAt!) > new Date(prev)
-          ? activeConversation.otherParticipantLastReadAt!
-          : prev;
-      });
-    }
-  }, [activeConversation?.otherParticipantLastReadAt]);
+
 
   // Auto-scroll to bottom of messages container
   const scrollToBottom = useCallback((smooth = false) => {
@@ -141,7 +133,6 @@ export default function MessagesPage() {
 
   // Fetch initial messages when selectedId changes
   useEffect(() => {
-    setLastReadTimestamp(null);
     if (!selectedId) {
       setMessages([]);
       return;
@@ -306,22 +297,13 @@ export default function MessagesPage() {
       }
     });
 
-    // 5. Read receipt
-    const unsubRead = onMessagesRead((event) => {
-      if (
-        event.conversationId === selectedId &&
-        (!currentUser || event.readerUserId !== currentUser.id)
-      ) {
-        setLastReadTimestamp(event.readAt);
-      }
-    });
+
 
     return () => {
       unsubReceive();
       unsubEdited();
       unsubDeleted();
       unsubTyping();
-      unsubRead();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -332,7 +314,6 @@ export default function MessagesPage() {
     onMessageEdited,
     onMessageDeleted,
     onUserTyping,
-    onMessagesRead,
     refreshUnreadCount,
     scrollToBottom,
   ]);
@@ -1373,22 +1354,12 @@ export default function MessagesPage() {
                   : lastMsg.isMine;
                 if (!isMine) return null;
 
-                const isSeen =
-                  Boolean(lastReadTimestamp) &&
-                  new Date(lastReadTimestamp!).getTime() >=
-                    new Date(lastMsg.createdAt).getTime();
-
                 return (
-                  <div
-                    style={{
-                      textAlign: "right",
-                      fontSize: 11,
-                      color: isSeen ? "var(--primary)" : "var(--text-muted)",
-                      marginTop: 2,
-                      fontWeight: isSeen ? 500 : 400,
-                    }}
-                  >
-                    {isSeen ? "✓ Seen" : "✓ Sent"}
+                  <div style={{ textAlign: "right", marginTop: 2 }}>
+                    <MessageStatus
+                      isSeen={isMessageSeen(lastMsg.createdAt)}
+                      variant="check"
+                    />
                   </div>
                 );
               })()}
