@@ -86,7 +86,6 @@ html, body {
   padding: 0;
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-page);
@@ -209,73 +208,109 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==========================================================================
-   Socialio 3-Column Layout & Component System
+   Socialio 3-Column Layout & Component System (Full Width & Aligned)
    ========================================================================== */
+
+/* Navbar Fixed Container */
+.app-navbar {
+  padding: 0 24px !important;
+}
 
 .app-layout-shell {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: flex-start;
   width: 100%;
-  max-width: 1280px;
+  max-width: 1920px;
   margin: 0 auto;
   min-height: 100vh;
   position: relative;
-  padding: 0 16px;
-  gap: clamp(12px, 2vw, 24px);
+  padding: 68px 24px 0;
+  gap: 24px;
   box-sizing: border-box;
 }
 
-/* Left Navigation Rail */
+/* Left Navigation Rail (Aligned on same column as Marshmallow logo) */
 .app-left-rail {
-  width: 240px;
+  width: 250px;
   flex-shrink: 0;
   position: sticky;
-  top: 72px;
-  height: calc(100vh - 88px);
+  top: 68px;
+  height: calc(100vh - 80px);
+  max-height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 12px 0 20px;
+  padding: 8px 0 16px;
   box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+.app-left-rail::-webkit-scrollbar {
+  width: 4px;
+}
+.app-left-rail::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 9999px;
 }
 
 /* Center Content Stream */
 .app-center-stream {
   flex: 1;
-  max-width: 760px;
+  max-width: 680px;
   min-width: 0;
-  padding: 16px 0 60px;
+  margin: 0 auto;
+  padding: 8px 0 60px;
 }
 
-/* Right Auxiliary Rail */
+/* Right Auxiliary Rail (Aligned on same column as right Navbar controls) */
 .app-right-rail {
-  width: 300px;
+  width: 320px;
   flex-shrink: 0;
   position: sticky;
-  top: 72px;
+  top: 68px;
   height: fit-content;
-  max-height: calc(100vh - 88px);
+  max-height: calc(100vh - 80px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
 }
 .app-right-rail::-webkit-scrollbar {
-  display: none;
+  width: 4px;
+}
+.app-right-rail::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 9999px;
+}
+
+/* Left Rail Internal Elements */
+.app-left-rail-top {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-left-rail-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 /* Nav Item Pill */
 .social-nav-pill {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 16px;
+  gap: 12px;
+  padding: 9px 14px;
   border-radius: var(--radius-full);
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
   transition: all 0.15s ease;
   user-select: none;
@@ -284,6 +319,8 @@ h1, h2, h3, h4, h5, h6 {
   border: none;
   width: 100%;
   text-align: left;
+  box-sizing: border-box;
+  position: relative;
 }
 
 .social-nav-pill:hover {
@@ -302,6 +339,19 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--primary);
 }
 
+.social-nav-pill .nav-icon-only {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.social-nav-pill .nav-pill-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .social-nav-pill .nav-badge {
   margin-left: auto;
   background-color: #ef4444;
@@ -310,6 +360,103 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   padding: 1px 7px;
   border-radius: var(--radius-full);
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+/* Brand CTA "Roast a Post" button */
+.app-left-rail-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--primary) 0%, #D97706 100%);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 4px 14px rgba(201, 107, 50, 0.28);
+  transition: all 0.15s ease;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+
+.app-left-rail-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(201, 107, 50, 0.38);
+}
+
+.app-left-rail-cta-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* User Mini Card at Bottom of Left Rail */
+.app-left-rail-user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  margin-top: auto; /* Pushes to bottom cleanly without breaking vertical scroll */
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+
+.app-left-rail-user-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  min-width: 0;
+  flex: 1;
+}
+
+.app-left-rail-user-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.app-left-rail-user-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.app-left-rail-user-handle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.app-left-rail-user-settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.app-left-rail-user-settings:hover {
+  background-color: var(--bg-hover);
+  color: var(--primary);
 }
 
 /* Widget Card */
@@ -329,62 +476,124 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
-/* Responsive Rules */
-@media (max-width: 1240px) {
+/* Responsive Rules: Smooth Transitions on Window Resize / Minimize */
+@media (max-width: 1279px) {
   .app-right-rail {
-    display: none;
-  }
-  .app-layout-shell {
-    justify-content: center;
+    display: none !important;
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1023px) {
+  .app-navbar {
+    padding: 0 16px !important;
+  }
+
+  .app-layout-shell {
+    padding: 68px 16px 0;
+    gap: 16px;
+  }
+
+  /* Collapse left rail to 64px icon rail when window is minimized or snapped */
   .app-left-rail {
     width: 64px;
     align-items: center;
+    padding: 8px 0 16px;
   }
+
+  .app-left-rail-top,
+  .app-left-rail-nav {
+    align-items: center;
+    width: 100%;
+  }
+
+  /* Nav pill becomes 44x44 circular button */
   .social-nav-pill {
-    padding: 12px;
+    padding: 0;
+    width: 44px;
+    height: 44px;
     justify-content: center;
     border-radius: 50%;
-    width: 48px;
-    height: 48px;
   }
-  .social-nav-pill span:not(.nav-icon-only) {
+
+  .social-nav-pill:hover {
+    transform: none;
+  }
+
+  .social-nav-pill .nav-pill-label {
     display: none;
   }
+
   .social-nav-pill .nav-badge {
     position: absolute;
-    top: 4px;
-    right: 4px;
+    top: 2px;
+    right: 2px;
     padding: 1px 5px;
+    font-size: 10px;
+    min-width: 14px;
+    text-align: center;
   }
+
+  /* Roast a Post button becomes 44x44 circular button */
+  .app-left-rail-cta {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+  }
+
+  .app-left-rail-cta-label {
+    display: none;
+  }
+
+  /* User mini card collapses to circular avatar */
+  .app-left-rail-user-card {
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    margin: auto auto 0;
+  }
+
+  .app-left-rail-user-link {
+    justify-content: center;
+    flex: initial;
+  }
+
+  .app-left-rail-user-meta,
+  .app-left-rail-user-settings {
+    display: none;
+  }
+
   .navbar-user-name {
     display: none !important;
   }
-  .app-user-snippet-text {
-    display: none;
-  }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
+  .app-navbar {
+    padding: 0 12px !important;
+  }
+
   .app-layout-shell {
-    padding: 0 10px;
+    padding: 62px 10px 0;
     gap: 0;
   }
+
   .app-left-rail {
-    display: none;
+    display: none !important;
   }
+
   .navbar-brand-text {
     font-size: 18px !important;
   }
-  .navbar-search-wrap {
-    max-width: 140px !important;
-  }
+
   .app-center-stream {
     max-width: 100%;
-    padding: 12px 0 80px;
+    padding: 8px 0 80px;
   }
 }
 

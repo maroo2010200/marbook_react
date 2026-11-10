@@ -510,7 +510,8 @@ export default function MessagesPage() {
     <div
       style={{
         display: "flex",
-        height: "calc(100vh - 61px)",
+        height: "calc(100vh - 56px)",
+        marginTop: 56,
         width: "100%",
         maxWidth: "100vw",
         backgroundColor: "var(--bg-page)",

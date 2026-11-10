@@ -17,6 +17,7 @@ import { ProfilePage } from "./pages/ProfilePage";
 import MessagesPage from "./pages/MessagesPage";
 import SearchPage from "./pages/SearchPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import SettingsPage from "./pages/SettingsPage";
 
 function App() {
   return (
@@ -70,6 +71,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <SearchPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
                     </ProtectedRoute>
                   }
                 />
