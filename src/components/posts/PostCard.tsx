@@ -9,6 +9,7 @@ import { LightboxModal } from "../LightboxModal";
 import { ImageAdjustModal } from "../ImageAdjustModal";
 import { Avatar } from "../Avatar";
 import { parseRichText } from "../../utils/richText";
+import { soundEffects } from "../../utils/soundEffects";
 
 interface PostCardProps {
   post: Post;
@@ -425,6 +426,7 @@ export function PostCard({
 
     try {
       await postsApi.deletePost(post.id);
+      soundEffects.playDelete();
       setIsDeleteModalOpen(false);
       onPostDeleted(post.id);
     } catch {
@@ -1171,7 +1173,12 @@ export function PostCard({
         {/* Flame / Roast Button */}
         <button
           type="button"
-          onClick={() => onToggleLike(post.id)}
+          onClick={() => {
+            if (!isLiked) {
+              soundEffects.playRoast();
+            }
+            onToggleLike(post.id);
+          }}
           aria-label={isLiked ? "Unroast post" : "Roast post"}
           title={isLiked ? "Unroast" : "Roast"}
           style={{

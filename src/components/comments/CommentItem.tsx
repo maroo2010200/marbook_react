@@ -6,6 +6,7 @@ import { getMediaUrl, getPostOptimizedUrl } from "../../utils/media";
 import { LightboxModal } from "../LightboxModal";
 import { Avatar } from "../Avatar";
 import { parseRichText } from "../../utils/richText";
+import { soundEffects } from "../../utils/soundEffects";
 
 export interface CommentItemProps {
   comment: Comment;
@@ -736,7 +737,12 @@ export function CommentItem({
         {/* Flame / Roast Button */}
         <button
           type="button"
-          onClick={() => onToggleLike(comment.id)}
+          onClick={() => {
+            if (!isCommentLiked) {
+              soundEffects.playRoast();
+            }
+            onToggleLike(comment.id);
+          }}
           aria-label={isCommentLiked ? "Unroast comment" : "Roast comment"}
           title={isCommentLiked ? "Unroast" : "Roast"}
           style={{
