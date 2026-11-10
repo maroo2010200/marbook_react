@@ -32,7 +32,7 @@ function VerifyPage() {
         await verify(token);
         setStatus("success");
         setMessage(
-          "Your email has been verified. You can now log in to Marbook.",
+          "Your email has been verified. You can now log in to Marshmallow.",
         );
       } catch (error: any) {
         if (error instanceof Error && !(error as any).isAxiosError) {

@@ -7,7 +7,7 @@ function HomePage() {
   console.log("user from context", user);
   return (
     <div>
-      <h1>Welcome to Marbook</h1>
+      <h1>Welcome to Marshmallow</h1>
     </div>
   )
 }

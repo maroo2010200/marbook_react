@@ -9,6 +9,7 @@ import { MessagesDropdown } from "../MessagesDropdown";
 import { ChatIcon } from "../ChatIcon";
 import { SearchBar } from "../SearchBar";
 import { Avatar } from "../Avatar";
+import { MarshmallowLogo } from "../MarshmallowLogo";
 import type { NotificationItem } from "../../types/notifications";
 
 function Navbar() {
@@ -36,6 +37,7 @@ function Navbar() {
     if (location.pathname === "/feed") {
       e.preventDefault();
       window.scrollTo({ top: 0, behavior: "smooth" });
+      window.dispatchEvent(new CustomEvent("marshmallow:refresh-feed"));
       window.dispatchEvent(new CustomEvent("marbook:refresh-feed"));
     }
   };
@@ -95,13 +97,25 @@ function Navbar() {
             textDecoration: "none",
             fontWeight: 800,
             fontSize: 22,
-            color: "#1877f2",
             letterSpacing: "-0.5px",
             cursor: "pointer",
             flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
           }}
         >
-          Marbook
+          <MarshmallowLogo size={28} />
+          <span
+            style={{
+              background:
+                "linear-gradient(135deg, var(--primary) 0%, #e07a5f 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Marshmallow
+          </span>
         </Link>
 
         {isAuthenticated && (
@@ -479,7 +493,7 @@ function Navbar() {
                   Log Out
                 </h3>
                 <p style={{ margin: "2px 0 0", fontSize: 14, color: "var(--text-secondary)" }}>
-                  Are you sure you want to log out of Marbook?
+                  Are you sure you want to log out of Marshmallow?
                 </p>
               </div>
             </div>

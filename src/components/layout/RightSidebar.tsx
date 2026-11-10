@@ -5,6 +5,7 @@ import { followsApi } from "../../api/follows";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
 import { Avatar } from "../Avatar";
+import { MarshmallowLoader } from "../MarshmallowLoader";
 import { formatMessageSnippet } from "../../utils/richText";
 import type { UserSearchResult } from "../../types/user";
 
@@ -66,6 +67,44 @@ export function RightSidebar() {
 
   return (
     <aside className="app-right-rail" aria-label="Explore and Suggestions">
+      {/* Brand Campfire Banner (Option 3) */}
+      <div
+        className="social-widget-card"
+        style={{
+          background: "linear-gradient(135deg, rgba(201, 107, 50, 0.08) 0%, rgba(245, 158, 11, 0.12) 100%)",
+          border: "1px solid rgba(201, 107, 50, 0.2)",
+          padding: "12px 14px",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
+        <div style={{ flexShrink: 0, width: 48, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <MarshmallowLoader size="sm" inline label={null} />
+        </div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 13,
+              color: "var(--text-primary)",
+              letterSpacing: "-0.2px",
+            }}
+          >
+            Marshmallow Social
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--text-secondary)",
+              marginTop: 2,
+              lineHeight: 1.3,
+            }}
+          >
+            Stay warm &amp; connected around the campfire
+          </div>
+        </div>
+      </div>
       {/* Contacts / Conversations (Facebook style) */}
       <div className="social-widget-card">
         <div
@@ -303,10 +342,41 @@ export function RightSidebar() {
         </div>
       )}
 
-      {/* Mini Footer Snippet */}
-      <div style={{ padding: "0 8px", fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.6 }}>
-        <div>Terms of Service · Privacy Policy · Cookie Policy</div>
-        <div>© 2026 Marbook, Inc. Socialio Edition</div>
+      {/* Tech Stack & Attribution Footer (Option 1) */}
+      <div
+        style={{
+          padding: "0 8px",
+          fontSize: 12,
+          color: "var(--text-tertiary)",
+          lineHeight: 1.6,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+          <span>Built with</span>
+          <strong style={{ color: "var(--text-secondary)", fontWeight: 600 }}>.NET 10</strong>
+          <span>·</span>
+          <strong style={{ color: "var(--text-secondary)", fontWeight: 600 }}>React</strong>
+          <span>·</span>
+          <strong style={{ color: "var(--text-secondary)", fontWeight: 600 }}>PostgreSQL</strong>
+        </div>
+        <div style={{ marginTop: 2 }}>
+          <span>© 2026 Marshmallow</span>
+          {" · "}
+          <a
+            href="https://github.com/maroo2010200"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              color: "var(--primary)",
+              textDecoration: "none",
+              fontWeight: 500,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+          >
+            GitHub
+          </a>
+        </div>
       </div>
     </aside>
   );

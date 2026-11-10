@@ -14,7 +14,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
-      const saved = localStorage.getItem("marbook_theme");
+      const saved = localStorage.getItem("marshmallow_theme") || localStorage.getItem("marbook_theme");
       if (saved === "light" || saved === "dark") {
         return saved;
       }
@@ -29,7 +29,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     try {
-      localStorage.setItem("marbook_theme", theme);
+      localStorage.setItem("marshmallow_theme", theme);
     } catch {
       // ignore
     }
@@ -39,7 +39,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {
-      const saved = localStorage.getItem("marbook_theme");
+      const saved = localStorage.getItem("marshmallow_theme") || localStorage.getItem("marbook_theme");
       if (!saved) {
         setThemeState(e.matches ? "dark" : "light");
       }

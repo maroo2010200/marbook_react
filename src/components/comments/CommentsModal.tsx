@@ -6,6 +6,7 @@ import { CommentInput } from "./CommentInput";
 import type { Post } from "../../types/posts";
 import type { Comment } from "../../types/comments";
 import { Avatar } from "../Avatar";
+import { MarshmallowLoader } from "../MarshmallowLoader";
 
 interface CommentsModalProps {
   post: Post | null;
@@ -187,26 +188,8 @@ export function CommentsModal({
 
           {/* Initial Loading Spinner */}
           {loading && (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "30px 0",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <div
-                style={{
-                  display: "inline-block",
-                  width: 20,
-                  height: 20,
-                  border: "2px solid var(--divider)",
-                  borderTopColor: "var(--primary)",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                  marginBottom: 8,
-                }}
-              />
-              <p style={{ margin: 0, fontSize: 13 }}>Loading comments...</p>
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <MarshmallowLoader size="md" label="Toasting comments..." />
             </div>
           )}
 
@@ -281,26 +264,13 @@ export function CommentsModal({
           {loadingMore && (
             <div
               style={{
-                textAlign: "center",
-                padding: "12px 0",
-                color: "var(--text-secondary)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 8,
+                padding: "10px 0",
               }}
             >
-              <div
-                style={{
-                  width: 14,
-                  height: 14,
-                  border: "2px solid var(--divider)",
-                  borderTopColor: "var(--primary)",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                }}
-              />
-              <span style={{ fontSize: 12 }}>Loading more comments...</span>
+              <MarshmallowLoader size="sm" inline label="Toasting more comments..." />
             </div>
           )}
 
