@@ -19,6 +19,7 @@ export interface ConversationSummary {
   otherParticipant: UserSummary;
   lastMessage?: Message | null;
   unreadCount: number;
+  otherParticipantLastReadAt?: string | null;
 }
 
 export interface ChatUnreadCount {

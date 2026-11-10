@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useChat } from "../context/ChatContext";
@@ -117,6 +117,18 @@ export default function MessagesPage() {
     }
   }, [selectedId, conversations]);
 
+  // Sync lastReadTimestamp from activeConversation summary
+  useEffect(() => {
+    if (activeConversation?.otherParticipantLastReadAt) {
+      setLastReadTimestamp((prev) => {
+        if (!prev) return activeConversation.otherParticipantLastReadAt!;
+        return new Date(activeConversation.otherParticipantLastReadAt!) > new Date(prev)
+          ? activeConversation.otherParticipantLastReadAt!
+          : prev;
+      });
+    }
+  }, [activeConversation?.otherParticipantLastReadAt]);
+
   // Auto-scroll to bottom of messages container
   const scrollToBottom = useCallback((smooth = false) => {
     if (messagesEndRef.current) {
@@ -129,6 +141,7 @@ export default function MessagesPage() {
 
   // Fetch initial messages when selectedId changes
   useEffect(() => {
+    setLastReadTimestamp(null);
     if (!selectedId) {
       setMessages([]);
       return;
@@ -295,7 +308,10 @@ export default function MessagesPage() {
 
     // 5. Read receipt
     const unsubRead = onMessagesRead((event) => {
-      if (event.conversationId === selectedId) {
+      if (
+        event.conversationId === selectedId &&
+        (!currentUser || event.readerUserId !== currentUser.id)
+      ) {
         setLastReadTimestamp(event.readAt);
       }
     });
@@ -1349,18 +1365,33 @@ export default function MessagesPage() {
               )}
 
               {/* Seen indicator under last own message */}
-              {lastReadTimestamp && messages.length > 0 && messages[messages.length - 1].isMine && (
-                <div
-                  style={{
-                    textAlign: "right",
-                    fontSize: 11,
-                    color: "var(--text-muted)",
-                    marginTop: 2,
-                  }}
-                >
-                  ✓ Seen
-                </div>
-              )}
+              {(() => {
+                if (messages.length === 0) return null;
+                const lastMsg = messages[messages.length - 1];
+                const isMine = currentUser
+                  ? lastMsg.senderUserId === currentUser.id
+                  : lastMsg.isMine;
+                if (!isMine) return null;
+
+                const isSeen =
+                  Boolean(lastReadTimestamp) &&
+                  new Date(lastReadTimestamp!).getTime() >=
+                    new Date(lastMsg.createdAt).getTime();
+
+                return (
+                  <div
+                    style={{
+                      textAlign: "right",
+                      fontSize: 11,
+                      color: isSeen ? "var(--primary)" : "var(--text-muted)",
+                      marginTop: 2,
+                      fontWeight: isSeen ? 500 : 400,
+                    }}
+                  >
+                    {isSeen ? "✓ Seen" : "✓ Sent"}
+                  </div>
+                );
+              })()}
 
               <div ref={messagesEndRef} />
             </div>
