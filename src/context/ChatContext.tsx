@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   createContext,
   useContext,
   useEffect,
@@ -61,7 +61,7 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-const BACKEND_BASE = "http://localhost:5244";
+import { BACKEND_BASE } from "../config/env";
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { user: currentUser, isAuthenticated } = useAuth();

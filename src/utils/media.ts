@@ -1,4 +1,4 @@
-const BACKEND_BASE = "http://localhost:5244";
+import { BACKEND_BASE } from "../config/env";
 
 /**
  * Normalizes a media URL or relative path:

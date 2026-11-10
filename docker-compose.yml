@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: marbook-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: marbook_password_2026
+      POSTGRES_DB: marbookapi
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../MarbookApi
+      dockerfile: Dockerfile
+    container_name: marbook-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=marbookapi;Username=postgres;Password=marbook_password_2026
+      - Cors__AllowedOrigins=http://localhost,http://localhost:5173,http://localhost:80
+      - Frontend__BaseUrl=http://localhost
+      # Replace with your actual secrets or set in .env
+      - Jwt__SigningKey=SuperSecretProductionKeyWithAtLeast32BytesLength!2026
+      # - Brevo__ApiKey=your_brevo_api_key_here
+      # - Cloudinary__CloudName=your_cloud_name
+      # - Cloudinary__ApiKey=your_api_key
+      # - Cloudinary__ApiSecret=your_api_secret
+    ports:
+      - "5244:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5244
+    container_name: marbook-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+

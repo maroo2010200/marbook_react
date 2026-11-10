@@ -30,7 +30,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
 
-const BACKEND_BASE = "http://localhost:5244";
+import { BACKEND_BASE } from "../config/env";
 
 export function NotificationProvider({
   children,
