@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
@@ -7,7 +7,6 @@ import { useTheme } from "../../context/ThemeContext";
 import { NotificationsDropdown } from "../NotificationsDropdown";
 import { MessagesDropdown } from "../MessagesDropdown";
 import { ChatIcon } from "../ChatIcon";
-import { SearchBar } from "../SearchBar";
 import { Avatar } from "../Avatar";
 import { MarshmallowLogo } from "../MarshmallowLogo";
 import type { NotificationItem } from "../../types/notifications";
@@ -20,6 +19,26 @@ function Navbar() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(e.target as Node)
+      ) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    if (isProfileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isProfileMenuOpen]);
   const { unreadCount, setUnreadCount } = useNotifications();
   const { unreadChatCount } = useChat();
 
@@ -71,16 +90,21 @@ function Navbar() {
 
   return (
     <nav
+      className="app-navbar"
       style={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: "10px clamp(12px, 2vw, 24px)",
+        padding: "0 24px",
+        height: 56,
+        boxSizing: "border-box",
         backgroundColor: "var(--bg-card)",
         borderBottom: "1px solid var(--border-color)",
-        position: "sticky",
+        position: "fixed",
         top: 0,
-        zIndex: 100,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
         boxShadow: "var(--shadow-sm)",
         transition: "background-color 0.2s ease, border-color 0.2s ease",
         fontFamily:
@@ -118,11 +142,6 @@ function Navbar() {
           </span>
         </Link>
 
-        {isAuthenticated && (
-          <div className="navbar-search-wrap" style={{ flex: 1, minWidth: 0 }}>
-            <SearchBar />
-          </div>
-        )}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "clamp(6px, 1.2vw, 12px)", flexShrink: 0 }}>
@@ -347,66 +366,263 @@ function Navbar() {
               />
             </div>
 
-            <Link
-              to="/profile/me"
-              style={{
-                textDecoration: "none",
-                fontWeight: 600,
-                fontSize: 14,
-                color: "var(--text-primary)",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "4px 10px 4px 6px",
-                borderRadius: 20,
-                backgroundColor: "var(--bg-hover)",
-                transition: "background-color 0.15s ease",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--bg-active)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
-              }
-            >
-              <Avatar src={user?.avatarUrl} name={user?.name} size={28} />
-              <span className="navbar-user-name">{user?.name ?? "Profile"}</span>
-            </Link>
+            <div style={{ position: "relative" }} ref={profileMenuRef}>
+              <button
+                type="button"
+                id="navbar-profile-btn"
+                onClick={() => {
+                  setIsNotificationsOpen(false);
+                  setIsMessagesOpen(false);
+                  setIsProfileMenuOpen((prev) => !prev);
+                }}
+                aria-label="Account menu"
+                style={{
+                  textDecoration: "none",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "var(--text-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "4px 10px 4px 6px",
+                  borderRadius: 20,
+                  backgroundColor: isProfileMenuOpen
+                    ? "var(--bg-active)"
+                    : "var(--bg-hover)",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "background-color 0.15s ease",
+                }}
+              >
+                <Avatar src={user?.avatarUrl} name={user?.name} size={28} />
+                <span className="navbar-user-name">{user?.name ?? "Account"}</span>
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    transform: isProfileMenuOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s ease",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
 
-            <button
-              type="button"
-              id="navbar-logout-btn"
-              onClick={() => setIsLogoutModalOpen(true)}
-              aria-label="Log Out"
-              title="Log Out"
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: "50%",
-                backgroundColor: "var(--bg-hover)",
-                color: "var(--text-secondary)",
-                border: "none",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.12)";
-                e.currentTarget.style.color = "#ef4444";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--bg-hover)";
-                e.currentTarget.style.color = "var(--text-secondary)";
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </button>
+              {/* Profile Dropdown Popup */}
+              {isProfileMenuOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    right: 0,
+                    width: 250,
+                    backgroundColor: "var(--bg-card)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "var(--radius-lg)",
+                    boxShadow: "0 12px 32px rgba(0, 0, 0, 0.18)",
+                    padding: "8px",
+                    zIndex: 2500,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 3,
+                  }}
+                >
+                  {/* User Profile Header */}
+                  <Link
+                    to={`/profile/${user?.id || "me"}`}
+                    onClick={() => setIsProfileMenuOpen(false)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "8px 10px",
+                      borderRadius: "var(--radius-md)",
+                      textDecoration: "none",
+                      color: "inherit",
+                      transition: "background-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <Avatar src={user?.avatarUrl} name={user?.name} size={38} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 13,
+                          color: "var(--text-primary)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {user?.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text-secondary)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        @{user?.username || "profile"}
+                      </div>
+                    </div>
+                  </Link>
+
+                  <div
+                    style={{
+                      height: 1,
+                      backgroundColor: "var(--border-color)",
+                      margin: "4px 0",
+                    }}
+                  />
+
+                  {/* Settings & Privacy Link */}
+                  <Link
+                    to="/settings"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "8px 10px",
+                      borderRadius: "var(--radius-md)",
+                      textDecoration: "none",
+                      color: "var(--text-primary)",
+                      fontSize: 13.5,
+                      fontWeight: 500,
+                      transition: "background-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    <span>Settings &amp; Privacy</span>
+                  </Link>
+
+                  {/* Dark Mode Toggle Item */}
+                  <button
+                    type="button"
+                    onClick={() => toggleTheme()}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 10px",
+                      borderRadius: "var(--radius-md)",
+                      border: "none",
+                      backgroundColor: "transparent",
+                      color: "var(--text-primary)",
+                      fontSize: 13.5,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      width: "100%",
+                      textAlign: "left",
+                      transition: "background-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 15 }}>{isDark ? "☀️" : "🌙"}</span>
+                      <span>Dark Theme</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 600 }}>
+                      {isDark ? "On" : "Off"}
+                    </span>
+                  </button>
+
+                  <div
+                    style={{
+                      height: 1,
+                      backgroundColor: "var(--border-color)",
+                      margin: "4px 0",
+                    }}
+                  />
+
+                  {/* Log Out Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setIsLogoutModalOpen(true);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "8px 10px",
+                      borderRadius: "var(--radius-md)",
+                      border: "none",
+                      backgroundColor: "transparent",
+                      color: "#ef4444",
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      width: "100%",
+                      textAlign: "left",
+                      transition: "background-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.1)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    <span>Log Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <>

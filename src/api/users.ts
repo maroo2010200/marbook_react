@@ -28,4 +28,19 @@ export const usersApi = {
     });
     return response.data;
   },
+
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>("/users/change-password", data);
+    return response.data;
+  },
+
+  deleteAccount: async (password: string): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>("/users/delete-account", {
+      password,
+    });
+    return response.data;
+  },
 };

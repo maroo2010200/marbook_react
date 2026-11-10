@@ -36,6 +36,68 @@ export default function SearchPage() {
   // Posts state
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsTotal, setPostsTotal] = useState(0);
+  const [searchTerm, setSearchTerm] = useState(query);
+  const [suggestedUsers, setSuggestedUsers] = useState<UserSearchResult[]>([]);
+  const [explorePosts, setExplorePosts] = useState<Post[]>([]);
+  const [isLoadingExplorePosts, setIsLoadingExplorePosts] = useState(false);
+
+  // Sync searchTerm if query changes externally (e.g. back/forward navigation)
+  useEffect(() => {
+    setSearchTerm(query);
+  }, [query]);
+
+  // Live instant debounced search as user types (before hitting Enter)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchTerm.trim();
+      if (trimmed !== query) {
+        setSearchParams(
+          trimmed
+            ? { q: trimmed, type: activeTab }
+            : activeTab !== "all"
+            ? { type: activeTab }
+            : {}
+        );
+      }
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, query, activeTab, setSearchParams]);
+
+  // Fetch explore content when query is empty
+  useEffect(() => {
+    if (!query.trim()) {
+      setIsLoadingExplorePosts(true);
+      postsApi
+        .getAll(1, 10)
+        .then((res) => {
+          const items = res.items || [];
+          setExplorePosts(items);
+          setLikedPostIds((prev) => {
+            const next = new Set(prev);
+            for (const p of items) {
+              if (p.isLiked) next.add(p.id);
+            }
+            return next;
+          });
+        })
+        .catch(() => {})
+        .finally(() => setIsLoadingExplorePosts(false));
+
+      usersApi
+        .searchUsers("", 1, 8)
+        .then((res) => {
+          const filtered = (res.items || []).filter((u) => u.id !== currentUser?.id);
+          setSuggestedUsers(filtered);
+          const map: Record<number, boolean> = {};
+          filtered.forEach((u) => {
+            if (u.isFollowing !== undefined) map[u.id] = u.isFollowing;
+          });
+          setFollowingMap((prev) => ({ ...prev, ...map }));
+        })
+        .catch(() => {});
+    }
+  }, [query, currentUser?.id]);
   const [postsPage, setPostsPage] = useState(1);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [hasMorePosts, setHasMorePosts] = useState(false);
@@ -367,6 +429,160 @@ export default function SearchPage() {
           )}
         </div>
 
+        {/* Explore Search Input Form */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const trimmed = searchTerm.trim();
+            setSearchParams(
+              trimmed
+                ? { q: trimmed, type: activeTab }
+                : activeTab !== "all"
+                ? { type: activeTab }
+                : {}
+            );
+          }}
+          style={{
+            display: "flex",
+            gap: 10,
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <span
+              style={{
+                position: "absolute",
+                left: 14,
+                color: "var(--text-secondary)",
+                fontSize: 16,
+                pointerEvents: "none",
+              }}
+            >
+              🔍
+            </span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search for people, @usernames, or posts on Marshmallow (instant results)..."
+              autoFocus
+              style={{
+                width: "100%",
+                padding: "12px 48px 12px 42px",
+                borderRadius: "var(--radius-full)",
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-input)",
+                color: "var(--text-primary)",
+                fontSize: 14,
+                outline: "none",
+                transition: "border-color 0.15s ease",
+                boxSizing: "border-box",
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
+            />
+            <div
+              style={{
+                position: "absolute",
+                right: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              {(isLoadingUsers || isLoadingPosts) && (
+                <div style={{ width: 28, height: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <MarshmallowLoader size="sm" inline label={null} />
+                </div>
+              )}
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSearchParams(activeTab !== "all" ? { type: activeTab } : {});
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    padding: "4px",
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+          <button
+            type="submit"
+            style={{
+              padding: "12px 22px",
+              borderRadius: "var(--radius-full)",
+              border: "none",
+              backgroundColor: "var(--primary)",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: "pointer",
+              boxShadow: "var(--shadow-sm)",
+              transition: "all 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Search
+          </button>
+        </form>
+
+        {/* Quick Discovery Topic Chips */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600 }}>
+            Suggestions:
+          </span>
+          {["🧁 Marshmallow", "🔥 S'mores", "☕ Campfire", "React", ".NET 10", "Social"].map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => {
+                const cleaned = tag.replace(/^[^\w]+/, "").trim();
+                setSearchTerm(cleaned);
+                setSearchParams({ q: cleaned, type: activeTab });
+              }}
+              style={{
+                padding: "4px 11px",
+                borderRadius: "var(--radius-full)",
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-hover)",
+                color: "var(--text-secondary)",
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--primary)";
+                e.currentTarget.style.color = "var(--primary)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-color)";
+                e.currentTarget.style.color = "var(--text-secondary)";
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+
         {/* Tab Filters */}
         <div
           style={{
@@ -490,56 +706,157 @@ export default function SearchPage() {
 
       {/* No Query / Empty Prompt */}
       {!query.trim() && (
-        <div
-          style={{
-            backgroundColor: "var(--bg-card)",
-            borderRadius: 16,
-            padding: "48px 24px",
-            textAlign: "center",
-            border: "1px solid var(--border-color)",
-          }}
-        >
-          <div style={{ fontSize: 44, marginBottom: 12 }}>🔍</div>
-          <h2 style={{ fontSize: 18, color: "var(--text-primary)", margin: "0 0 8px" }}>
-            Search for people and posts
-          </h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: 14, maxWidth: 420, margin: "0 auto" }}>
-            Type a name, username, or keywords from a post into the search bar above to discover people and conversations on Marshmallow.
-          </p>
-        </div>
-      )}
-
-      {/* No Results State */}
-      {query.trim() &&
-        !isInitialLoading &&
-        users.length === 0 &&
-        posts.length === 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Welcome Explorer Banner */}
           <div
+            className="social-widget-card"
             style={{
-              backgroundColor: "var(--bg-card)",
-              borderRadius: 16,
-              padding: "48px 24px",
+              padding: "24px",
               textAlign: "center",
-              border: "1px solid var(--border-color)",
+              background:
+                "linear-gradient(135deg, rgba(201, 107, 50, 0.08) 0%, rgba(245, 158, 11, 0.12) 100%)",
+              border: "1px solid rgba(201, 107, 50, 0.22)",
             }}
           >
-            <div style={{ fontSize: 44, marginBottom: 12 }}>🕵️‍♂️</div>
-            <h2 style={{ fontSize: 18, color: "var(--text-primary)", margin: "0 0 8px" }}>
-              No results found for &ldquo;{query}&rdquo;
+            <div style={{ fontSize: 36, marginBottom: 8 }}>🔥</div>
+            <h2
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                margin: "0 0 6px",
+              }}
+            >
+              Explore &amp; Discover Marshmallow
             </h2>
             <p
               style={{
                 color: "var(--text-secondary)",
-                fontSize: 14,
-                maxWidth: 420,
-                margin: "0 auto 16px",
+                fontSize: 13.5,
+                maxWidth: 480,
+                margin: "0 auto",
                 lineHeight: 1.5,
               }}
             >
-              We couldn&apos;t find any users or posts matching your search. Check your spelling or try more general keywords.
+              Search for people, @usernames, or topics above with instant live results, or explore the freshest campfire posts below!
             </p>
           </div>
-        )}
+
+          {/* Discover People Section */}
+          {(activeTab === "all" || activeTab === "people") && suggestedUsers.length > 0 && (
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 14,
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    margin: 0,
+                  }}
+                >
+                  People You Might Like 👥
+                </h3>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fill, minmax(240px, 1fr))",
+                  gap: 14,
+                }}
+              >
+                {suggestedUsers.map((targetUser) => (
+                  <UserCard
+                    key={targetUser.id}
+                    user={targetUser}
+                    isFollowing={!!followingMap[targetUser.id]}
+                    isActionLoading={!!followingActionLoading[targetUser.id]}
+                    isMe={currentUser?.id === targetUser.id}
+                    onToggleFollow={() => handleToggleFollow(targetUser)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Explore Posts Stream */}
+          {(activeTab === "all" || activeTab === "posts") && (
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 14,
+                  marginTop: 6,
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    margin: 0,
+                  }}
+                >
+                  Recent Campfire Posts 🔥
+                </h3>
+              </div>
+
+              {isLoadingExplorePosts ? (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <MarshmallowLoader
+                    size="md"
+                    label="Toasting explore posts..."
+                  />
+                </div>
+              ) : explorePosts.length === 0 ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "32px",
+                    color: "var(--text-secondary)",
+                    backgroundColor: "var(--bg-card)",
+                    borderRadius: "var(--radius-lg)",
+                    border: "1px solid var(--border-color)",
+                  }}
+                >
+                  No posts around the campfire yet. Be the first to roast a post!
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {explorePosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      isLiked={likedPostIds.has(post.id)}
+                      currentUserId={currentUser?.id}
+                      onToggleLike={handleToggleLike}
+                      onOpenComments={handleOpenComments}
+                      onPostUpdated={(updated) =>
+                        setExplorePosts((prev) =>
+                          prev.map((p) => (p.id === updated.id ? updated : p))
+                        )
+                      }
+                      onPostDeleted={(postId) =>
+                        setExplorePosts((prev) => prev.filter((p) => p.id !== postId))
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Content for TAB: ALL */}
       {query.trim() && !isInitialLoading && activeTab === "all" && (
