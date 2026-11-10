@@ -4,6 +4,7 @@ import { notificationsApi } from "../api/notifications";
 import { useNotifications } from "../context/NotificationContext";
 import type { NotificationItem } from "../types/notifications";
 import { Avatar } from "./Avatar";
+import { MarshmallowLoader } from "./MarshmallowLoader";
 import { formatRelativeTime } from "../utils/time";
 
 interface NotificationsDropdownProps {
@@ -295,28 +296,8 @@ export function NotificationsDropdown({
         }}
       >
         {loading && (
-          <div
-            style={{
-              padding: "36px 16px",
-              textAlign: "center",
-              color: "#65676b",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                border: "2px solid #e4e6eb",
-                borderTopColor: "#1877f2",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
-            <span style={{ fontSize: 13 }}>Loading notifications...</span>
+          <div style={{ padding: "24px 16px", textAlign: "center" }}>
+            <MarshmallowLoader size="md" label="Toasting notifications..." />
           </div>
         )}
 

@@ -9,6 +9,7 @@ import { PostCard } from "../components/posts/PostCard";
 import { CommentsModal } from "../components/comments/CommentsModal";
 import { UserCard } from "../components/UserCard";
 import { MainLayout } from "../components/layout/MainLayout";
+import { MarshmallowLoader } from "../components/MarshmallowLoader";
 import type { UserSearchResult } from "../types/user";
 import type { Post } from "../types/posts";
 
@@ -355,7 +356,7 @@ export default function SearchPage() {
                 <span style={{ color: "var(--primary)" }}>&ldquo;{query}&rdquo;</span>
               </>
             ) : (
-              "Explore & Search Marbook"
+              "Explore & Search Marshmallow"
             )}
           </h1>
           {query.trim() && (
@@ -479,20 +480,11 @@ export default function SearchPage() {
       {/* Loading Skeleton */}
       {isInitialLoading && (
         <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              margin: "0 auto 16px",
-              borderRadius: "50%",
-              border: "3px solid var(--primary)",
-              borderTopColor: "transparent",
-              animation: "spin 0.6s linear infinite",
-            }}
+          <MarshmallowLoader
+            size="lg"
+            label="Searching Marshmallow..."
+            sublabel="Roasting search results over the campfire..."
           />
-          <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-            Searching people and posts...
-          </p>
         </div>
       )}
 
@@ -512,7 +504,7 @@ export default function SearchPage() {
             Search for people and posts
           </h2>
           <p style={{ color: "var(--text-secondary)", fontSize: 14, maxWidth: 420, margin: "0 auto" }}>
-            Type a name, username, or keywords from a post into the search bar above to discover people and conversations on Marbook.
+            Type a name, username, or keywords from a post into the search bar above to discover people and conversations on Marshmallow.
           </p>
         </div>
       )}

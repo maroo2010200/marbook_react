@@ -19,6 +19,7 @@ import { chatApi } from "../api/chat";
 import { ChatIcon } from "../components/ChatIcon";
 import { Avatar } from "../components/Avatar";
 import { MainLayout } from "../components/layout/MainLayout";
+import { MarshmallowLoader } from "../components/MarshmallowLoader";
 import { getMediaUrl, getPostOptimizedUrl } from "../utils/media";
 
 function formatMemberDate(dateString: string): string {
@@ -505,29 +506,17 @@ export function ProfilePage() {
     return (
       <div
         style={{
-          maxWidth: 720,
-          margin: "40px auto",
-          padding: "0 16px",
-          textAlign: "center",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
         }}
       >
-        <div
-          style={{
-            display: "inline-block",
-            width: 38,
-            height: 38,
-            border: "3px solid var(--border-color)",
-            borderTopColor: "var(--primary)",
-            borderRadius: "50%",
-            animation: "spin 0.8s linear infinite",
-          }}
+        <MarshmallowLoader
+          size="lg"
+          label="Toasting profile..."
+          sublabel="Roasting user information..."
         />
-        <p style={{ marginTop: 14, color: "var(--text-secondary)", fontSize: 15 }}>
-          Loading profile...
-        </p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -956,20 +945,11 @@ export function ProfilePage() {
 
           {postsLoading && posts.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <div
-                style={{
-                  display: "inline-block",
-                  width: 30,
-                  height: 30,
-                  border: "3px solid #e4e6eb",
-                  borderTopColor: "#1877f2",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                }}
+              <MarshmallowLoader
+                size="md"
+                label="Toasting posts..."
+                sublabel="Grilling posts over the campfire..."
               />
-              <p style={{ color: "#65676b", fontSize: 14, marginTop: 10 }}>
-                Loading posts...
-              </p>
             </div>
           ) : postsError ? (
             <div
@@ -1028,17 +1008,7 @@ export function ProfilePage() {
               {/* Loading More Spinner */}
               {loadingMore && (
                 <div style={{ textAlign: "center", padding: "16px 0" }}>
-                  <div
-                    style={{
-                      display: "inline-block",
-                      width: 24,
-                      height: 24,
-                      border: "3px solid var(--border-color)",
-                      borderTopColor: "var(--primary)",
-                      borderRadius: "50%",
-                      animation: "spin 0.8s linear infinite",
-                    }}
-                  />
+                  <MarshmallowLoader size="sm" inline label="Toasting more posts..." />
                 </div>
               )}
 
@@ -1159,7 +1129,7 @@ export function ProfilePage() {
                   {profile.name}
                 </div>
                 <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                  {profile.username ? `@${profile.username}` : "Marbook Member"}
+                  {profile.username ? `@${profile.username}` : "Marshmallow Member"}
                 </div>
               </div>
             </div>
@@ -1440,20 +1410,7 @@ export function ProfilePage() {
 
           {isFollowersLoading && followersList.length === 0 ? (
             <div style={{ textAlign: "center", padding: "48px 0" }}>
-              <div
-                style={{
-                  display: "inline-block",
-                  width: 32,
-                  height: 32,
-                  border: "3px solid var(--border-color)",
-                  borderTopColor: "var(--primary)",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                }}
-              />
-              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 12 }}>
-                Loading followers...
-              </p>
+              <MarshmallowLoader size="md" label="Toasting followers..." />
             </div>
           ) : followersList.length === 0 ? (
             <div
@@ -1640,20 +1597,7 @@ export function ProfilePage() {
 
           {isFollowingLoading && followingList.length === 0 ? (
             <div style={{ textAlign: "center", padding: "48px 0" }}>
-              <div
-                style={{
-                  display: "inline-block",
-                  width: 32,
-                  height: 32,
-                  border: "3px solid var(--border-color)",
-                  borderTopColor: "var(--primary)",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                }}
-              />
-              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 12 }}>
-                Loading following...
-              </p>
+              <MarshmallowLoader size="md" label="Toasting following..." />
             </div>
           ) : followingList.length === 0 ? (
             <div

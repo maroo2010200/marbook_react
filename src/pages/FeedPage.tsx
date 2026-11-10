@@ -8,6 +8,7 @@ import { CommentsModal } from "../components/comments/CommentsModal";
 import { PostComposer } from "../components/posts/PostComposer";
 import { PostCard } from "../components/posts/PostCard";
 import { MainLayout } from "../components/layout/MainLayout";
+import { MarshmallowLoader } from "../components/MarshmallowLoader";
 import type { Post } from "../types/posts";
 
 function FeedPage() {
@@ -37,8 +38,12 @@ function FeedPage() {
       fetchPosts();
     };
 
+    window.addEventListener("marshmallow:refresh-feed", handleRefresh);
+    window.addEventListener("marshmallow:refresh-feed", handleRefresh);
     window.addEventListener("marbook:refresh-feed", handleRefresh);
     return () => {
+      window.removeEventListener("marshmallow:refresh-feed", handleRefresh);
+      window.removeEventListener("marshmallow:refresh-feed", handleRefresh);
       window.removeEventListener("marbook:refresh-feed", handleRefresh);
     };
   }, [fetchPosts]);
@@ -411,27 +416,12 @@ function FeedPage() {
 
       {/* Initial loading state */}
       {loading && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "40px 20px",
-            color: "#65676b",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-block",
-              width: 24,
-              height: 24,
-              border: "3px solid #e4e6eb",
-              borderTopColor: "#1877f2",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-              marginBottom: 10,
-            }}
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <MarshmallowLoader
+            size="lg"
+            label="Toasting your feed..."
+            sublabel="Grilling posts over the campfire..."
           />
-          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-          <p style={{ margin: 0, fontSize: 15 }}>Loading your feed...</p>
         </div>
       )}
 
@@ -507,7 +497,7 @@ function FeedPage() {
             }}
           >
             {feedTab === "following"
-              ? "Follow other creators and users across Marbook to see their newest posts here!"
+              ? "Follow other creators and users across Marshmallow to see their newest posts here!"
               : "Be the first to share something with the community using the composer above!"}
           </p>
           {feedTab === "following" && (
@@ -571,26 +561,13 @@ function FeedPage() {
       {loadingMore && (
         <div
           style={{
-            textAlign: "center",
-            padding: "16px",
-            color: "#65676b",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: 8,
+            padding: "20px 0",
           }}
         >
-          <div
-            style={{
-              width: 16,
-              height: 16,
-              border: "2px solid #e4e6eb",
-              borderTopColor: "#1877f2",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-            }}
-          />
-          <span style={{ fontSize: 14 }}>Loading more posts...</span>
+          <MarshmallowLoader size="sm" inline label="Toasting more posts..." />
         </div>
       )}
 

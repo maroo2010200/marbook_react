@@ -4,6 +4,7 @@ import { notificationsApi } from "../api/notifications";
 import { useNotifications } from "../context/NotificationContext";
 import { MainLayout } from "../components/layout/MainLayout";
 import { Avatar } from "../components/Avatar";
+import { MarshmallowLoader } from "../components/MarshmallowLoader";
 import { formatRelativeTime } from "../utils/time";
 import type { NotificationItem, NotificationType } from "../types/notifications";
 
@@ -254,19 +255,12 @@ export default function NotificationsPage() {
 
         {/* Notifications List */}
         {loading ? (
-          <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-secondary)" }}>
-            <div
-              style={{
-                display: "inline-block",
-                width: 28,
-                height: 28,
-                border: "3px solid var(--border-color)",
-                borderTopColor: "var(--primary)",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-              }}
+          <div style={{ textAlign: "center", padding: "48px 20px" }}>
+            <MarshmallowLoader
+              size="lg"
+              label="Toasting notifications..."
+              sublabel="Checking the campfire for updates..."
             />
-            <p style={{ marginTop: 12, fontSize: 14 }}>Loading notifications...</p>
           </div>
         ) : notifications.length === 0 ? (
           <div

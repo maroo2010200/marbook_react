@@ -4,6 +4,7 @@ import { usersApi } from "../api/users";
 import { postsApi } from "../api/posts";
 import { formatRelativeTime } from "../utils/time";
 import { Avatar } from "./Avatar";
+import { MarshmallowLoader } from "./MarshmallowLoader";
 import type { UserSearchResult } from "../types/user";
 import type { Post } from "../types/posts";
 
@@ -215,7 +216,7 @@ export function SearchBar({ onSearchSubmit, className, style }: SearchBarProps) 
               if (query.trim().length >= 2) setIsOpen(true);
             }}
             onBlur={() => setIsFocused(false)}
-            placeholder="Search Marbook..."
+            placeholder="Search Marshmallow..."
             style={{
               width: "100%",
               border: "none",
@@ -298,26 +299,15 @@ export function SearchBar({ onSearchSubmit, className, style }: SearchBarProps) 
           {isLoading && (
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "12px 16px",
-                fontSize: 13,
-                color: "var(--text-secondary)",
+                padding: "8px 16px",
                 borderBottom: "1px solid var(--border-color)",
               }}
             >
-              <div
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: "50%",
-                  border: "2px solid var(--primary)",
-                  borderTopColor: "transparent",
-                  animation: "spin 0.6s linear infinite",
-                }}
+              <MarshmallowLoader
+                size="sm"
+                inline
+                label={<span>Searching for &ldquo;{query}&rdquo;...</span>}
               />
-              <span>Searching for &ldquo;{query}&rdquo;...</span>
             </div>
           )}
 

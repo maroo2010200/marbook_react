@@ -66,7 +66,7 @@ function LoginPage() {
           textAlign: "center",
         }}
       >
-        Log In to Marbook
+        Log In to Marshmallow
       </h1>
 
       {error && (

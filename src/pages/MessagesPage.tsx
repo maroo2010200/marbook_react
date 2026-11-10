@@ -870,7 +870,7 @@ export default function MessagesPage() {
                       ? `${typingUser} is typing...`
                       : activeConversation.otherParticipant.username
                       ? `@${activeConversation.otherParticipant.username}`
-                      : "Active on Marbook"}
+                      : "Active on Marshmallow"}
                   </span>
                 </div>
               </div>

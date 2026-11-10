@@ -1,81 +1,81 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Surfaces & Canvas */
-  --bg-page: #f4f6fa;
+  /* Surfaces & Canvas - Warm Ivory Fluff */
+  --bg-page: #fbf9f5;
   --bg-card: #ffffff;
-  --bg-card-hover: #f9fafb;
-  --bg-hover: #f0f3f8;
-  --bg-active: #e2e8f0;
-  --bg-input: #f1f4f9;
-  --bg-badge: #e2e8f0;
+  --bg-card-hover: #fdfbf8;
+  --bg-hover: #f4efea;
+  --bg-active: #ebe3d9;
+  --bg-input: #f5f0e9;
+  --bg-badge: #eee7dc;
 
-  /* Typography */
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-tertiary: #94a3b8;
+  /* Typography - Roasted Espresso & Warm Mocha */
+  --text-primary: #241d19;
+  --text-secondary: #75675e;
+  --text-tertiary: #a3958b;
 
-  /* Borders & Dividers */
-  --border-color: #e2e8f0;
-  --border-subtle: #f1f5f9;
-  --divider: #edf2f7;
+  /* Borders & Dividers - Warm Biscuit */
+  --border-color: #eae2d7;
+  --border-subtle: #f3ece3;
+  --divider: #ebe4da;
 
-  /* Brand Accents */
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --primary-light-hover: #dbeafe;
+  /* Brand Accents - Toasted Caramel & Golden Amber */
+  --primary: #c96b32;
+  --primary-hover: #b45b25;
+  --primary-light: #fef3eb;
+  --primary-light-hover: #fde6d7;
 
-  /* Geometry & Radii */
+  /* Geometry & Radii - Pillowy / Soft */
   --radius-xs: 6px;
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
 
-  /* Elevation Shadows */
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
-  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.06);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
-  --shadow-card-hover: 0 8px 20px -3px rgba(15, 23, 42, 0.07), 0 3px 6px -2px rgba(15, 23, 42, 0.03);
-  --modal-overlay: rgba(15, 23, 42, 0.55);
+  /* Elevation Shadows - Soft Warm Glow */
+  --shadow-sm: 0 1px 3px rgba(36, 29, 25, 0.04), 0 1px 2px rgba(36, 29, 25, 0.02);
+  --shadow-md: 0 4px 14px -2px rgba(36, 29, 25, 0.07), 0 2px 6px -1px rgba(36, 29, 25, 0.03);
+  --shadow-lg: 0 12px 30px -4px rgba(36, 29, 25, 0.10), 0 4px 12px -2px rgba(36, 29, 25, 0.05);
+  --shadow-card: 0 1px 3px rgba(36, 29, 25, 0.04), 0 1px 2px rgba(36, 29, 25, 0.02);
+  --shadow-card-hover: 0 8px 24px -3px rgba(36, 29, 25, 0.08), 0 3px 8px -2px rgba(36, 29, 25, 0.04);
+  --modal-overlay: rgba(28, 23, 21, 0.60);
 }
 
 [data-theme="dark"] {
-  /* Surfaces & Canvas */
-  --bg-page: #0b0f17;
-  --bg-card: #151b26;
-  --bg-card-hover: #1c2433;
-  --bg-hover: #1f2937;
-  --bg-active: #2d3748;
-  --bg-input: #1a2230;
-  --bg-badge: #1f2937;
+  /* Surfaces & Canvas - Dark Chocolate & S'mores */
+  --bg-page: #141110;
+  --bg-card: #1e1917;
+  --bg-card-hover: #26201d;
+  --bg-hover: #2a2320;
+  --bg-active: #382e29;
+  --bg-input: #241d1a;
+  --bg-badge: #2a221f;
 
-  /* Typography */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
+  /* Typography - Warm Milk Foam Cream */
+  --text-primary: #faf6f0;
+  --text-secondary: #b7a79d;
+  --text-tertiary: #7d6e64;
 
-  /* Borders & Dividers */
-  --border-color: #222d3d;
-  --border-subtle: #192230;
-  --divider: #1c2433;
+  /* Borders & Dividers - Deep Cocoa */
+  --border-color: #2f2622;
+  --border-subtle: #241e1b;
+  --divider: #28211e;
 
-  /* Brand Accents */
-  --primary: #3b82f6;
-  --primary-hover: #60a5fa;
-  --primary-light: rgba(59, 130, 246, 0.14);
-  --primary-light-hover: rgba(59, 130, 246, 0.22);
+  /* Brand Accents - Glowing Ember / Toasted Amber */
+  --primary: #f59e0b;
+  --primary-hover: #fbbf24;
+  --primary-light: rgba(245, 158, 11, 0.14);
+  --primary-light-hover: rgba(245, 158, 11, 0.22);
 
   /* Elevation Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 14px 30px rgba(0, 0, 0, 0.65);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --modal-overlay: rgba(0, 0, 0, 0.8);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.75);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 8px 26px rgba(0, 0, 0, 0.55);
+  --modal-overlay: rgba(0, 0, 0, 0.85);
 }
 
 * {
@@ -525,4 +525,199 @@ h1, h2, h3, h4, h5, h6 {
     flex-wrap: wrap;
     min-height: auto;
   }
-}
+}
+
+
+/* ============================================================
+   MARSHMALLOW CAMPFIRE ROASTING ANIMATIONS
+   ============================================================ */
+@keyframes mLoaderSkewerTurn {
+  0%, 100% {
+    transform: rotate(-3deg) translateY(0px);
+  }
+  25% {
+    transform: rotate(-1deg) translateY(-2px);
+  }
+  50% {
+    transform: rotate(-5.5deg) translateY(1.5px);
+  }
+  75% {
+    transform: rotate(-2deg) translateY(-1px);
+  }
+}
+
+@keyframes mLoaderToastRoll {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-40px);
+  }
+}
+
+@keyframes mLoaderWobble {
+  0%, 100% {
+    transform: scale(1, 1);
+  }
+  30% {
+    transform: scale(1.025, 0.96);
+  }
+  70% {
+    transform: scale(0.975, 1.03);
+  }
+}
+
+@keyframes mLoaderFlameBack {
+  0%, 100% {
+    transform: scale(1, 1) rotate(0deg);
+  }
+  33% {
+    transform: scale(0.94, 1.15) rotate(2.5deg);
+  }
+  66% {
+    transform: scale(1.06, 0.88) rotate(-3deg);
+  }
+}
+
+@keyframes mLoaderFlameMid {
+  0%, 100% {
+    transform: scale(1, 1) rotate(-2deg);
+  }
+  50% {
+    transform: scale(0.92, 1.12) rotate(3deg);
+  }
+}
+
+@keyframes mLoaderFlameCore {
+  0%, 100% {
+    transform: scale(1, 1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scale(1.12, 1.25);
+    opacity: 1;
+  }
+}
+
+@keyframes mLoaderEmber1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-14px, -36px) scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes mLoaderEmber2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(12px, -42px) scale(0.1);
+    opacity: 0;
+  }
+}
+
+@keyframes mLoaderEmber3 {
+  0% {
+    transform: translate(0, 0) scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(3px, -28px) scale(0.1);
+    opacity: 0;
+  }
+}
+
+@keyframes mLoaderSteam {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateY(-20px) scale(1.3);
+    opacity: 0;
+  }
+}
+
+@keyframes mLoaderFireGlow {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
+}
+
+.m-loader-skewer {
+  animation: mLoaderSkewerTurn 3s ease-in-out infinite;
+  transform-origin: 20px 70px;
+}
+.m-loader-squash {
+  animation: mLoaderWobble 2.4s ease-in-out infinite;
+  transform-origin: 102px 58px;
+}
+.m-loader-toast {
+  animation: mLoaderToastRoll 2.2s linear infinite;
+}
+.m-loader-flame-back {
+  animation: mLoaderFlameBack 0.75s ease-in-out infinite alternate;
+  transform-origin: 90px 125px;
+}
+.m-loader-flame-mid {
+  animation: mLoaderFlameMid 0.6s ease-in-out infinite alternate;
+  transform-origin: 90px 125px;
+}
+.m-loader-flame-core {
+  animation: mLoaderFlameCore 0.45s ease-in-out infinite alternate;
+  transform-origin: 90px 125px;
+}
+.m-loader-ember-1 {
+  animation: mLoaderEmber1 1.8s ease-out infinite;
+}
+.m-loader-ember-2 {
+  animation: mLoaderEmber2 2.2s ease-out 0.7s infinite;
+}
+.m-loader-ember-3 {
+  animation: mLoaderEmber3 1.5s ease-out 1.2s infinite;
+}
+.m-loader-steam-1 {
+  animation: mLoaderSteam 2s ease-out infinite;
+  transform-origin: 94px 38px;
+}
+.m-loader-steam-2 {
+  animation: mLoaderSteam 2.4s ease-out 1s infinite;
+  transform-origin: 110px 36px;
+}
+.m-loader-glow {
+  animation: mLoaderFireGlow 0.9s ease-in-out infinite alternate;
+  transform-origin: 90px 115px;
+}
+
+/* ============================================================
+   MARSHMALLOW BRAND LOGO HOVER SQUISH
+   ============================================================ */
+@keyframes marshmallowLogoSquish {
+  0%, 100% {
+    transform: scale(1, 1);
+  }
+  30% {
+    transform: scale(1.15, 0.86);
+  }
+  60% {
+    transform: scale(0.92, 1.08);
+  }
+}
+
+.marshmallow-logo-icon:hover,
+.navbar-brand-text:hover .marshmallow-logo-icon {
+  animation: marshmallowLogoSquish 0.55s ease-in-out;
+}
