@@ -6,6 +6,7 @@ export interface Comment {
   imageUrl?: string | null;
   userId: number;
   userName: string;
+  userUsername?: string | null;
   userAvatarUrl?: string | null;
   createdAt: string;
   updatedAt: string;

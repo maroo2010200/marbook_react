@@ -6,7 +6,7 @@ import { extractMediaUrlFromLink } from "../../utils/richText";
 
 export interface CommentInputProps {
   isAuthenticated: boolean;
-  replyingTo: { commentId: number; userName: string } | null;
+  replyingTo: { commentId: number; userName: string; userUsername?: string | null } | null;
   newComment: string;
   submitting: boolean;
   submitError: string | null;
@@ -127,7 +127,7 @@ export function CommentInput({
             <span>
               Replying to{" "}
               <strong style={{ color: "var(--text-primary)" }}>
-                @{replyingTo.userName}
+                @{replyingTo.userUsername || replyingTo.userName}
               </strong>
             </span>
             <button

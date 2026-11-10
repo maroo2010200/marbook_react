@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import React from "react";
 
 export interface MediaDetection {
@@ -128,32 +129,64 @@ export function parseRichText(
   const linkColor = options?.linkColor || "#0095f6";
   const hidePureMediaUrl = options?.hidePureMediaUrl ?? true;
 
-  // 1. Check for leading @mention
-  let prefixMention: string | null = null;
-  let remainingText = content;
+  // Helper to parse @mentions inside text and render them as clickable profile links
+  const renderTextWithMentions = (textChunk: string, keyPrefix: string): React.ReactNode[] => {
+    const mentionRegex = /@([a-zA-Z0-9_\u0600-\u06FF]+)/g;
+    const result: React.ReactNode[] = [];
+    let curIndex = 0;
+    let mMatch: RegExpExecArray | null;
 
-  const mentionMatch = content.match(/^(@[\w\u0600-\u06FF]+)([\s\S]*)$/);
-  if (mentionMatch) {
-    prefixMention = mentionMatch[1];
-    remainingText = mentionMatch[2];
-  }
+    while ((mMatch = mentionRegex.exec(textChunk)) !== null) {
+      const handle = mMatch[1];
+      const matchStart = mMatch.index;
 
-  // 2. Find all URLs in remainingText
+      if (matchStart > curIndex) {
+        result.push(textChunk.substring(curIndex, matchStart));
+      }
+
+      result.push(
+        <Link
+          key={`${keyPrefix}-mention-${matchStart}`}
+          to={`/profile/${handle}`}
+          style={{
+            color: linkColor,
+            fontWeight: 600,
+            textDecoration: "none",
+            cursor: "pointer",
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+        >
+          @{handle}
+        </Link>
+      );
+
+      curIndex = matchStart + mMatch[0].length;
+    }
+
+    if (curIndex < textChunk.length) {
+      result.push(textChunk.substring(curIndex));
+    }
+
+    return result;
+  };
+
   const detectedMediaList: string[] = [];
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  // Clone regex for stateful iteration
   const regex = new RegExp(URL_REGEX);
 
-  while ((match = regex.exec(remainingText)) !== null) {
+  while ((match = regex.exec(content)) !== null) {
     const url = match[1];
     const startIndex = match.index;
 
-    // Push text before the link
+    // Push text before the link (parsed for mentions)
     if (startIndex > lastIndex) {
-      parts.push(remainingText.substring(lastIndex, startIndex));
+      const chunk = content.substring(lastIndex, startIndex);
+      parts.push(...renderTextWithMentions(chunk, `txt-${lastIndex}`));
     }
 
     // Check if this URL is a GIF or image
@@ -180,12 +213,8 @@ export function parseRichText(
           fontWeight: 500,
         }}
         onClick={(e) => e.stopPropagation()}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.color = "#38bdf8")
-        }
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.color = linkColor)
-        }
+        onMouseEnter={(e) => (e.currentTarget.style.color = "#38bdf8")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
       >
         {url}
       </a>
@@ -194,43 +223,23 @@ export function parseRichText(
     lastIndex = startIndex + url.length;
   }
 
-  // Push remaining text after last link
-  if (lastIndex < remainingText.length) {
-    parts.push(remainingText.substring(lastIndex));
+  // Push remaining text after last link (parsed for mentions)
+  if (lastIndex < content.length) {
+    const chunk = content.substring(lastIndex);
+    parts.push(...renderTextWithMentions(chunk, `txt-${lastIndex}`));
   }
 
-  // 3. Determine if the text is purely a media URL
-  const trimmedRemaining = remainingText.trim();
+  const trimmed = content.trim();
   const isSingleUrl = Boolean(
-    trimmedRemaining &&
-    trimmedRemaining.match(/^(?:https?:\/\/|www\.)[^\s]+$/i) &&
+    trimmed &&
+    trimmed.match(/^(?:https?:\/\/|www\.)[^\s]+$/i) &&
     detectedMediaList.length > 0
   );
 
   const isPureMedia = isSingleUrl;
 
-  // Build final nodes
-  const nodes: React.ReactNode[] = [];
-
-  if (prefixMention) {
-    nodes.push(
-      <span
-        key="mention"
-        style={{ color: linkColor, fontWeight: 600, marginRight: 4 }}
-      >
-        {prefixMention}
-      </span>
-    );
-  }
-
-  if (isPureMedia && hidePureMediaUrl) {
-    // Hide raw link if only sending a media embed
-  } else {
-    nodes.push(...parts);
-  }
-
   return {
-    nodes,
+    nodes: isPureMedia && hidePureMediaUrl ? [] : parts,
     mediaUrls: detectedMediaList,
     isPureMedia,
   };

@@ -55,20 +55,25 @@ export function ProfilePage() {
   const { openFloatingChat } = useChat();
   const navigate = useNavigate();
 
-  const targetUserId =
-    rawId === "me" || !rawId
-      ? currentUser?.id
-      : Number.parseInt(rawId, 10);
-
-  const isMe = Boolean(
-    (currentUser?.id && targetUserId && currentUser.id === targetUserId) ||
-    rawId === "me" ||
-    !rawId
-  );
-
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  const isNumericId = Boolean(rawId && /^\d+$/.test(rawId));
+  const isMe = Boolean(
+    rawId === "me" ||
+    !rawId ||
+    (currentUser?.id && isNumericId && currentUser.id === Number.parseInt(rawId!, 10)) ||
+    (currentUser?.username && rawId && currentUser.username.toLowerCase() === rawId.replace(/^@/, "").toLowerCase()) ||
+    (profile && currentUser?.id === profile.id)
+  );
+
+  const targetUserId =
+    rawId === "me" || !rawId
+      ? currentUser?.id
+      : isNumericId
+      ? Number.parseInt(rawId!, 10)
+      : profile?.id;
 
   // Active Tab: 'posts' | 'about' | 'followers' | 'following' | 'photos'
   type ProfileTab = "posts" | "about" | "followers" | "following" | "photos";
@@ -112,25 +117,34 @@ export function ProfilePage() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  // Fetch Profile data
+  // Fetch Profile data (supports numeric ID, "me", or @username)
   const fetchProfile = useCallback(async () => {
-    if (!targetUserId || Number.isNaN(targetUserId)) {
-      setProfileError("Invalid user profile ID");
-      setProfileLoading(false);
-      return;
-    }
-
     try {
       setProfileLoading(true);
       setProfileError(null);
-      const data = await usersApi.getUserProfile(targetUserId);
+
+      let data: UserProfile;
+      if (rawId === "me" || !rawId) {
+        if (!currentUser?.id) {
+          setProfileError("User not logged in");
+          setProfileLoading(false);
+          return;
+        }
+        data = await usersApi.getUserProfile(currentUser.id);
+      } else if (isNumericId) {
+        data = await usersApi.getUserProfile(Number.parseInt(rawId!, 10));
+      } else {
+        const cleanUsername = rawId!.replace(/^@/, "");
+        data = await usersApi.getUserProfileByUsername(cleanUsername);
+      }
+
       setProfile(data);
     } catch {
       setProfileError("Failed to load user profile. The user may not exist.");
     } finally {
       setProfileLoading(false);
     }
-  }, [targetUserId]);
+  }, [rawId, isNumericId, currentUser?.id]);
 
   useEffect(() => {
     fetchProfile();
@@ -149,7 +163,7 @@ export function ProfilePage() {
     removePost,
     createPost,
   } = usePosts(1, 10, {
-    userId: targetUserId && !Number.isNaN(targetUserId) ? targetUserId : undefined,
+    userId: (targetUserId && !Number.isNaN(targetUserId) ? targetUserId : profile?.id) ?? undefined,
   });
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -239,7 +253,7 @@ export function ProfilePage() {
   useEffect(() => {
     setFollowersLoaded(false);
     setFollowingLoaded(false);
-  }, [targetUserId]);
+  }, [rawId]);
 
   const handleToggleCardFollow = async (
     targetId: number,

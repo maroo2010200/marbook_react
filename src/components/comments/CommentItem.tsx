@@ -14,7 +14,7 @@ export interface CommentItemProps {
   loadingRepliesCommentIds: Set<number>;
   onToggleReplies: (commentId: number) => void;
   onToggleLike: (commentId: number) => void;
-  onStartReply: (commentId: number, userName: string) => void;
+  onStartReply: (commentId: number, userName: string, userUsername?: string | null) => void;
   currentUserId?: number;
   onEditComment?: (
     commentId: number,
@@ -572,7 +572,7 @@ export function CommentItem({
               {/* Reply Button */}
               <button
                 type="button"
-                onClick={() => onStartReply(comment.id, comment.userName)}
+                onClick={() => onStartReply(comment.id, comment.userName, comment.userUsername)}
                 style={{
                   background: "none",
                   border: "none",
