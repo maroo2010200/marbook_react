@@ -29,13 +29,28 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
     setSuccess(false);
+
+    const cleanUsername = username.trim().toLowerCase();
+    if (!cleanUsername) {
+      setError("Username is required.");
+      return;
+    }
+    if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+      setError("Username must be between 3 and 30 characters.");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(cleanUsername)) {
+      setError("Username can only contain letters, numbers, and underscores.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       await register({
-        email,
-        name,
-        username: username || null,
+        email: email.trim(),
+        name: name.trim(),
+        username: cleanUsername,
         password,
         birthdate,
       });
@@ -361,14 +376,15 @@ export default function RegisterPage() {
                 marginBottom: "5px",
               }}
             >
-              Username (optional)
+              Username *
             </label>
             <input
               id="reg-username"
               type="text"
-              placeholder="e.g. mayalin"
+              placeholder="e.g. mayalin99"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+              required
               disabled={loading}
               style={{
                 width: "100%",
@@ -385,6 +401,16 @@ export default function RegisterPage() {
               onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
               onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
             />
+            <span
+              style={{
+                fontSize: "11px",
+                color: "var(--text-tertiary)",
+                marginTop: "4px",
+                display: "block",
+              }}
+            >
+              Your unique campfire handle: @{username || "handle"} (3–30 letters, numbers, or _)
+            </span>
           </div>
 
           <div>

@@ -67,6 +67,14 @@ function App() {
                   }
                 />
                 <Route
+                  path="/@:id"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/search"
                   element={
                     <ProtectedRoute>

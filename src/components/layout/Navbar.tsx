@@ -436,7 +436,7 @@ function Navbar() {
                 >
                   {/* User Profile Header */}
                   <Link
-                    to={`/profile/${user?.id || "me"}`}
+                    to={user?.username ? `/@${user.username}` : `/profile/${user?.id || "me"}`}
                     onClick={() => setIsProfileMenuOpen(false)}
                     style={{
                       display: "flex",
