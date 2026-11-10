@@ -25,6 +25,7 @@ export function FloatingChatDock() {
     onMessageEdited,
     onMessageDeleted,
     onUserTyping,
+    onMessagesRead,
   } = useChat();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -33,6 +34,24 @@ export function FloatingChatDock() {
   const [isSending, setIsSending] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [conversationDetails, setConversationDetails] = useState<ConversationSummary | null>(null);
+  const [lastReadTimestamp, setLastReadTimestamp] = useState<string | null>(null);
+
+  // Reset lastReadTimestamp on conversation change
+  useEffect(() => {
+    setLastReadTimestamp(null);
+  }, [floatingConversationId]);
+
+  // Sync initial lastReadTimestamp from conversationDetails
+  useEffect(() => {
+    if (conversationDetails?.otherParticipantLastReadAt) {
+      setLastReadTimestamp((prev) => {
+        if (!prev) return conversationDetails.otherParticipantLastReadAt!;
+        return new Date(conversationDetails.otherParticipantLastReadAt!) > new Date(prev)
+          ? conversationDetails.otherParticipantLastReadAt!
+          : prev;
+      });
+    }
+  }, [conversationDetails?.otherParticipantLastReadAt]);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -174,11 +193,21 @@ export function FloatingChatDock() {
       }
     });
 
+    const unsubRead = onMessagesRead((event) => {
+      if (
+        event.conversationId === floatingConversationId &&
+        (!currentUser || event.readerUserId !== currentUser.id)
+      ) {
+        setLastReadTimestamp(event.readAt);
+      }
+    });
+
     return () => {
       unsubReceive();
       unsubEdited();
       unsubDeleted();
       unsubTyping();
+      unsubRead();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [
@@ -188,6 +217,7 @@ export function FloatingChatDock() {
     onMessageEdited,
     onMessageDeleted,
     onUserTyping,
+    onMessagesRead,
     refreshUnreadCount,
     setConversations,
   ]);
@@ -383,49 +413,78 @@ export function FloatingChatDock() {
             Say hello to {otherParticipant?.name || "them"} 👋
           </div>
         ) : (
-          messages.map((m) => {
-            const isMine = m.isMine;
-            return (
-              <div
-                key={m.id}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: isMine ? "flex-end" : "flex-start",
-                  maxWidth: "85%",
-                  alignSelf: isMine ? "flex-end" : "flex-start",
-                }}
-              >
+          (() => {
+            const lastMineIndex = messages
+              .map((m) =>
+                currentUser ? m.senderUserId === currentUser.id : m.isMine
+              )
+              .lastIndexOf(true);
+
+            return messages.map((m, index) => {
+              const isMine = currentUser
+                ? m.senderUserId === currentUser.id
+                : m.isMine;
+              const isLastMine = isMine && index === lastMineIndex;
+              const isSeen =
+                Boolean(lastReadTimestamp) &&
+                new Date(lastReadTimestamp!).getTime() >=
+                  new Date(m.createdAt).getTime();
+
+              return (
                 <div
+                  key={m.id}
                   style={{
-                    backgroundColor: isMine ? "var(--primary)" : "var(--bg-card)",
-                    color: isMine ? "#ffffff" : "var(--text-primary)",
-                    padding: "8px 12px",
-                    borderRadius: isMine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                    fontSize: 13,
-                    lineHeight: 1.4,
-                    wordBreak: "break-word",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-                    border: isMine ? "none" : "1px solid var(--border-color)",
-                    fontStyle: m.isDeleted ? "italic" : "normal",
-                    opacity: m.isDeleted ? 0.75 : 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: isMine ? "flex-end" : "flex-start",
+                    maxWidth: "85%",
+                    alignSelf: isMine ? "flex-end" : "flex-start",
                   }}
                 >
-                  {parseRichText(m.content).nodes}
+                  <div
+                    style={{
+                      backgroundColor: isMine ? "var(--primary)" : "var(--bg-card)",
+                      color: isMine ? "#ffffff" : "var(--text-primary)",
+                      padding: "8px 12px",
+                      borderRadius: isMine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                      fontSize: 13,
+                      lineHeight: 1.4,
+                      wordBreak: "break-word",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                      border: isMine ? "none" : "1px solid var(--border-color)",
+                      fontStyle: m.isDeleted ? "italic" : "normal",
+                      opacity: m.isDeleted ? 0.75 : 1,
+                    }}
+                  >
+                    {parseRichText(m.content).nodes}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: "var(--text-tertiary)",
+                      marginTop: 2,
+                      padding: "0 4px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <span>{formatRelativeTime(m.createdAt)}</span>
+                    {isLastMine && (
+                      <span
+                        style={{
+                          color: isSeen ? "var(--primary)" : "var(--text-tertiary)",
+                          fontWeight: isSeen ? 500 : 400,
+                        }}
+                      >
+                        • {isSeen ? "Seen" : "Sent"}
+                      </span>
+                    )}
+                  </span>
                 </div>
-                <span
-                  style={{
-                    fontSize: 10,
-                    color: "var(--text-tertiary)",
-                    marginTop: 2,
-                    padding: "0 4px",
-                  }}
-                >
-                  {formatRelativeTime(m.createdAt)}
-                </span>
-              </div>
-            );
-          })
+              );
+            });
+          })()
         )}
 
         {/* Typing Bubble */}

@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   createContext,
   useContext,
   useEffect,
@@ -389,6 +389,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           )
         );
         refreshUnreadCount();
+      }
+      else if (
+        currentUserRef.current &&
+        event.readerUserId !== currentUserRef.current.id
+      ) {
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === event.conversationId
+              ? { ...c, otherParticipantLastReadAt: event.readAt }
+              : c
+          )
+        );
       }
       messagesReadListeners.current.forEach((listener) => {
         try {
