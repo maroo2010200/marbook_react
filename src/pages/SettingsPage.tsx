@@ -819,7 +819,7 @@ export default function SettingsPage() {
                   }}
                 >
                   <span>🔥</span>
-                  <span>Play Roast Sizzle</span>
+                  <span>Play Warm Ember Glow (Roast)</span>
                 </button>
 
                 <button
@@ -840,7 +840,7 @@ export default function SettingsPage() {
                   }}
                 >
                   <span>💬</span>
-                  <span>Play Comment Plop</span>
+                  <span>Play Zen Droplet (Comment)</span>
                 </button>
 
                 <button
@@ -903,7 +903,7 @@ export default function SettingsPage() {
                   }}
                 >
                   <span>🔔</span>
-                  <span>Play Notification Spark</span>
+                  <span>Play Calming Bell (Notification)</span>
                 </button>
 
                 <button

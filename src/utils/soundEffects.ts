@@ -45,7 +45,7 @@ export function setSoundEnabled(enabled: boolean): void {
 export const soundEffects = {
   /**
    * 🔥 Roast Sound:
-   * A satisfying warm campfire pop accompanied by a subtle ember sizzle.
+   * A calming, warm ember chime (gentle harmonic glow: G4 + B4 major third with soft acoustic attack and silky decay).
    */
   playRoast() {
     if (!isSoundEnabled()) return;
@@ -55,49 +55,54 @@ export const soundEffects = {
     try {
       const now = ctx.currentTime;
 
-      // 1. Warm bubble pop (rising tone)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      // Tone 1: Warm fundamental G4 (392.00 Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(392.0, now);
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(320, now);
-      osc.frequency.exponentialRampToValueAtTime(740, now + 0.08);
+      gain1.gain.setValueAtTime(0.0001, now);
+      gain1.gain.linearRampToValueAtTime(0.12, now + 0.02);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
 
-      gain.gain.setValueAtTime(0.18, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.45);
 
-      osc.start(now);
-      osc.stop(now + 0.12);
+      // Tone 2: Harmonious sweet third B4 (493.88 Hz) entering at +20ms
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(493.88, now + 0.02);
 
-      // 2. Ember Sizzle (filtered micro-noise burst)
-      const bufferSize = ctx.sampleRate * 0.06; // 60ms
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
+      gain2.gain.setValueAtTime(0.0001, now);
+      gain2.gain.setValueAtTime(0.0001, now + 0.02);
+      gain2.gain.linearRampToValueAtTime(0.09, now + 0.045);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
 
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
 
-      const filter = ctx.createBiquadFilter();
-      filter.type = "bandpass";
-      filter.frequency.setValueAtTime(3200, now);
-      filter.Q.setValueAtTime(3.0, now);
+      osc2.start(now + 0.02);
+      osc2.stop(now + 0.5);
 
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.08, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      // Subtle warm undertone: G3 (196.00 Hz) for cozy acoustic depth
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      osc3.type = "sine";
+      osc3.frequency.setValueAtTime(196.0, now);
 
-      noise.connect(filter);
-      filter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
+      gain3.gain.setValueAtTime(0.0001, now);
+      gain3.gain.linearRampToValueAtTime(0.04, now + 0.02);
+      gain3.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
 
-      noise.start(now);
-      noise.stop(now + 0.06);
+      osc3.connect(gain3);
+      gain3.connect(ctx.destination);
+
+      osc3.start(now);
+      osc3.stop(now + 0.35);
     } catch {
       // Audio playback silently ignored if blocked by browser policy
     }
@@ -105,7 +110,7 @@ export const soundEffects = {
 
   /**
    * 💬 Comment Sound:
-   * A soft, playful marshmallow "squish / plop".
+   * A calming, tranquil zen water droplet / mellow tongue drum tap (gentle E4 with subtle acoustic roundness and soft decay).
    */
   playComment() {
     if (!isSoundEnabled()) return;
@@ -115,39 +120,39 @@ export const soundEffects = {
     try {
       const now = ctx.currentTime;
 
-      // Soft rubbery downward pitch glide (plop)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      // Soft natural water droplet: micro-pitch settling from 360 Hz to E4 (329.63 Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(360, now);
+      osc1.frequency.exponentialRampToValueAtTime(329.63, now + 0.035);
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(540, now);
-      osc.frequency.exponentialRampToValueAtTime(240, now + 0.14);
+      gain1.gain.setValueAtTime(0.0001, now);
+      gain1.gain.linearRampToValueAtTime(0.12, now + 0.015);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
 
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.38);
 
-      osc.start(now);
-      osc.stop(now + 0.15);
+      // Gentle acoustic bell overtone: B4 (493.88 Hz) at quiet volume
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(493.88, now + 0.015);
 
-      // Secondary soft bass undertone for squishy feel
-      const subOsc = ctx.createOscillator();
-      const subGain = ctx.createGain();
+      gain2.gain.setValueAtTime(0.0001, now);
+      gain2.gain.setValueAtTime(0.0001, now + 0.015);
+      gain2.gain.linearRampToValueAtTime(0.05, now + 0.035);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
 
-      subOsc.type = "sine";
-      subOsc.frequency.setValueAtTime(220, now);
-      subOsc.frequency.exponentialRampToValueAtTime(110, now + 0.12);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
 
-      subGain.gain.setValueAtTime(0.12, now);
-      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-      subOsc.connect(subGain);
-      subGain.connect(ctx.destination);
-
-      subOsc.start(now);
-      subOsc.stop(now + 0.12);
+      osc2.start(now + 0.015);
+      osc2.stop(now + 0.42);
     } catch {
       // Ignore audio failure
     }
@@ -282,7 +287,7 @@ export const soundEffects = {
 
   /**
    * 🔔 Notification Sound:
-   * A warm, sweet campfire spark ping (two-note chime: A5 -> C#6).
+   * A calming, tranquil wind-chime / soft meditation bell (peaceful C5 + G5 harmonic pair with soft attack and serene decay).
    */
   playNotification() {
     if (!isSoundEnabled()) return;
@@ -292,38 +297,55 @@ export const soundEffects = {
     try {
       const now = ctx.currentTime;
 
-      // Note 1: A5 (880 Hz)
+      // Note 1: C5 (523.25 Hz) - gentle singing bell
       const osc1 = ctx.createOscillator();
       const gain1 = ctx.createGain();
       osc1.type = "sine";
-      osc1.frequency.setValueAtTime(880, now);
+      osc1.frequency.setValueAtTime(523.25, now);
 
       gain1.gain.setValueAtTime(0.0001, now);
-      gain1.gain.linearRampToValueAtTime(0.15, now + 0.015);
-      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+      gain1.gain.linearRampToValueAtTime(0.1, now + 0.03);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
 
       osc1.connect(gain1);
       gain1.connect(ctx.destination);
 
       osc1.start(now);
-      osc1.stop(now + 0.2);
+      osc1.stop(now + 0.7);
 
-      // Note 2: C#6 (1108.73 Hz) at +60ms
+      // Note 2: Harmonious fifth G5 (783.99 Hz) entering softly at +60ms
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = "sine";
-      osc2.frequency.setValueAtTime(1108.73, now + 0.06);
+      osc2.frequency.setValueAtTime(783.99, now + 0.06);
 
       gain2.gain.setValueAtTime(0.0001, now);
       gain2.gain.setValueAtTime(0.0001, now + 0.06);
-      gain2.gain.linearRampToValueAtTime(0.16, now + 0.075);
-      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+      gain2.gain.linearRampToValueAtTime(0.08, now + 0.09);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
 
       osc2.connect(gain2);
       gain2.connect(ctx.destination);
 
       osc2.start(now + 0.06);
-      osc2.stop(now + 0.28);
+      osc2.stop(now + 0.8);
+
+      // Warm body resonance: G4 (392.00 Hz) for soft acoustic fullness
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      osc3.type = "sine";
+      osc3.frequency.setValueAtTime(392.0, now + 0.02);
+
+      gain3.gain.setValueAtTime(0.0001, now);
+      gain3.gain.setValueAtTime(0.0001, now + 0.02);
+      gain3.gain.linearRampToValueAtTime(0.03, now + 0.05);
+      gain3.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+
+      osc3.connect(gain3);
+      gain3.connect(ctx.destination);
+
+      osc3.start(now + 0.02);
+      osc3.stop(now + 0.6);
     } catch {
       // Ignore audio failure
     }
@@ -348,14 +370,15 @@ export const soundEffects = {
       osc1.frequency.setValueAtTime(560, now);
       osc1.frequency.exponentialRampToValueAtTime(780, now + 0.045);
 
-      gain1.gain.setValueAtTime(0.14, now);
-      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.065);
+      gain1.gain.setValueAtTime(0.0001, now);
+      gain1.gain.linearRampToValueAtTime(0.12, now + 0.01);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
 
       osc1.connect(gain1);
       gain1.connect(ctx.destination);
 
       osc1.start(now);
-      osc1.stop(now + 0.065);
+      osc1.stop(now + 0.07);
 
       // Pop 2 (higher, sweet bubble at +65ms)
       const osc2 = ctx.createOscillator();
@@ -365,7 +388,8 @@ export const soundEffects = {
       osc2.frequency.exponentialRampToValueAtTime(1020, now + 0.115);
 
       gain2.gain.setValueAtTime(0.0001, now);
-      gain2.gain.setValueAtTime(0.16, now + 0.065);
+      gain2.gain.setValueAtTime(0.0001, now + 0.065);
+      gain2.gain.linearRampToValueAtTime(0.12, now + 0.075);
       gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.145);
 
       osc2.connect(gain2);
