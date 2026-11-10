@@ -8,6 +8,7 @@ import { chatApi } from "../../api/chat";
 import { Avatar } from "../Avatar";
 import { formatRelativeTime } from "../../utils/time";
 import { parseRichText } from "../../utils/richText";
+import { soundEffects } from "../../utils/soundEffects";
 import type { Message, ConversationSummary } from "../../types/chat";
 
 export function FloatingChatDock() {
@@ -235,6 +236,7 @@ export function FloatingChatDock() {
       }
 
       const newMsg = await chatApi.sendMessage(floatingConversationId, trimmed);
+      soundEffects.playChatSent();
       setMessages((prev) => {
         if (prev.some((m) => m.id === newMsg.id)) {
           return prev;

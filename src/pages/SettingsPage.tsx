@@ -884,6 +884,69 @@ export default function SettingsPage() {
                   <span>🗑️</span>
                   <span>Play Delete Ash Poof</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playNotification()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>🔔</span>
+                  <span>Play Notification Spark</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playChatMessage()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>💬</span>
+                  <span>Play Chat Incoming Bubble</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playChatSent()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>✉️</span>
+                  <span>Play Chat Sent Whoosh</span>
+                </button>
               </div>
             </div>
           </div>

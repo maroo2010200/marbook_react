@@ -14,6 +14,7 @@ import {
 } from "@microsoft/signalr";
 import { useAuth } from "./AuthContext";
 import { chatApi } from "../api/chat";
+import { soundEffects } from "../utils/soundEffects";
 import type {
   ConversationSummary,
   ChatUnreadCount,
@@ -255,6 +256,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const isMine = currentUserRef.current
         ? msg.senderUserId === currentUserRef.current.id
         : msg.isMine;
+
+      if (!isMine) {
+        soundEffects.playChatMessage();
+      }
 
       const normalizedMsg = { ...msg, isMine };
 
