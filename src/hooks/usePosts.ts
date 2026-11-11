@@ -219,6 +219,98 @@ export function usePosts(
     [addPost]
   );
 
+  // Live real-time updates via SignalR events
+  useEffect(() => {
+    const handleLivePostCreated = (e: Event) => {
+      const newPost = (e as CustomEvent<Post>).detail;
+      if (!newPost || !newPost.id) return;
+
+      // Profile filter: if this hook is scoped to a specific user, only include that user's posts
+      if (userId && newPost.userId !== userId) return;
+
+      setPosts((prev) => {
+        if (prev.some((p) => p.id === newPost.id)) return prev;
+        const updated = [newPost, ...prev];
+        postsRef.current = updated;
+        return updated;
+      });
+    };
+
+    const handleLivePostLiked = (e: Event) => {
+      const { postId, likeCount } = (e as CustomEvent<{ postId: number; likeCount: number }>).detail || {};
+      if (!postId) return;
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p.id !== postId) return p;
+          return { ...p, likesCount: likeCount };
+        })
+      );
+    };
+
+    const handleLivePostDeleted = (e: Event) => {
+      const { postId } = (e as CustomEvent<{ postId: number }>).detail || {};
+      if (!postId) return;
+      setPosts((prev) => {
+        const updated = prev.filter((p) => p.id !== postId);
+        postsRef.current = updated;
+        return updated;
+      });
+    };
+
+    const handleLivePostPinned = (e: Event) => {
+      const { postId, isPinned } = (e as CustomEvent<{ postId: number; isPinned: boolean }>).detail || {};
+      if (!postId) return;
+      setPosts((prev) => {
+        const updated = prev.map((p) => {
+          if (p.id === postId) return { ...p, isPinned };
+          if (isPinned && userId) return { ...p, isPinned: false };
+          return p;
+        });
+        if (userId) {
+          updated.sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+        }
+        postsRef.current = updated;
+        return [...updated];
+      });
+    };
+
+    const handleLiveCommentCreated = (e: Event) => {
+      const { postId } = (e as CustomEvent<{ postId: number }>).detail || {};
+      if (!postId) return;
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, commentsCount: (p.commentsCount ?? 0) + 1 } : p))
+      );
+    };
+
+    const handleLiveCommentDeleted = (e: Event) => {
+      const { postId } = (e as CustomEvent<{ postId: number }>).detail || {};
+      if (!postId) return;
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, commentsCount: Math.max(0, (p.commentsCount ?? 1) - 1) } : p))
+      );
+    };
+
+    window.addEventListener("marshmallow:live-post-created", handleLivePostCreated);
+    window.addEventListener("marshmallow:live-post-liked", handleLivePostLiked);
+    window.addEventListener("marshmallow:live-post-deleted", handleLivePostDeleted);
+    window.addEventListener("marshmallow:live-post-pinned", handleLivePostPinned);
+    window.addEventListener("marshmallow:live-comment-created", handleLiveCommentCreated);
+    window.addEventListener("marshmallow:live-comment-deleted", handleLiveCommentDeleted);
+
+    return () => {
+      window.removeEventListener("marshmallow:live-post-created", handleLivePostCreated);
+      window.removeEventListener("marshmallow:live-post-liked", handleLivePostLiked);
+      window.removeEventListener("marshmallow:live-post-deleted", handleLivePostDeleted);
+      window.removeEventListener("marshmallow:live-post-pinned", handleLivePostPinned);
+      window.removeEventListener("marshmallow:live-comment-created", handleLiveCommentCreated);
+      window.removeEventListener("marshmallow:live-comment-deleted", handleLiveCommentDeleted);
+    };
+  }, [userId]);
+
   return {
     posts,
     updatePost,

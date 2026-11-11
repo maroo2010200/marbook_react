@@ -17,12 +17,14 @@ export interface CommentItemProps {
   onToggleLike: (commentId: number) => void;
   onStartReply: (commentId: number, userName: string, userUsername?: string | null) => void;
   currentUserId?: number;
+  postAuthorId?: number;
   onEditComment?: (
     commentId: number,
     content: string,
     imageUrl?: string | null
   ) => Promise<Comment | void>;
   onDeleteComment?: (commentId: number) => Promise<void>;
+  onTogglePinComment?: (commentId: number) => Promise<void>;
 }
 
 const MAX_CHAR_COUNT = 300;
@@ -36,10 +38,17 @@ export function CommentItem({
   onToggleLike,
   onStartReply,
   currentUserId,
+  postAuthorId,
   onEditComment,
   onDeleteComment,
+  onTogglePinComment,
 }: CommentItemProps) {
   const isAuthor = Boolean(currentUserId && currentUserId === comment.userId);
+  const canPin = Boolean(
+    currentUserId &&
+    (currentUserId === postAuthorId || currentUserId === comment.userId) &&
+    onTogglePinComment
+  );
 
   // Edit state
   const [isEditing, setIsEditing] = useState(false);
@@ -438,6 +447,22 @@ export function CommentItem({
           ) : (
             /* Normal Comment Content */
             <div>
+              {comment.isPinned && (
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#f59e0b",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span>📌</span>
+                  <span>Pinned by author</span>
+                </div>
+              )}
               <div
                 style={{
                   fontSize: depth === 0 ? 14 : 13,
@@ -587,8 +612,8 @@ export function CommentItem({
                 Reply
               </button>
 
-              {/* Author Actions: 3 dots menu */}
-              {isAuthor && (
+              {/* Author / Moderation Actions: 3 dots menu */}
+              {(isAuthor || canPin) && (
                 <div
                   style={{
                     position: "relative",
@@ -643,61 +668,95 @@ export function CommentItem({
                         boxShadow: "var(--shadow-md)",
                         borderRadius: 6,
                         border: "1px solid var(--border-color)",
-                        minWidth: 105,
+                        minWidth: 120,
                         zIndex: 40,
                         overflow: "hidden",
                         padding: "3px 0",
                       }}
                     >
-                      <button
-                        type="button"
-                        onClick={handleStartEdit}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          padding: "6px 12px",
-                          background: "none",
-                          border: "none",
-                          textAlign: "left",
-                          fontSize: 12,
-                          color: "var(--text-primary)",
-                          cursor: "pointer",
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.backgroundColor = "transparent")
-                        }
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                      {canPin && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setIsMenuOpen(false);
+                            await onTogglePinComment?.(comment.id);
+                          }}
+                          style={{
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "6px 12px",
+                            background: "none",
+                            border: "none",
+                            textAlign: "left",
+                            fontSize: 12,
+                            color: "var(--text-primary)",
+                            cursor: "pointer",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor = "transparent")
+                          }
                         >
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        <span>Edit</span>
-                      </button>
+                          <span>📌</span>
+                          <span>{comment.isPinned ? "Unpin comment" : "Pin comment"}</span>
+                        </button>
+                      )}
 
-                      <button
-                        type="button"
-                        onClick={handleStartDelete}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          padding: "6px 12px",
-                          background: "none",
+                      {isAuthor && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleStartEdit}
+                            style={{
+                              width: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              padding: "6px 12px",
+                              background: "none",
+                              border: "none",
+                              textAlign: "left",
+                              fontSize: 12,
+                              color: "var(--text-primary)",
+                              cursor: "pointer",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor = "transparent")
+                            }
+                          >
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleStartDelete}
+                            style={{
+                              width: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              padding: "6px 12px",
+                              background: "none",
                           border: "none",
                           textAlign: "left",
                           fontSize: 12,
@@ -726,15 +785,17 @@ export function CommentItem({
                         </svg>
                         <span>Delete</span>
                       </button>
-                    </div>
+                    </>
                   )}
                 </div>
               )}
             </div>
           )}
         </div>
+      )}
+    </div>
 
-        {/* Flame / Roast Button */}
+    {/* Flame / Roast Button */}
         <button
           type="button"
           onClick={() => {
@@ -887,6 +948,8 @@ export function CommentItem({
               currentUserId={currentUserId}
               onEditComment={onEditComment}
               onDeleteComment={onDeleteComment}
+              postAuthorId={postAuthorId}
+              onTogglePinComment={onTogglePinComment}
             />
           ))}
         </div>

@@ -11,6 +11,7 @@ export interface Message {
   updatedAt?: string | null;
   isDeleted: boolean;
   isMine: boolean;
+  isPinned?: boolean;
 }
 
 export interface ConversationSummary {

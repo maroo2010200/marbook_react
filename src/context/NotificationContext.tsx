@@ -159,6 +159,84 @@ export function NotificationProvider({
       }
     );
 
+    // Live Feed & Engagement Events
+    connection.on("PostCreated", (post: unknown) => {
+      window.dispatchEvent(
+        new CustomEvent("marshmallow:live-post-created", { detail: post })
+      );
+    });
+
+    connection.on(
+      "PostLiked",
+      (data: {
+        postId: number;
+        likeCount: number;
+        userId: number;
+        isLiked: boolean;
+      }) => {
+        window.dispatchEvent(
+          new CustomEvent("marshmallow:live-post-liked", { detail: data })
+        );
+      }
+    );
+
+    connection.on("PostDeleted", (data: { postId: number }) => {
+      window.dispatchEvent(
+        new CustomEvent("marshmallow:live-post-deleted", { detail: data })
+      );
+    });
+
+    connection.on(
+      "PostPinned",
+      (data: { postId: number; userId: number; isPinned: boolean }) => {
+        window.dispatchEvent(
+          new CustomEvent("marshmallow:live-post-pinned", { detail: data })
+        );
+      }
+    );
+
+    connection.on(
+      "CommentCreated",
+      (data: { postId: number; comment: unknown }) => {
+        window.dispatchEvent(
+          new CustomEvent("marshmallow:live-comment-created", { detail: data })
+        );
+      }
+    );
+
+    connection.on(
+      "CommentLiked",
+      (data: {
+        commentId: number;
+        postId: number;
+        likeCount: number;
+        userId: number;
+        isLiked: boolean;
+      }) => {
+        window.dispatchEvent(
+          new CustomEvent("marshmallow:live-comment-liked", { detail: data })
+        );
+      }
+    );
+
+    connection.on(
+      "CommentDeleted",
+      (data: { commentId: number; postId: number }) => {
+        window.dispatchEvent(
+          new CustomEvent("marshmallow:live-comment-deleted", { detail: data })
+        );
+      }
+    );
+
+    connection.on(
+      "CommentPinned",
+      (data: { commentId: number; postId: number; isPinned: boolean }) => {
+        window.dispatchEvent(
+          new CustomEvent("marshmallow:live-comment-pinned", { detail: data })
+        );
+      }
+    );
+
     connection
       .start()
       .then(() => {

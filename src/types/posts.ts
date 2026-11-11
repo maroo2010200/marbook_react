@@ -19,6 +19,7 @@ export interface Post {
   originalPost?: Post | null;
   repostsCount?: number;
   isReposted?: boolean;
+  isPinned?: boolean;
 }
 
 export interface PostSearchResult extends Post {

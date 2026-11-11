@@ -85,5 +85,14 @@ export const commentsApi = {
   deleteComment: async (commentId: number): Promise<void> => {
     await api.delete(`/comments/${commentId}`);
   },
+
+  togglePinComment: async (
+    commentId: number
+  ): Promise<{ commentId: number; isPinned: boolean }> => {
+    const response = await api.post<{ commentId: number; isPinned: boolean }>(
+      `/comments/${commentId}/Pin`
+    );
+    return response.data;
+  },
 };
 
