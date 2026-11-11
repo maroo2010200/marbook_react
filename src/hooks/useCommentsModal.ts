@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { commentsApi } from "../api/comments";
+import { soundEffects } from "../utils/soundEffects";
 import { useAuth } from "../context/AuthContext";
 import type { Post } from "../types/posts";
 import type { Comment } from "../types/comments";
@@ -365,6 +366,7 @@ export function useCommentsModal({
         setAttachedImageUrl(null);
         setReplyingTo(null);
         onCommentAdded?.(createdReply);
+        soundEffects.playComment();
       } else {
         const created = await commentsApi.createComment(
           post.id,
@@ -377,6 +379,7 @@ export function useCommentsModal({
         setNewComment("");
         setAttachedImageUrl(null);
         onCommentAdded?.(created);
+        soundEffects.playComment();
       }
     } catch (err: any) {
       setSubmitError(
@@ -415,6 +418,7 @@ export function useCommentsModal({
     async (commentId: number): Promise<void> => {
       const ancestorIds = getAncestorIds(commentsRef.current, commentId) ?? [];
       await commentsApi.deleteComment(commentId);
+      soundEffects.playDelete();
       const { updatedList, totalDeleted } = deleteCommentAndDecrementAncestors(
         commentsRef.current,
         commentId,

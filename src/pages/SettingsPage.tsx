@@ -6,6 +6,7 @@ import { usersApi } from "../api/users";
 import { MainLayout } from "../components/layout/MainLayout";
 import { Avatar } from "../components/Avatar";
 import { MarshmallowLoader } from "../components/MarshmallowLoader";
+import { soundEffects, isSoundEnabled, setSoundEnabled } from "../utils/soundEffects";
 
 type SettingsTab = "account" | "appearance" | "notifications";
 
@@ -45,6 +46,18 @@ export default function SettingsPage() {
   const [notifyMessages, setNotifyMessages] = useState(() => {
     return localStorage.getItem("marshmallow_pref_messages") !== "false";
   });
+
+  // Sound effects toggle
+  const [soundEnabled, setSoundState] = useState(() => isSoundEnabled());
+
+  const handleToggleSound = () => {
+    const next = !soundEnabled;
+    setSoundState(next);
+    setSoundEnabled(next);
+    if (next) {
+      soundEffects.playRoast();
+    }
+  };
 
   // Handle password submit
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -726,6 +739,214 @@ export default function SettingsPage() {
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
                   Deep cocoa canvas with warm glowing amber embers
                 </div>
+              </div>
+            </div>
+
+            {/* Sound Effects Controls */}
+            <div
+              style={{
+                marginTop: "24px",
+                paddingTop: "20px",
+                borderTop: "1px solid var(--border-color)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "14px",
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
+                    Campfire Sound Effects 🎵
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
+                    Cozy audio feedback on roasting, commenting, and following
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleToggleSound}
+                  style={{
+                    width: 44,
+                    height: 24,
+                    borderRadius: 12,
+                    border: "none",
+                    backgroundColor: soundEnabled
+                      ? "var(--primary)"
+                      : "var(--border-color)",
+                    cursor: "pointer",
+                    position: "relative",
+                    transition: "background-color 0.2s ease",
+                  }}
+                  aria-label="Toggle sound effects"
+                >
+                  <div
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      backgroundColor: "#fff",
+                      position: "absolute",
+                      top: 3,
+                      left: soundEnabled ? 22 : 4,
+                      transition: "left 0.2s ease",
+                    }}
+                  />
+                </button>
+              </div>
+
+              {/* Sound Preview Buttons */}
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "12px" }}>
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playRoast()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>🔥</span>
+                  <span>Play Warm Ember Glow (Roast)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playComment()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>💬</span>
+                  <span>Play Zen Droplet (Comment)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playFollow()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>🤝</span>
+                  <span>Play Calming Follow Chime</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playDelete()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>🗑️</span>
+                  <span>Play Delete Ash Poof</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playNotification()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>🔔</span>
+                  <span>Play Calming Bell (Notification)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playChatMessage()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>💬</span>
+                  <span>Play Chat Incoming Bubble</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => soundEffects.playChatSent()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>✉️</span>
+                  <span>Play Chat Sent Whoosh</span>
+                </button>
               </div>
             </div>
           </div>

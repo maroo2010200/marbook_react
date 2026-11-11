@@ -43,7 +43,7 @@ export function UserCard({
       }}
     >
       <Link
-        to={`/profile/${user.id}`}
+        to={user.username ? `/@${user.username}` : `/profile/${user.id}`}
         style={{
           textDecoration: "none",
           display: "flex",

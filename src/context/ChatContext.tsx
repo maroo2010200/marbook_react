@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   createContext,
   useContext,
   useEffect,
@@ -14,6 +14,7 @@ import {
 } from "@microsoft/signalr";
 import { useAuth } from "./AuthContext";
 import { chatApi } from "../api/chat";
+import { soundEffects } from "../utils/soundEffects";
 import type {
   ConversationSummary,
   ChatUnreadCount,
@@ -61,7 +62,7 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-const BACKEND_BASE = "http://localhost:5244";
+import { BACKEND_BASE } from "../config/env";
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { user: currentUser, isAuthenticated } = useAuth();
@@ -255,6 +256,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const isMine = currentUserRef.current
         ? msg.senderUserId === currentUserRef.current.id
         : msg.isMine;
+
+      if (!isMine) {
+        soundEffects.playChatMessage();
+      }
 
       const normalizedMsg = { ...msg, isMine };
 

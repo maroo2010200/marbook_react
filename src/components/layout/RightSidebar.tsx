@@ -279,7 +279,7 @@ export function RightSidebar() {
               return (
                 <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                   <Link
-                    to={`/profile/${item.id}`}
+                    to={item.username ? `/@${item.username}` : `/profile/${item.id}`}
                     style={{
                       display: "flex",
                       alignItems: "center",

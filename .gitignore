@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local project documentation
+FRONTEND_EXPLAINED.md
+PROJECT_ROADMAP.md
+PROJECT_SUMMARY.md
+AGENTS.md
+DEPLOYMENT_GUIDE.md
+

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate, Link } from "react-router-dom";
+import { MarshmallowLogo } from "../components/MarshmallowLogo";
+import { MarshmallowLoader } from "../components/MarshmallowLoader";
 
-function RegisterPage() {
+export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -11,33 +13,56 @@ function RegisterPage() {
   const [birthdate, setBirthdate] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [isResendError, setIsResendError] = useState(false);
   const navigate = useNavigate();
 
-  const { register, resendVerificationEmail } = useAuth();
+  const { register, resendVerificationEmail, isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return <Navigate to="/feed" replace />;
+  }
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setError("");
     setSuccess(false);
 
+    const cleanUsername = username.trim().toLowerCase();
+    if (!cleanUsername) {
+      setError("Username is required.");
+      return;
+    }
+    if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+      setError("Username must be between 3 and 30 characters.");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(cleanUsername)) {
+      setError("Username can only contain letters, numbers, and underscores.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
       await register({
-        email,
-        name,
-        username: username || null,
+        email: email.trim(),
+        name: name.trim(),
+        username: cleanUsername,
         password,
         birthdate,
       });
       setSuccess(true);
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message ?? "Register failed");
+        setError(err.response?.data?.message ?? "Registration failed.");
       } else {
         setError("Something went wrong. Please try again.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,79 +87,137 @@ function RegisterPage() {
     }
   };
 
+  // Registration Success / Check Email View
   if (success) {
     return (
       <div
         style={{
-          maxWidth: 480,
-          margin: "40px auto",
-          padding: "32px 28px",
-          backgroundColor: "var(--bg-card)",
-          borderRadius: 12,
-          border: "1px solid var(--border-color)",
-          boxShadow: "var(--shadow-md)",
-          textAlign: "center",
+          minHeight: "calc(100vh - 60px)",
+          backgroundColor: "var(--bg-page)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "30px 20px",
         }}
       >
-        <h1 style={{ color: "#2b8a3e", margin: "0 0 14px", fontSize: 24 }}>Registration successful!</h1>
+        <div
+          style={{
+            maxWidth: "460px",
+            width: "100%",
+            padding: "36px 30px",
+            backgroundColor: "var(--bg-card)",
+            borderRadius: "var(--radius-xl)",
+            border: "1px solid var(--border-color)",
+            boxShadow: "var(--shadow-lg)",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: "60px",
+              height: "60px",
+              margin: "0 auto 18px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(43, 138, 62, 0.12)",
+              color: "#2b8a3e",
+              fontSize: "28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid rgba(43, 138, 62, 0.25)",
+            }}
+          >
+            ✉️
+          </div>
 
-        {/* 1. Only show the original message if resendMessage hasn't been set yet */}
-        {!resendMessage && (
-          <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.5 }}>
-            We've sent a verification email to <strong style={{ color: "var(--text-primary)" }}>{email}</strong>. Please
-            check your inbox and click the verification link to activate your
-            account.
-          </p>
-        )}
+          <h1
+            style={{
+              margin: "0 0 10px",
+              fontSize: "24px",
+              fontWeight: 800,
+              color: "var(--text-primary)",
+            }}
+          >
+            Check your Inbox!
+          </h1>
 
-        {/* 2. Display the message once the button is clicked (Green for success, Red for error) */}
-        {resendMessage && (
-          <p style={{ color: isResendError ? "#e02424" : "#2b8a3e", marginTop: "8px", fontSize: 14 }}>{resendMessage}</p>
-        )}
+          {!resendMessage && (
+            <p
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: "14px",
+                lineHeight: 1.6,
+                margin: "0 0 20px",
+              }}
+            >
+              We've sent a verification link to{" "}
+              <strong style={{ color: "var(--text-primary)" }}>{email}</strong>.
+              Click the link in the email to activate your account and pull up your
+              chair by the campfire.
+            </p>
+          )}
 
-        {/* 3. Button Container to keep spacing uniform and prevent alignment breaks */}
-        <div style={{ marginTop: "24px", display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
-          {email && (
+          {resendMessage && (
+            <p
+              style={{
+                color: isResendError ? "#e02424" : "#2b8a3e",
+                fontSize: "14px",
+                lineHeight: 1.5,
+                margin: "0 0 20px",
+              }}
+            >
+              {resendMessage}
+            </p>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              marginTop: "20px",
+            }}
+          >
             <button
               type="button"
               onClick={handleResend}
               disabled={resendLoading}
               style={{
-                backgroundColor: resendLoading ? "var(--bg-hover)" : "orange",
-                color: "white",
-                border: "none",
-                padding: "8px 16px",
-                borderRadius: "6px",
-                cursor: resendLoading ? "not-allowed" : "pointer",
-                opacity: resendLoading ? 0.7 : 1,
+                padding: "11px 18px",
+                borderRadius: "var(--radius-full)",
+                backgroundColor: "var(--primary-light)",
+                color: "var(--primary)",
+                border: "1px solid rgba(201, 107, 50, 0.2)",
                 fontWeight: 600,
+                fontSize: "14px",
+                cursor: resendLoading ? "not-allowed" : "pointer",
+                opacity: resendLoading ? 0.6 : 1,
               }}
             >
-              {resendLoading ? "Resending..." : "Resend verification email"}
+              {resendLoading ? "Resending email..." : "Resend Verification Email"}
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={() => {
-              setSuccess(false);
-              setError("");
-              setResendMessage("");
-              setIsResendError(false);
-              navigate("/login");
-            }}
-            style={{
-              backgroundColor: "var(--bg-hover)",
-              color: "var(--text-primary)",
-              border: "1px solid var(--border-color)",
-              padding: "8px 16px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-          >
-            Back to login
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccess(false);
+                setError("");
+                navigate("/login");
+              }}
+              style={{
+                padding: "11px 18px",
+                borderRadius: "var(--radius-full)",
+                backgroundColor: "var(--bg-hover)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-color)",
+                fontWeight: 600,
+                fontSize: "14px",
+                cursor: "pointer",
+              }}
+            >
+              Back to Login
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -143,99 +226,368 @@ function RegisterPage() {
   return (
     <div
       style={{
-        maxWidth: 480,
-        margin: "40px auto",
-        padding: "32px 28px",
-        backgroundColor: "var(--bg-card)",
-        borderRadius: 12,
-        border: "1px solid var(--border-color)",
-        boxShadow: "var(--shadow-md)",
+        minHeight: "calc(100vh - 60px)",
+        backgroundColor: "var(--bg-page)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "30px 20px",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      <h1
+      {/* Warm Ambient Glow */}
+      <div
         style={{
-          margin: "0 0 20px",
-          fontSize: 26,
-          fontWeight: 700,
-          color: "var(--text-primary)",
-          textAlign: "center",
+          position: "absolute",
+          top: "10%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "600px",
+          height: "350px",
+          background:
+            "radial-gradient(circle, rgba(201, 107, 50, 0.12) 0%, transparent 70%)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+
+      <div
+        style={{
+          maxWidth: "460px",
+          width: "100%",
+          padding: "36px 32px",
+          backgroundColor: "var(--bg-card)",
+          borderRadius: "var(--radius-xl)",
+          border: "1px solid var(--border-color)",
+          boxShadow: "var(--shadow-lg)",
+          position: "relative",
+          zIndex: 1,
         }}
       >
-        Create a New Account
-      </h1>
+        {/* Header with Logo */}
+        <div style={{ textAlign: "center", marginBottom: "26px" }}>
+          <div
+            style={{
+              width: "56px",
+              height: "56px",
+              margin: "0 auto 14px",
+              borderRadius: "50%",
+              backgroundColor: "var(--primary-light)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "2px solid var(--primary)",
+              boxShadow: "0 4px 16px rgba(201, 107, 50, 0.2)",
+            }}
+          >
+            <MarshmallowLogo size={32} />
+          </div>
 
-      {error && (
+          <h1
+            style={{
+              margin: "0 0 6px",
+              fontSize: "24px",
+              fontWeight: 800,
+              color: "var(--text-primary)",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            Join the Campfire
+          </h1>
+
+          <p
+            style={{
+              margin: 0,
+              fontSize: "14px",
+              color: "var(--text-secondary)",
+            }}
+          >
+            Create your account and start sharing cozy moments
+          </p>
+        </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div
+            style={{
+              backgroundColor: "rgba(239, 68, 68, 0.1)",
+              color: "#ef4444",
+              border: "1px solid rgba(239, 68, 68, 0.25)",
+              padding: "10px 14px",
+              borderRadius: "var(--radius-md)",
+              fontSize: "13px",
+              marginBottom: "18px",
+              lineHeight: 1.4,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <div>
+            <label
+              htmlFor="reg-name"
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text-primary)",
+                marginBottom: "5px",
+              }}
+            >
+              Full Name *
+            </label>
+            <input
+              id="reg-name"
+              type="text"
+              placeholder="e.g. Maya Lin"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "11px 14px",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-input)",
+                color: "var(--text-primary)",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                outline: "none",
+                transition: "border-color 0.15s ease",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="reg-username"
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text-primary)",
+                marginBottom: "5px",
+              }}
+            >
+              Username *
+            </label>
+            <input
+              id="reg-username"
+              type="text"
+              placeholder="e.g. mayalin99"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+              required
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "11px 14px",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-input)",
+                color: "var(--text-primary)",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                outline: "none",
+                transition: "border-color 0.15s ease",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
+            />
+            <span
+              style={{
+                fontSize: "11px",
+                color: "var(--text-tertiary)",
+                marginTop: "4px",
+                display: "block",
+              }}
+            >
+              Your unique campfire handle: @{username || "handle"} (3–30 letters, numbers, or _)
+            </span>
+          </div>
+
+          <div>
+            <label
+              htmlFor="reg-email"
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text-primary)",
+                marginBottom: "5px",
+              }}
+            >
+              Email Address *
+            </label>
+            <input
+              id="reg-email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "11px 14px",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-input)",
+                color: "var(--text-primary)",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                outline: "none",
+                transition: "border-color 0.15s ease",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="reg-password"
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text-primary)",
+                marginBottom: "5px",
+              }}
+            >
+              Password *
+            </label>
+            <input
+              id="reg-password"
+              type="password"
+              placeholder="At least 6 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "11px 14px",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-input)",
+                color: "var(--text-primary)",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                outline: "none",
+                transition: "border-color 0.15s ease",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="reg-birthdate"
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text-primary)",
+                marginBottom: "5px",
+              }}
+            >
+              Birthdate *
+            </label>
+            <input
+              id="reg-birthdate"
+              type="date"
+              value={birthdate}
+              onChange={(e) => setBirthdate(e.target.value)}
+              required
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "11px 14px",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-input)",
+                color: "var(--text-primary)",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                outline: "none",
+                transition: "border-color 0.15s ease",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
+            />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              marginTop: "10px",
+              padding: "13px",
+              borderRadius: "var(--radius-full)",
+              backgroundColor: loading ? "var(--bg-hover)" : "var(--primary)",
+              color: loading ? "var(--text-secondary)" : "#ffffff",
+              border: "none",
+              fontSize: "15px",
+              fontWeight: 700,
+              cursor: loading ? "not-allowed" : "pointer",
+              boxShadow: loading ? "none" : "0 4px 14px rgba(201, 107, 50, 0.35)",
+              transition: "transform 0.15s ease, background-color 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) e.currentTarget.style.transform = "translateY(0)";
+            }}
+          >
+            {loading ? "Preparing campfire..." : "Join Marshmallow"}
+          </button>
+
+          {/* Mini Marshmallow Loader when loading */}
+          {loading && (
+            <div style={{ textAlign: "center", marginTop: "2px" }}>
+              <MarshmallowLoader
+                size="sm"
+                label="Setting up your marshmallow..."
+              />
+            </div>
+          )}
+        </form>
+
+        {/* Switch to Login */}
         <div
           style={{
-            backgroundColor: "#ffebe8",
-            color: "#e02424",
-            padding: "10px 14px",
-            borderRadius: 8,
-            fontSize: 13,
-            marginBottom: 16,
+            marginTop: "22px",
+            paddingTop: "18px",
+            borderTop: "1px solid var(--divider)",
+            textAlign: "center",
+            fontSize: "14px",
+            color: "var(--text-secondary)",
           }}
         >
-          {error}
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            style={{
+              color: "var(--primary)",
+              textDecoration: "none",
+              fontWeight: 700,
+            }}
+          >
+            Log In →
+          </Link>
         </div>
-      )}
-
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: 14 }}
-      >
-        <input
-          type="email"
-          placeholder="Email *"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        <input
-          type="text"
-          placeholder="Full Name *"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-
-        <input
-          type="text"
-          placeholder="Username (optional)"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Password *"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        <input
-          type="date"
-          placeholder="Birthdate *"
-          value={birthdate}
-          onChange={(e) => setBirthdate(e.target.value)}
-          required
-        />
-
-        <button
-          type="submit"
-          style={{
-            marginTop: 6,
-            padding: "12px",
-            fontSize: 15,
-            fontWeight: 700,
-          }}
-        >
-          Sign Up
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
-
-export default RegisterPage;

@@ -21,6 +21,7 @@ import { Avatar } from "../components/Avatar";
 import { MainLayout } from "../components/layout/MainLayout";
 import { MarshmallowLoader } from "../components/MarshmallowLoader";
 import { getMediaUrl, getPostOptimizedUrl } from "../utils/media";
+import { soundEffects } from "../utils/soundEffects";
 
 function formatMemberDate(dateString: string): string {
   try {
@@ -140,6 +141,11 @@ export function ProfilePage() {
       }
 
       setProfile(data);
+
+      // Cleanly sync URL to /@username in browser address bar
+      if (data.username && (isNumericId || rawId === "me")) {
+        window.history.replaceState(null, "", `/@${data.username}`);
+      }
     } catch {
       setProfileError("Failed to load user profile. The user may not exist.");
     } finally {
@@ -275,6 +281,7 @@ export function ProfilePage() {
           );
         }
       } else {
+        soundEffects.playFollow();
         await followsApi.follow(targetId);
         if (isMe) {
           setProfile((prev) =>
@@ -405,6 +412,7 @@ export function ProfilePage() {
 
     try {
       if (nextFollowing) {
+        soundEffects.playFollow();
         await followsApi.follow(profile.id);
       } else {
         await followsApi.unfollow(profile.id);

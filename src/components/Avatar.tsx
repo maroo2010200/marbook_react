@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { getAvatarThumbnailUrl } from "../utils/media";
+import { MarshmallowLogo } from "./MarshmallowLogo";
 
 export interface AvatarProps {
   src?: string | null;
@@ -30,9 +31,9 @@ export function Avatar({
     setHasError(false);
   }
 
-  const initial = (name?.trim() || "U").charAt(0).toUpperCase();
   const calculatedFontSize = fontSize ?? Math.max(11, Math.round(size * 0.42));
   const fullUrl = src ? getAvatarThumbnailUrl(src, size) : "";
+  const isDefaultMarshmallow = !fullUrl || hasError;
 
   return (
     <div
@@ -43,7 +44,12 @@ export function Avatar({
         height: size,
         minWidth: size,
         borderRadius,
-        backgroundColor: "var(--primary)",
+        backgroundColor: isDefaultMarshmallow
+          ? "var(--primary-light, #FAF4EB)"
+          : "var(--primary)",
+        border: isDefaultMarshmallow
+          ? "1.5px solid rgba(201, 107, 50, 0.25)"
+          : undefined,
         color: "#ffffff",
         display: "flex",
         alignItems: "center",
@@ -53,10 +59,11 @@ export function Avatar({
         overflow: "hidden",
         flexShrink: 0,
         userSelect: "none",
+        boxSizing: "border-box",
         ...style,
       }}
     >
-      {fullUrl && !hasError ? (
+      {!isDefaultMarshmallow ? (
         <img
           src={fullUrl}
           alt={name || "User avatar"}
@@ -69,7 +76,7 @@ export function Avatar({
           }}
         />
       ) : (
-        <span>{initial}</span>
+        <MarshmallowLogo size={Math.max(14, Math.round(size * 0.72))} />
       )}
     </div>
   );

@@ -436,7 +436,7 @@ function Navbar() {
                 >
                   {/* User Profile Header */}
                   <Link
-                    to={`/profile/${user?.id || "me"}`}
+                    to={user?.username ? `/@${user.username}` : `/profile/${user?.id || "me"}`}
                     onClick={() => setIsProfileMenuOpen(false)}
                     style={{
                       display: "flex",
@@ -625,14 +625,25 @@ function Navbar() {
             </div>
           </>
         ) : (
-          <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Link
               to="/login"
               style={{
                 textDecoration: "none",
-                color: "#1877f2",
+                color: "var(--text-primary)",
                 fontWeight: 600,
                 fontSize: 14,
+                padding: "6px 14px",
+                borderRadius: "var(--radius-full)",
+                transition: "color 0.15s ease, background-color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "var(--primary)";
+                e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "var(--text-primary)";
+                e.currentTarget.style.backgroundColor = "transparent";
               }}
             >
               Login
@@ -641,17 +652,27 @@ function Navbar() {
               to="/register"
               style={{
                 textDecoration: "none",
-                backgroundColor: "#1877f2",
-                color: "#fff",
-                fontWeight: 600,
+                backgroundColor: "var(--primary)",
+                color: "#ffffff",
+                fontWeight: 700,
                 fontSize: 14,
-                padding: "6px 14px",
-                borderRadius: 6,
+                padding: "6px 16px",
+                borderRadius: "var(--radius-full)",
+                boxShadow: "0 2px 8px rgba(201, 107, 50, 0.25)",
+                transition: "transform 0.15s ease, background-color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.backgroundColor = "var(--primary-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.backgroundColor = "var(--primary)";
               }}
             >
               Register
             </Link>
-          </>
+          </div>
         )}
       </div>
 

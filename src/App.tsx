@@ -10,6 +10,8 @@ import { ChatProvider } from "./context/ChatContext";
 import { NotificationToast } from "./components/NotificationToast";
 import { FloatingChatDock } from "./components/chat/FloatingChatDock";
 import RegisterPage from "./pages/RegisterPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FeedPage from "./pages/FeedPage";
 import VerifyPage from "./pages/VerifyPage";
@@ -33,6 +35,8 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/verify" element={<VerifyPage />} />
                 <Route
                   path="/feed"
@@ -60,6 +64,14 @@ function App() {
                 />
                 <Route
                   path="/profile/:id"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/@:id"
                   element={
                     <ProtectedRoute>
                       <ProfilePage />

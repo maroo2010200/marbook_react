@@ -14,6 +14,7 @@ import {
 import { useAuth } from "./AuthContext";
 import { notificationsApi } from "../api/notifications";
 import type { NotificationItem } from "../types/notifications";
+import { soundEffects } from "../utils/soundEffects";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -30,7 +31,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
 
-const BACKEND_BASE = "http://localhost:5244";
+import { BACKEND_BASE } from "../config/env";
 
 export function NotificationProvider({
   children,
@@ -117,6 +118,9 @@ export function NotificationProvider({
     connection.on(
       "ReceiveNotification",
       (dto: NotificationItem, count?: number) => {
+        // Play notification chime
+        soundEffects.playNotification();
+
         // 1. Update unread count
         if (typeof count === "number") {
           setUnreadCount(count);
