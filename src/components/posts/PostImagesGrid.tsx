@@ -4,12 +4,17 @@ import { getPostOptimizedUrl, getMediaUrl, isVideoMedia } from "../../utils/medi
 export interface PostImagesGridProps {
   images: string[];
   onImageClick?: (index: number) => void;
+  maxHeight?: number;
 }
 
-export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
+export function PostImagesGrid({ images, onImageClick, maxHeight }: PostImagesGridProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (!images || images.length === 0) return null;
+
+  const singleMaxHeight = maxHeight ?? 650;
+  const clampGridHeight = (defaultHeight: number) =>
+    maxHeight ? Math.min(defaultHeight, maxHeight) : defaultHeight;
 
   const count = images.length;
   const handleClick = (idx: number) => {
@@ -144,7 +149,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
             marginTop: 10,
             borderRadius: 8,
             overflow: "hidden",
-            maxHeight: 650,
+            maxHeight: singleMaxHeight,
             backgroundColor: "#000",
             position: "relative",
           }}
@@ -156,7 +161,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
             preload="metadata"
             style={{
               width: "100%",
-              maxHeight: 650,
+              maxHeight: singleMaxHeight,
               display: "block",
               margin: "0 auto",
               backgroundColor: "#000",
@@ -172,7 +177,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
           marginTop: 10,
           borderRadius: 8,
           overflow: "hidden",
-          maxHeight: 650,
+          maxHeight: singleMaxHeight,
           backgroundColor: "#f0f2f5",
           cursor: "pointer",
           display: "flex",
@@ -189,7 +194,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
           loading="lazy"
           style={{
             maxWidth: "100%",
-            maxHeight: 650,
+            maxHeight: singleMaxHeight,
             width: "auto",
             height: "auto",
             objectFit: "contain",
@@ -214,7 +219,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 4,
-          height: 320,
+          height: clampGridHeight(320),
           backgroundColor: "#e4e6eb",
         }}
       >
@@ -244,7 +249,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
           display: "grid",
           gridTemplateColumns: "1.2fr 1fr",
           gap: 4,
-          height: 360,
+          height: clampGridHeight(360),
           backgroundColor: "#e4e6eb",
         }}
       >
@@ -295,7 +300,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
           gridTemplateColumns: "1fr 1fr",
           gridTemplateRows: "1fr 1fr",
           gap: 4,
-          height: 360,
+          height: clampGridHeight(360),
           backgroundColor: "#e4e6eb",
         }}
       >
@@ -326,7 +331,7 @@ export function PostImagesGrid({ images, onImageClick }: PostImagesGridProps) {
         gridTemplateColumns: "1fr 1fr",
         gridTemplateRows: "1fr 1fr",
         gap: 4,
-        height: 380,
+        height: clampGridHeight(380),
         backgroundColor: "#e4e6eb",
       }}
     >

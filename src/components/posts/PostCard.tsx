@@ -548,6 +548,7 @@ export function PostCard({
         marginBottom: 16,
         boxShadow: "var(--shadow-card)",
         position: "relative",
+        scrollMarginTop: 76,
         transition: "all 0.2s ease",
       }}
     >
