@@ -359,9 +359,33 @@ export function RightSidebar() {
           <span>·</span>
           <strong style={{ color: "var(--text-secondary)", fontWeight: 600 }}>PostgreSQL</strong>
         </div>
-        <div style={{ marginTop: 2 }}>
+        <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
           <span>© 2026 Marshmallow</span>
-          {" · "}
+          <span>·</span>
+          <Link
+            to="/privacy"
+            style={{
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+          >
+            Privacy
+          </Link>
+          <span>·</span>
+          <Link
+            to="/terms"
+            style={{
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+          >
+            Terms
+          </Link>
+          <span>·</span>
           <a
             href="https://github.com/maroo2010200"
             target="_blank"
