@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getMediaUrl } from "../utils/media";
+import { getMediaUrl, isVideoMedia } from "../utils/media";
 
 export interface LightboxModalProps {
   isOpen: boolean;
@@ -107,9 +107,13 @@ export function LightboxModal({
             padding: "4px 12px",
             borderRadius: 20,
             backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
           }}
         >
-          {currentIndex + 1} / {images.length}
+          {isVideoMedia(currentUrl) && <span>🎥</span>}
+          <span>{currentIndex + 1} / {images.length}</span>
         </div>
 
         {/* Action buttons (New tab + Close) */}
@@ -118,7 +122,7 @@ export function LightboxModal({
             href={currentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            title="Open original image"
+            title={isVideoMedia(currentUrl) ? "Open original video" : "Open original image"}
             style={{
               color: "#fff",
               textDecoration: "none",
@@ -240,7 +244,7 @@ export function LightboxModal({
         </button>
       )}
 
-      {/* Image Display */}
+      {/* Media Display */}
       <div
         style={{
           maxWidth: "90vw",
@@ -252,19 +256,38 @@ export function LightboxModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <img
-          key={currentUrl}
-          src={currentUrl}
-          alt={`Attachment ${currentIndex + 1}`}
-          style={{
-            maxWidth: "100%",
-            maxHeight: "86vh",
-            objectFit: "contain",
-            borderRadius: 6,
-            boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
-            animation: "scaleIn 0.18s ease-out",
-          }}
-        />
+        {isVideoMedia(currentUrl) ? (
+          <video
+            key={currentUrl}
+            src={currentUrl}
+            controls
+            autoPlay
+            playsInline
+            style={{
+              maxWidth: "100%",
+              maxHeight: "86vh",
+              borderRadius: 6,
+              boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
+              backgroundColor: "#000",
+              outline: "none",
+              animation: "scaleIn 0.18s ease-out",
+            }}
+          />
+        ) : (
+          <img
+            key={currentUrl}
+            src={currentUrl}
+            alt={`Attachment ${currentIndex + 1}`}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "86vh",
+              objectFit: "contain",
+              borderRadius: 6,
+              boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
+              animation: "scaleIn 0.18s ease-out",
+            }}
+          />
+        )}
       </div>
 
       {/* Next Button */}

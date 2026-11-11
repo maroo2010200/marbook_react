@@ -92,3 +92,17 @@ export function getPostOptimizedUrl(path?: string | null, maxWidth = 1000): stri
     crop: "limit",
   });
 }
+
+/**
+ * Detects whether a media URL or filename corresponds to a video file.
+ */
+export function isVideoMedia(path?: string | null): boolean {
+  if (!path) return false;
+  // Cloudinary video delivery path: .../video/upload/...
+  if (path.includes("/video/upload/")) return true;
+  // Data URLs with video mime
+  if (path.startsWith("data:video/")) return true;
+  // Check common video file extensions
+  const cleanPath = path.split("?")[0].split("#")[0].toLowerCase();
+  return /\.(mp4|webm|mov|mkv|ogg|m4v|avi|flv|wmv)$/i.test(cleanPath);
+}
