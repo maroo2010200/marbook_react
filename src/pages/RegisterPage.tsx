@@ -552,6 +552,46 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Terms & Privacy Agreement Notice */}
+          <div
+            style={{
+              marginTop: "6px",
+              marginBottom: "2px",
+              fontSize: "12px",
+              color: "var(--text-secondary)",
+              lineHeight: 1.5,
+              textAlign: "center",
+            }}
+          >
+            <span>By joining, you agree to our </span>
+            <Link
+              to="/terms"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                color: "var(--primary)",
+                fontWeight: 600,
+                textDecoration: "underline",
+              }}
+            >
+              Terms of Service
+            </Link>
+            <span> and </span>
+            <Link
+              to="/privacy"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                color: "var(--primary)",
+                fontWeight: 600,
+                textDecoration: "underline",
+              }}
+            >
+              Privacy Policy
+            </Link>
+            <span>. Your personal data is encrypted &amp; never sold.</span>
+          </div>
+
           {/* Submit Button */}
           <button
             type="submit"

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { usersApi } from "../api/users";
@@ -8,7 +8,7 @@ import { Avatar } from "../components/Avatar";
 import { MarshmallowLoader } from "../components/MarshmallowLoader";
 import { soundEffects, isSoundEnabled, setSoundEnabled } from "../utils/soundEffects";
 
-type SettingsTab = "account" | "appearance" | "notifications";
+type SettingsTab = "account" | "appearance" | "notifications" | "privacy";
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -258,6 +258,34 @@ export default function SettingsPage() {
             >
               <span>🔔</span>
               <span>Notifications</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("privacy")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 16px",
+                borderRadius: "var(--radius-full)",
+                border: "none",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: "pointer",
+                backgroundColor:
+                  activeTab === "privacy"
+                    ? "var(--primary)"
+                    : "var(--bg-hover)",
+                color:
+                  activeTab === "privacy"
+                    ? "#fff"
+                    : "var(--text-secondary)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span>🛡️</span>
+              <span>Safety &amp; Privacy</span>
             </button>
           </div>
         </div>
@@ -1246,6 +1274,184 @@ export default function SettingsPage() {
                     }}
                   />
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: SAFETY & PRIVACY */}
+        {activeTab === "privacy" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Safety & Zero-Leak Pledge Card */}
+            <div className="social-widget-card" style={{ padding: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 22 }}>🛡️</span>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  Data Safety &amp; Protection Guarantees
+                </h2>
+              </div>
+
+              <p
+                style={{
+                  fontSize: 14,
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.6,
+                  margin: "0 0 16px",
+                }}
+              >
+                Marshmallow is committed to keeping your data completely confidential and leak-proof.
+                Here are the active technical and policy safeguards protecting your account:
+              </p>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    padding: "14px",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, color: "var(--text-primary)" }}>
+                    🚫 Zero Data Selling
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                    We never sell, rent, or trade your personal information, chats, or posts with data brokers or advertisers.
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: "14px",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, color: "var(--text-primary)" }}>
+                    🔐 One-Way Password Hashing
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                    Passwords are salted and cryptographically hashed. Your actual password is never stored or readable.
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: "14px",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, color: "var(--text-primary)" }}>
+                    🔒 SSL / TLS In Transit
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                    All requests and Neon database connections are strictly encrypted with TLS 1.3/SSL.
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: "14px",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "var(--bg-hover)",
+                    border: "1px solid var(--border-color)",
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, color: "var(--text-primary)" }}>
+                    👁️ Audience Controls
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                    Choose between Public, Followers Only, or Private (&ldquo;Only Me&rdquo;) for every post.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Official Legal Documents Links */}
+            <div className="social-widget-card" style={{ padding: "20px" }}>
+              <h3
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                }}
+              >
+                Official Agreements &amp; Policies
+              </h3>
+              <p
+                style={{
+                  fontSize: 13.5,
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.5,
+                  margin: "0 0 16px",
+                }}
+              >
+                Read our full, legally compliant documents anytime:
+              </p>
+
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <Link
+                  to="/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 18px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-hover)",
+                    color: "var(--text-primary)",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                    fontSize: 13.5,
+                    transition: "border-color 0.15s ease",
+                  }}
+                >
+                  <span>🛡️</span>
+                  <span>View Privacy Policy &rarr;</span>
+                </Link>
+
+                <Link
+                  to="/terms"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 18px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-hover)",
+                    color: "var(--text-primary)",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                    fontSize: 13.5,
+                    transition: "border-color 0.15s ease",
+                  }}
+                >
+                  <span>📜</span>
+                  <span>View Terms of Service &rarr;</span>
+                </Link>
               </div>
             </div>
           </div>
