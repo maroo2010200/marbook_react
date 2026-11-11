@@ -21,6 +21,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsPage from "./pages/TermsPage";
+import { MobileBottomNav } from "./components/layout/MobileBottomNav";
 
 function HandleProfileRoute() {
   const { id } = useParams<{ id: string }>();
@@ -115,6 +116,7 @@ function App() {
                 />
                 <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
+              <MobileBottomNav />
             </BrowserRouter>
           </ChatProvider>
         </NotificationProvider>

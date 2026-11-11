@@ -573,13 +573,13 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-@media (max-width: 639px) {
+@media (max-width: 767px) {
   .app-navbar {
     padding: 0 12px !important;
   }
 
   .app-layout-shell {
-    padding: 62px 10px 0;
+    padding: 60px 8px 0;
     gap: 0;
   }
 
@@ -593,8 +593,124 @@ h1, h2, h3, h4, h5, h6 {
 
   .app-center-stream {
     max-width: 100%;
-    padding: 8px 0 80px;
+    padding: 8px 0 calc(76px + env(safe-area-inset-bottom, 0px)) !important;
   }
+
+  /* Prevent iOS automatic zoom on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  .social-widget-card {
+    padding: 14px 12px;
+    border-radius: var(--radius-md);
+  }
+
+  /* Notification toast floats above mobile bottom nav */
+  .app-notification-toast {
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  /* Floating chat dock stays above mobile bottom nav */
+  .floating-chat-dock {
+    bottom: calc(54px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 8px !important;
+    left: 8px !important;
+    width: auto !important;
+    height: 380px !important;
+    border-radius: 14px 14px 0 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-navbar {
+    padding: 0 10px !important;
+  }
+
+  .navbar-brand-text {
+    font-size: 17px !important;
+    gap: 5px !important;
+  }
+
+  .navbar-user-name {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Mobile Bottom Navigation Bar
+   ========================================================================== */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mobile-bottom-nav {
+    display: flex !important;
+  }
+}
+
+.mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 100%;
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 4px 0;
+  box-sizing: border-box;
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.92);
+}
+
+.mobile-nav-item.active {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.mobile-nav-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  position: relative;
+}
+
+.mobile-nav-label {
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+.mobile-nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: var(--radius-full);
+  min-width: 14px;
+  height: 14px;
+  line-height: 12px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bg-card);
+  box-sizing: border-box;
 }
 
 /* ==========================================================================

@@ -294,6 +294,7 @@ export function FloatingChatDock() {
   // Render Full Floating Chat Window
   return (
     <div
+      className="floating-chat-dock"
       style={{
         position: "fixed",
         bottom: 0,
