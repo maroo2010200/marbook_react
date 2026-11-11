@@ -273,7 +273,12 @@ export const ChatAttachmentBubble: React.FC<ChatAttachmentBubbleProps> = ({
         if (onImageClick) {
           onImageClick(attachment.mediaUrl);
         } else {
-          window.open(attachment.mediaUrl, "_blank", "noopener,noreferrer");
+          // Broadcast in-app modal event instead of navigating away
+          window.dispatchEvent(
+            new CustomEvent("open-media-lightbox", {
+              detail: { url: attachment.mediaUrl },
+            })
+          );
         }
       }}
       title="Click to view full size"

@@ -11,6 +11,7 @@ import { formatRelativeTime } from "../../utils/time";
 import { parseRichText } from "../../utils/richText";
 import { soundEffects } from "../../utils/soundEffects";
 import { GifPicker } from "./GifPicker";
+import { LightboxModal } from "../LightboxModal";
 import {
   ChatAttachmentBubble,
   PaperclipIcon,
@@ -48,6 +49,8 @@ export function FloatingChatDock() {
   const [isSending, setIsSending] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const dragDepthRef = useRef(0);
@@ -603,9 +606,11 @@ export function FloatingChatDock() {
                 ? m.senderUserId === currentUser.id
                 : m.isMine;
               const isLastMine = isMine && index === lastMineIndex;
-              const parsed = parseRichText(m.content);
+              const parsed = parseRichText(m.content, {
+                hidePureMediaUrl: true,
+              });
               const isPureMedia =
-                !m.isDeleted && parsed.mediaUrls.length > 0 && parsed.nodes.length === 0;
+                !m.isDeleted && parsed.isPureMedia;
 
               return (
                 <div
@@ -655,6 +660,10 @@ export function FloatingChatDock() {
                           attachment={att}
                           isMine={isMine}
                           isPureMedia={isPureMedia}
+                          onImageClick={(url) => {
+                            setLightboxImages([url]);
+                            setIsLightboxOpen(true);
+                          }}
                           onMediaLoaded={scrollToBottom}
                         />
                       ))}
@@ -903,6 +912,16 @@ export function FloatingChatDock() {
           )}
         </button>
       </form>
+
+      {/* Fullscreen Lightbox for images & videos inside the website */}
+      <LightboxModal
+        isOpen={isLightboxOpen}
+        images={lightboxImages}
+        onClose={() => {
+          setIsLightboxOpen(false);
+          setLightboxImages([]);
+        }}
+      />
     </div>
   );
 }
