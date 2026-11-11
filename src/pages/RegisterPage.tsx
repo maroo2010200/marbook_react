@@ -1,9 +1,73 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Navigate, Link } from "react-router-dom";
 import { MarshmallowLogo } from "../components/MarshmallowLogo";
 import { MarshmallowLoader } from "../components/MarshmallowLoader";
+
+function extractErrorMessage(
+  err: unknown,
+  defaultMsg = "Registration failed. Please try again."
+): string {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data;
+    if (typeof data === "string" && data.trim()) {
+      return data;
+    }
+    if (data && typeof data === "object") {
+      if (
+        "message" in data &&
+        typeof (data as { message?: unknown }).message === "string" &&
+        ((data as { message: string }).message).trim()
+      ) {
+        return (data as { message: string }).message;
+      }
+      if (
+        "Message" in data &&
+        typeof (data as { Message?: unknown }).Message === "string" &&
+        ((data as { Message: string }).Message).trim()
+      ) {
+        return (data as { Message: string }).Message;
+      }
+      if (
+        "errors" in data &&
+        (data as { errors?: unknown }).errors &&
+        typeof (data as { errors: unknown }).errors === "object"
+      ) {
+        const groups = Object.values(
+          (data as { errors: Record<string, string[]> }).errors
+        );
+        const firstMsg = groups
+          .flat()
+          .find((m) => typeof m === "string" && m.trim());
+        if (firstMsg) return firstMsg;
+      }
+      if (
+        "detail" in data &&
+        typeof (data as { detail?: unknown }).detail === "string" &&
+        ((data as { detail: string }).detail).trim()
+      ) {
+        return (data as { detail: string }).detail;
+      }
+      if (
+        "title" in data &&
+        typeof (data as { title?: unknown }).title === "string" &&
+        ((data as { title: string }).title).trim()
+      ) {
+        return (data as { title: string }).title;
+      }
+    }
+    if (err.code === "ERR_NETWORK" || err.message === "Network Error") {
+      return "Network error: Unable to connect to the server. Please check your connection and try again.";
+    }
+    if (err.message) {
+      return err.message;
+    }
+  } else if (err instanceof Error && err.message) {
+    return err.message;
+  }
+  return defaultMsg;
+}
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -18,6 +82,7 @@ export default function RegisterPage() {
   const [resendMessage, setResendMessage] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [isResendError, setIsResendError] = useState(false);
+  const isSubmittingRef = useRef(false);
   const navigate = useNavigate();
 
   const { register, resendVerificationEmail, isAuthenticated } = useAuth();
@@ -28,6 +93,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (loading || isSubmittingRef.current) return;
+
     setError("");
     setSuccess(false);
 
@@ -44,7 +111,16 @@ export default function RegisterPage() {
       setError("Username can only contain letters, numbers, and underscores.");
       return;
     }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (!birthdate) {
+      setError("Birthdate is required.");
+      return;
+    }
 
+    isSubmittingRef.current = true;
     setLoading(true);
 
     try {
@@ -57,12 +133,9 @@ export default function RegisterPage() {
       });
       setSuccess(true);
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message ?? "Registration failed.");
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      setError(extractErrorMessage(err));
     } finally {
+      isSubmittingRef.current = false;
       setLoading(false);
     }
   };
@@ -72,17 +145,13 @@ export default function RegisterPage() {
     setResendMessage("");
     setIsResendError(false);
     try {
-      const result = await resendVerificationEmail(email);
+      const result = await resendVerificationEmail(email.trim());
       setResendMessage(result);
     } catch (err) {
       setIsResendError(true);
-      if (axios.isAxiosError(err)) {
-        setResendMessage(
-          err.response?.data?.message ?? err.message ?? "Resend failed",
-        );
-      } else {
-        setResendMessage("Something went wrong. Please try again.");
-      }
+      setResendMessage(
+        extractErrorMessage(err, "Resend failed. Please try again.")
+      );
     } finally {
       setResendLoading(false);
     }
@@ -322,7 +391,23 @@ export default function RegisterPage() {
               lineHeight: 1.4,
             }}
           >
-            {error}
+            <div>{error}</div>
+            {(error.toLowerCase().includes("already") ||
+              error.toLowerCase().includes("log in") ||
+              error.toLowerCase().includes("inbox")) && (
+              <div style={{ marginTop: "8px" }}>
+                <Link
+                  to="/login"
+                  style={{
+                    color: "var(--primary)",
+                    fontWeight: 700,
+                    textDecoration: "underline",
+                  }}
+                >
+                  Go to Login →
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
