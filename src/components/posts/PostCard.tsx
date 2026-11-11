@@ -3,11 +3,19 @@ import { Link } from "react-router-dom";
 import type { Post, PostVisibility } from "../../types/posts";
 import { postsApi } from "../../api/posts";
 import { mediaApi } from "../../api/media";
-import { getMediaUrl, isVideoMedia } from "../../utils/media";
+import {
+  getMediaUrl,
+  isVideoMedia,
+  detectUploadKind,
+  getUploadStatusLabel,
+  UPLOAD_STATUS_BANNER_STYLE,
+  type UploadMediaKind,
+} from "../../utils/media";
 import { PostImagesGrid } from "./PostImagesGrid";
 import { LightboxModal } from "../LightboxModal";
 import { ImageAdjustModal } from "../ImageAdjustModal";
 import { Avatar } from "../Avatar";
+import { MarshmallowLoader } from "../MarshmallowLoader";
 import { parseRichText } from "../../utils/richText";
 import { soundEffects } from "../../utils/soundEffects";
 import { formatRelativeTime } from "../../utils/time";
@@ -168,7 +176,9 @@ export function PostCard({
   const [editImageUrls, setEditImageUrls] = useState<string[]>(
     post.imageUrls || []
   );
-  const [isUploadingEditImages, setIsUploadingEditImages] = useState(false);
+  const [editUploadingKind, setEditUploadingKind] =
+    useState<UploadMediaKind | null>(null);
+  const isUploadingEditImages = editUploadingKind !== null;
   const editFileInputRef = useRef<HTMLInputElement | null>(null);
   const editVideoInputRef = useRef<HTMLInputElement | null>(null);
   const [adjustingEditIndex, setAdjustingEditIndex] = useState<number | null>(
@@ -365,7 +375,7 @@ export function PostCard({
       return;
     }
 
-    setIsUploadingEditImages(true);
+    setEditUploadingKind(detectUploadKind(filesList));
     setEditError(null);
     try {
       const newUrls: string[] = [];
@@ -380,7 +390,7 @@ export function PostCard({
           "Failed to upload media. Supported: JPG, PNG, WebP, GIF (up to 10MB) and MP4, WebM, MOV (up to 100MB)."
       );
     } finally {
-      setIsUploadingEditImages(false);
+      setEditUploadingKind(null);
     }
   };
 
@@ -404,7 +414,7 @@ export function PostCard({
     if (adjustingEditIndex === null) return;
     const targetIdx = adjustingEditIndex;
     setAdjustingEditIndex(null);
-    setIsUploadingEditImages(true);
+    setEditUploadingKind("photo");
     try {
       const url = await mediaApi.upload(croppedFile, "posts");
       setEditImageUrls((prev) =>
@@ -413,44 +423,46 @@ export function PostCard({
     } catch {
       setEditError("Failed to upload adjusted image.");
     } finally {
-      setIsUploadingEditImages(false);
+      setEditUploadingKind(null);
+    }
+  };
+
+  const uploadPendingEditPhoto = async (
+    fileToUpload: File,
+    objectUrl: string,
+    errorMessage: string
+  ) => {
+    URL.revokeObjectURL(objectUrl);
+    setPendingEditAdjust(null);
+
+    setEditUploadingKind("photo");
+    setEditError(null);
+    try {
+      const url = await mediaApi.upload(fileToUpload, "posts");
+      setEditImageUrls((prev) => [...prev, url]);
+    } catch {
+      setEditError(errorMessage);
+    } finally {
+      setEditUploadingKind(null);
     }
   };
 
   const handlePendingEditAdjustConfirm = async (croppedFile: File) => {
     if (!pendingEditAdjust) return;
-    const { objectUrl } = pendingEditAdjust;
-    URL.revokeObjectURL(objectUrl);
-    setPendingEditAdjust(null);
-
-    setIsUploadingEditImages(true);
-    setEditError(null);
-    try {
-      const url = await mediaApi.upload(croppedFile, "posts");
-      setEditImageUrls((prev) => [...prev, url]);
-    } catch {
-      setEditError("Failed to upload adjusted image.");
-    } finally {
-      setIsUploadingEditImages(false);
-    }
+    await uploadPendingEditPhoto(
+      croppedFile,
+      pendingEditAdjust.objectUrl,
+      "Failed to upload adjusted image."
+    );
   };
 
   const handlePendingEditSkipCrop = async () => {
     if (!pendingEditAdjust) return;
-    const { file, objectUrl } = pendingEditAdjust;
-    URL.revokeObjectURL(objectUrl);
-    setPendingEditAdjust(null);
-
-    setIsUploadingEditImages(true);
-    setEditError(null);
-    try {
-      const url = await mediaApi.upload(file, "posts");
-      setEditImageUrls((prev) => [...prev, url]);
-    } catch {
-      setEditError("Failed to upload image.");
-    } finally {
-      setIsUploadingEditImages(false);
-    }
+    await uploadPendingEditPhoto(
+      pendingEditAdjust.file,
+      pendingEditAdjust.objectUrl,
+      "Failed to upload image."
+    );
   };
 
   const handlePendingEditCancel = () => {
@@ -1320,6 +1332,15 @@ export function PostCard({
             </div>
           )}
 
+          {editUploadingKind && (
+            <MarshmallowLoader
+              size="sm"
+              inline
+              label={getUploadStatusLabel(editUploadingKind)}
+              style={UPLOAD_STATUS_BANNER_STYLE}
+            />
+          )}
+
           {/* Add media buttons in edit mode */}
           <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
             <input
@@ -1356,7 +1377,13 @@ export function PostCard({
                 border: "1px solid var(--border-color)",
                 background: "var(--bg-hover)",
                 cursor:
-                  editImageUrls.length >= 10 ? "not-allowed" : "pointer",
+                  isUploadingEditImages || editImageUrls.length >= 10
+                    ? "not-allowed"
+                    : "pointer",
+                opacity:
+                  isUploadingEditImages || editImageUrls.length >= 10
+                    ? 0.55
+                    : 1,
                 fontSize: 12,
                 fontWeight: 600,
                 color: "#45bd62",
@@ -1371,7 +1398,7 @@ export function PostCard({
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7-3 3.72L9 13l-3 4h12l-4-5z" />
               </svg>
               <span style={{ color: "var(--text-secondary)" }}>
-                {isUploadingEditImages ? "Uploading..." : "Add photos"}
+                Add photos
               </span>
             </button>
 
@@ -1391,7 +1418,13 @@ export function PostCard({
                 border: "1px solid var(--border-color)",
                 background: "var(--bg-hover)",
                 cursor:
-                  editImageUrls.length >= 10 ? "not-allowed" : "pointer",
+                  isUploadingEditImages || editImageUrls.length >= 10
+                    ? "not-allowed"
+                    : "pointer",
+                opacity:
+                  isUploadingEditImages || editImageUrls.length >= 10
+                    ? 0.55
+                    : 1,
                 fontSize: 12,
                 fontWeight: 600,
                 color: "#f02849",
@@ -1407,7 +1440,7 @@ export function PostCard({
                 <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
               </svg>
               <span style={{ color: "var(--text-secondary)" }}>
-                {isUploadingEditImages ? "Uploading..." : "Add video"}
+                Add video
               </span>
             </button>
           </div>
