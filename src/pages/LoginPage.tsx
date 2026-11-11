@@ -161,7 +161,43 @@ export default function LoginPage() {
               lineHeight: 1.4,
             }}
           >
-            {error}
+            <div>{error}</div>
+
+            {error.toLowerCase().includes("verify") ? (
+              <div style={{ marginTop: "8px" }}>
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendLoading}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--primary)",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
+                >
+                  {resendLoading ? "Sending verification email..." : "Resend verification email →"}
+                </button>
+              </div>
+            ) : (
+              <div style={{ marginTop: "6px", fontSize: "12px", color: "var(--text-secondary)" }}>
+                Forgot your password?{" "}
+                <Link
+                  to="/forgot-password"
+                  style={{
+                    color: "var(--primary)",
+                    fontWeight: 700,
+                    textDecoration: "underline",
+                  }}
+                >
+                  Reset it here →
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
@@ -206,18 +242,39 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="login-password"
+            <div
               style={{
-                display: "block",
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "var(--text-primary)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
                 marginBottom: "6px",
               }}
             >
-              Password
-            </label>
+              <label
+                htmlFor="login-password"
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  margin: 0,
+                }}
+              >
+                Password
+              </label>
+
+              <Link
+                to="/forgot-password"
+                style={{
+                  fontSize: "12px",
+                  color: "var(--primary)",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             <input
               id="login-password"
               type="password"
@@ -281,36 +338,13 @@ export default function LoginPage() {
           )}
         </form>
 
-        {/* Resend Verification */}
-        {email && (
-          <div style={{ textAlign: "center", marginTop: "18px" }}>
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resendLoading}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--primary)",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: resendLoading ? "not-allowed" : "pointer",
-                padding: 0,
-                opacity: resendLoading ? 0.6 : 1,
-              }}
-            >
-              {resendLoading ? "Sending..." : "Didn't receive verification email? Resend"}
-            </button>
-          </div>
-        )}
-
         {resendError && (
           <p
             style={{
               color: "#2b8a3e",
               fontSize: "13px",
               textAlign: "center",
-              marginTop: "10px",
+              marginTop: "14px",
               lineHeight: 1.4,
             }}
           >
