@@ -2,9 +2,20 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import type { Post, PostVisibility } from "../../types/posts";
 import { mediaApi } from "../../api/media";
-import { getMediaUrl, isVideoMedia } from "../../utils/media";
+import {
+  getMediaUrl,
+  isVideoMedia,
+  detectUploadKind,
+  getUploadStatusLabel,
+  extractDroppedImageUrl,
+  extractClipboardFiles,
+  fetchImageUrlAsFile,
+  UPLOAD_STATUS_BANNER_STYLE,
+  type UploadMediaKind,
+} from "../../utils/media";
 import { ImageAdjustModal } from "../ImageAdjustModal";
 import { Avatar } from "../Avatar";
+import { MarshmallowLoader } from "../MarshmallowLoader";
 
 interface PostComposerProps {
   onPostCreated: (
@@ -122,7 +133,10 @@ export function PostComposer({
 
   // Media attachments state
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadingKind, setUploadingKind] = useState<UploadMediaKind | null>(
+    null
+  );
+  const isUploading = uploadingKind !== null;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const [adjustingIndex, setAdjustingIndex] = useState<number | null>(null);
@@ -227,7 +241,7 @@ export function PostComposer({
     }
 
     // Multiple files or video: upload directly
-    setIsUploading(true);
+    setUploadingKind(detectUploadKind(filesList));
     setError(null);
     try {
       const newUrls: string[] = [];
@@ -242,7 +256,7 @@ export function PostComposer({
           "Failed to upload media. Supported: JPG, PNG, WebP, GIF (up to 10MB) and MP4, WebM, MOV (up to 100MB)."
       );
     } finally {
-      setIsUploading(false);
+      setUploadingKind(null);
     }
   };
 
@@ -287,14 +301,41 @@ export function PostComposer({
     e.stopPropagation();
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingOver(false);
     dragCounter.current = 0;
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFiles(Array.from(e.dataTransfer.files));
+      return;
     }
+
+    const droppedUrl = extractDroppedImageUrl(e.dataTransfer);
+    if (!droppedUrl) return;
+
+    setUploadingKind("photo");
+    setError(null);
+    const { file, error: fetchError } = await fetchImageUrlAsFile(droppedUrl);
+    setUploadingKind(null);
+
+    if (fetchError) {
+      setError(fetchError);
+      return;
+    }
+    if (file) {
+      await processFiles([file]);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLFormElement>) => {
+    const pastedFiles = extractClipboardFiles(e.clipboardData);
+    if (pastedFiles.length === 0) return;
+
+    // Prevent raw pasted image filenames or HTML markup from entering the caption.
+    e.preventDefault();
+    processFiles(pastedFiles);
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
@@ -305,7 +346,7 @@ export function PostComposer({
     if (adjustingIndex === null) return;
     const targetIdx = adjustingIndex;
     setAdjustingIndex(null);
-    setIsUploading(true);
+    setUploadingKind("photo");
     try {
       const url = await mediaApi.upload(croppedFile, "posts");
       setImageUrls((prev) =>
@@ -314,44 +355,46 @@ export function PostComposer({
     } catch {
       setError("Failed to upload adjusted image.");
     } finally {
-      setIsUploading(false);
+      setUploadingKind(null);
+    }
+  };
+
+  const uploadPendingPhoto = async (
+    fileToUpload: File,
+    objectUrl: string,
+    errorMessage: string
+  ) => {
+    URL.revokeObjectURL(objectUrl);
+    setPendingAdjust(null);
+
+    setUploadingKind("photo");
+    setError(null);
+    try {
+      const url = await mediaApi.upload(fileToUpload, "posts");
+      setImageUrls((prev) => [...prev, url]);
+    } catch {
+      setError(errorMessage);
+    } finally {
+      setUploadingKind(null);
     }
   };
 
   const handlePendingAdjustConfirm = async (croppedFile: File) => {
     if (!pendingAdjust) return;
-    const { objectUrl } = pendingAdjust;
-    URL.revokeObjectURL(objectUrl);
-    setPendingAdjust(null);
-
-    setIsUploading(true);
-    setError(null);
-    try {
-      const url = await mediaApi.upload(croppedFile, "posts");
-      setImageUrls((prev) => [...prev, url]);
-    } catch {
-      setError("Failed to upload adjusted image.");
-    } finally {
-      setIsUploading(false);
-    }
+    await uploadPendingPhoto(
+      croppedFile,
+      pendingAdjust.objectUrl,
+      "Failed to upload adjusted image."
+    );
   };
 
   const handlePendingSkipCrop = async () => {
     if (!pendingAdjust) return;
-    const { file, objectUrl } = pendingAdjust;
-    URL.revokeObjectURL(objectUrl);
-    setPendingAdjust(null);
-
-    setIsUploading(true);
-    setError(null);
-    try {
-      const url = await mediaApi.upload(file, "posts");
-      setImageUrls((prev) => [...prev, url]);
-    } catch {
-      setError("Failed to upload image.");
-    } finally {
-      setIsUploading(false);
-    }
+    await uploadPendingPhoto(
+      pendingAdjust.file,
+      pendingAdjust.objectUrl,
+      "Failed to upload image."
+    );
   };
 
   const handlePendingCancel = () => {
@@ -661,7 +704,7 @@ export function PostComposer({
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} onPaste={handlePaste}>
         <div style={{ position: "relative" }}>
           <textarea
             ref={textareaRef}
@@ -839,6 +882,15 @@ export function PostComposer({
           </div>
         )}
 
+        {uploadingKind && (
+          <MarshmallowLoader
+            size="sm"
+            inline
+            label={getUploadStatusLabel(uploadingKind)}
+            style={UPLOAD_STATUS_BANNER_STYLE}
+          />
+        )}
+
         {/* Attachment Action Bar */}
         <div
           style={{
@@ -890,14 +942,21 @@ export function PostComposer({
                 borderRadius: 6,
                 border: "none",
                 backgroundColor: "transparent",
-                cursor: imageUrls.length >= 10 ? "not-allowed" : "pointer",
+                cursor:
+                  isUploading || isSubmitting || imageUrls.length >= 10
+                    ? "not-allowed"
+                    : "pointer",
+                opacity:
+                  isUploading || isSubmitting || imageUrls.length >= 10
+                    ? 0.55
+                    : 1,
                 color: "#45bd62",
                 fontWeight: 600,
                 fontSize: 13,
                 transition: "background-color 0.15s ease",
               }}
               onMouseEnter={(e) => {
-                if (imageUrls.length < 10)
+                if (!isUploading && !isSubmitting && imageUrls.length < 10)
                   e.currentTarget.style.backgroundColor = "var(--bg-hover)";
               }}
               onMouseLeave={(e) =>
@@ -932,14 +991,21 @@ export function PostComposer({
                 borderRadius: 6,
                 border: "none",
                 backgroundColor: "transparent",
-                cursor: imageUrls.length >= 10 ? "not-allowed" : "pointer",
+                cursor:
+                  isUploading || isSubmitting || imageUrls.length >= 10
+                    ? "not-allowed"
+                    : "pointer",
+                opacity:
+                  isUploading || isSubmitting || imageUrls.length >= 10
+                    ? 0.55
+                    : 1,
                 color: "#f02849",
                 fontWeight: 600,
                 fontSize: 13,
                 transition: "background-color 0.15s ease",
               }}
               onMouseEnter={(e) => {
-                if (imageUrls.length < 10)
+                if (!isUploading && !isSubmitting && imageUrls.length < 10)
                   e.currentTarget.style.backgroundColor = "var(--bg-hover)";
               }}
               onMouseLeave={(e) =>
@@ -957,7 +1023,7 @@ export function PostComposer({
                 <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
               </svg>
               <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                {isUploading ? "Uploading video..." : "Video"}
+                Video
               </span>
             </button>
           </div>
