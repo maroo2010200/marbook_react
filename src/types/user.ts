@@ -7,7 +7,8 @@ export interface User {
   avatarUrl?: string | null;
   coverUrl?: string | null;
   isEmailVerified: boolean;
-  birthdate: string;
+  birthdate?: string;
+  isBirthdatePrivate?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,7 +21,8 @@ export interface UserProfile {
   bio: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
-  birthdate: string;
+  birthdate?: string;
+  isBirthdatePrivate?: boolean;
   createdAt: string;
   followersCount: number;
   followingCount: number;
@@ -35,7 +37,8 @@ export interface UserProfileUpdateDto {
   bio?: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
-  birthdate: string;
+  birthdate?: string;
+  isBirthdatePrivate?: boolean;
 }
 
 export interface UserSummary {

@@ -116,7 +116,7 @@ export default function VerifyPage() {
         bio: bio.trim() || null,
         avatarUrl: avatarUrl || null,
         coverUrl: coverUrl || null,
-        birthdate: user.birthdate,
+        birthdate: user.birthdate || "",
       });
 
       updateUser({

@@ -11,11 +11,56 @@ import { soundEffects, isSoundEnabled, setSoundEnabled } from "../utils/soundEff
 type SettingsTab = "account" | "appearance" | "notifications" | "privacy";
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
+
+  // Birthday privacy state
+  const [isBirthdatePrivate, setIsBirthdatePrivate] = useState<boolean>(() => {
+    return Boolean(user?.isBirthdatePrivate);
+  });
+  const [birthdayPrivacyLoading, setBirthdayPrivacyLoading] = useState(false);
+  const [birthdayPrivacySuccess, setBirthdayPrivacySuccess] = useState<string | null>(null);
+  const [birthdayPrivacyError, setBirthdayPrivacyError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (user) {
+      setIsBirthdatePrivate(Boolean(user.isBirthdatePrivate));
+    }
+  }, [user?.isBirthdatePrivate]);
+
+  const handleToggleBirthdayPrivacy = async () => {
+    if (!user || birthdayPrivacyLoading) return;
+    const nextVal = !isBirthdatePrivate;
+    setBirthdayPrivacyLoading(true);
+    setBirthdayPrivacyError(null);
+    setBirthdayPrivacySuccess(null);
+    try {
+      const updated = await usersApi.updateMyProfile({
+        name: user.name,
+        birthdate: user.birthdate || "",
+        isBirthdatePrivate: nextVal,
+        avatarUrl: user.avatarUrl,
+        coverUrl: user.coverUrl,
+      });
+      setIsBirthdatePrivate(Boolean(updated.isBirthdatePrivate));
+      updateUser({ isBirthdatePrivate: updated.isBirthdatePrivate });
+      setBirthdayPrivacySuccess(
+        nextVal
+          ? "Birthday is now private. Only you can see it on your profile."
+          : "Birthday is now public. Visitors can see it on your profile."
+      );
+      setTimeout(() => setBirthdayPrivacySuccess(null), 4000);
+    } catch (err: any) {
+      setBirthdayPrivacyError(
+        err?.response?.data?.message || err?.message || "Failed to update birthday privacy."
+      );
+    } finally {
+      setBirthdayPrivacyLoading(false);
+    }
+  };
 
   // Change Password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -1282,6 +1327,202 @@ export default function SettingsPage() {
         {/* TAB 4: SAFETY & PRIVACY */}
         {activeTab === "privacy" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Personal Privacy Controls (Birthday Privacy) */}
+            <div className="social-widget-card" style={{ padding: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 22 }}>🔒</span>
+                <div>
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    Personal Privacy Controls
+                  </h2>
+                  <p
+                    style={{
+                      margin: "2px 0 0",
+                      fontSize: 13,
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    Control what personal details other users can see on your profile.
+                  </p>
+                </div>
+              </div>
+
+              {birthdayPrivacySuccess && (
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "rgba(16, 185, 129, 0.12)",
+                    border: "1px solid rgba(16, 185, 129, 0.3)",
+                    color: "var(--primary-dark, #059669)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    marginBottom: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span>✓</span>
+                  <span>{birthdayPrivacySuccess}</span>
+                </div>
+              )}
+
+              {birthdayPrivacyError && (
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "rgba(239, 68, 68, 0.12)",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    color: "var(--accent-roast, #ef4444)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    marginBottom: 14,
+                  }}
+                >
+                  {birthdayPrivacyError}
+                </div>
+              )}
+
+              {/* Birthday Privacy Row */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 16,
+                  padding: "14px 16px",
+                  borderRadius: "var(--radius-md)",
+                  backgroundColor: "var(--bg-hover)",
+                  border: "1px solid var(--border-color)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(245, 158, 11, 0.12)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 18,
+                      flexShrink: 0,
+                    }}
+                  >
+                    🎂
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 14,
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        Keep Birthday Private
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "1px 8px",
+                          borderRadius: "var(--radius-full)",
+                          backgroundColor: isBirthdatePrivate
+                            ? "rgba(245, 158, 11, 0.16)"
+                            : "var(--bg-card)",
+                          color: isBirthdatePrivate
+                            ? "var(--primary-dark, #b45309)"
+                            : "var(--text-secondary)",
+                          border: "1px solid var(--border-color)",
+                        }}
+                      >
+                        {isBirthdatePrivate ? "🔒 Only Me" : "🌐 Public"}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        color: "var(--text-secondary)",
+                        marginTop: 2,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {isBirthdatePrivate
+                        ? "Your date of birth is hidden from all other users. Only you can see it on your profile."
+                        : "Your date of birth is visible to other users who visit your profile."}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Toggle switch */}
+                <label
+                  style={{
+                    position: "relative",
+                    display: "inline-block",
+                    width: 48,
+                    height: 26,
+                    cursor: birthdayPrivacyLoading ? "not-allowed" : "pointer",
+                    flexShrink: 0,
+                    opacity: birthdayPrivacyLoading ? 0.6 : 1,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isBirthdatePrivate}
+                    onChange={handleToggleBirthdayPrivacy}
+                    disabled={birthdayPrivacyLoading}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span
+                    style={{
+                      position: "absolute",
+                      cursor: "pointer",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: isBirthdatePrivate ? "var(--primary)" : "var(--border-color)",
+                      transition: "0.2s ease",
+                      borderRadius: 26,
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: "absolute",
+                        content: '""',
+                        height: 20,
+                        width: 20,
+                        left: isBirthdatePrivate ? 25 : 3,
+                        bottom: 3,
+                        backgroundColor: "#fff",
+                        transition: "0.2s ease",
+                        borderRadius: "50%",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+                      }}
+                    />
+                  </span>
+                </label>
+              </div>
+            </div>
+
             {/* Safety & Zero-Leak Pledge Card */}
             <div className="social-widget-card" style={{ padding: "20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
