@@ -143,7 +143,7 @@ export function ProfilePage() {
       setProfile(data);
 
       // Cleanly sync URL to /@username in browser address bar
-      if (data.username && (isNumericId || rawId === "me")) {
+      if (data.username && (isNumericId || rawId === "me" || !rawId)) {
         window.history.replaceState(null, "", `/@${data.username}`);
       }
     } catch {

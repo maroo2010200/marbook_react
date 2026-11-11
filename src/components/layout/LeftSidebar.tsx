@@ -28,7 +28,7 @@ export function LeftSidebar() {
         : unreadChatCount.totalUnreadMessages
       : null;
 
-  const profileUrl = user.username ? `/@${user.username}` : `/profile/${user.id}`;
+  const profileUrl = user.username ? `/@${user.username}` : user.id ? `/profile/${user.id}` : "/profile";
 
   const navItems = [
     {

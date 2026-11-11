@@ -1,5 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
@@ -20,6 +19,14 @@ import MessagesPage from "./pages/MessagesPage";
 import SearchPage from "./pages/SearchPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
+
+function HandleProfileRoute() {
+  const { id } = useParams<{ id: string }>();
+  if (!id?.startsWith("@")) {
+    return <Navigate to="/login" replace />;
+  }
+  return <ProfilePage />;
+}
 
 function App() {
   return (
@@ -63,6 +70,14 @@ function App() {
                   }
                 />
                 <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/profile/:id"
                   element={
                     <ProtectedRoute>
@@ -71,10 +86,10 @@ function App() {
                   }
                 />
                 <Route
-                  path="/@:id"
+                  path="/:id"
                   element={
                     <ProtectedRoute>
-                      <ProfilePage />
+                      <HandleProfileRoute />
                     </ProtectedRoute>
                   }
                 />
