@@ -8,6 +8,7 @@ import { PostImagesGrid } from "./PostImagesGrid";
 import { LightboxModal } from "../LightboxModal";
 import { ImageAdjustModal } from "../ImageAdjustModal";
 import { Avatar } from "../Avatar";
+import { MarshmallowLoader } from "../MarshmallowLoader";
 import { parseRichText } from "../../utils/richText";
 import { soundEffects } from "../../utils/soundEffects";
 import { formatRelativeTime } from "../../utils/time";
@@ -149,6 +150,10 @@ export function PostCard({
 
   // Repost state
   const [isReposting, setIsReposting] = useState(false);
+  const [optimisticRepost, setOptimisticRepost] = useState<{
+    isReposted: boolean;
+    repostsCount: number;
+  } | null>(null);
   const [repostFeedback, setRepostFeedback] = useState<string | null>(null);
   const [originalLightboxIndex, setOriginalLightboxIndex] = useState<number | null>(null);
 
@@ -276,6 +281,12 @@ export function PostCard({
       )
     : (post.visibility ?? "Public") === "Public";
   const canShowRepostButton = isTargetPublic || canUndoRepost;
+  const displayReposted = optimisticRepost
+    ? optimisticRepost.isReposted
+    : canUndoRepost;
+  const displayRepostsCount = optimisticRepost
+    ? optimisticRepost.repostsCount
+    : repostsCount;
 
   const handleToggleRepost = async () => {
     if (!currentUserId) {
@@ -290,14 +301,24 @@ export function PostCard({
     }
 
     const targetId = post.originalPostId ? (post.originalPost?.id ?? post.originalPostId) : post.id;
-    setIsReposting(true);
+    const nextIsReposted = !canUndoRepost;
+    const nextOptimisticCount = nextIsReposted
+      ? repostsCount + 1
+      : Math.max(0, repostsCount - 1);
 
-    if (!canUndoRepost) {
+    setIsReposting(true);
+    setOptimisticRepost({
+      isReposted: nextIsReposted,
+      repostsCount: nextOptimisticCount,
+    });
+
+    if (nextIsReposted) {
       soundEffects.playRepost();
     }
 
     try {
       const res = await postsApi.toggleRepost(targetId);
+      setOptimisticRepost(null);
       if (res.isReposted) {
         setRepostFeedback("Reposted to your feed! 🔁");
         setTimeout(() => setRepostFeedback(null), 3000);
@@ -316,6 +337,7 @@ export function PostCard({
         });
       }
     } catch (err: unknown) {
+      setOptimisticRepost(null);
       console.error("Failed to repost:", err);
       const errMsg =
         (err as { response?: { data?: string } })?.response?.data ||
@@ -1708,19 +1730,27 @@ export function PostCard({
             type="button"
             onClick={handleToggleRepost}
             disabled={isReposting}
-            aria-label={canUndoRepost ? "Undo repost" : "Repost post"}
-            title={canUndoRepost ? "Undo Repost" : "Repost to your feed"}
+            aria-label={displayReposted ? "Undo repost" : "Repost post"}
+            title={
+              isReposting
+                ? displayReposted
+                  ? "Toasting repost..."
+                  : "Removing repost..."
+                : displayReposted
+                ? "Undo Repost"
+                : "Repost to your feed"
+            }
             style={{
               background: "none",
               border: "none",
-              cursor: isReposting ? "wait" : "pointer",
+              cursor: isReposting ? "default" : "pointer",
               padding: 0,
               display: "flex",
               alignItems: "center",
               gap: 7,
-              color: canUndoRepost ? "#10b981" : "var(--text-secondary)",
+              color: displayReposted ? "#10b981" : "var(--text-secondary)",
               transition: "transform 0.1s ease, color 0.15s ease",
-              opacity: isReposting ? 0.6 : 1,
+              opacity: isReposting ? 0.92 : 1,
             }}
             onMouseDown={(e) =>
               (e.currentTarget.style.transform = "scale(0.92)")
@@ -1729,35 +1759,39 @@ export function PostCard({
               (e.currentTarget.style.transform = "scale(1)")
             }
           >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={canUndoRepost ? "#10b981" : "var(--text-secondary)"}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{
-                transition: "stroke 0.15s ease, transform 0.15s ease",
-                transform: canUndoRepost ? "scale(1.08)" : "scale(1)",
-              }}
-            >
-              <path d="m17 2 4 4-4 4" />
-              <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
-              <path d="m7 22-4-4 4-4" />
-              <path d="M21 13v1a4 4 0 0 1-4 4H3" />
-            </svg>
-            {repostsCount > 0 && (
+            {isReposting ? (
+              <MarshmallowLoader size="xs" inline label={null} />
+            ) : (
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={displayReposted ? "#10b981" : "var(--text-secondary)"}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  transition: "stroke 0.15s ease, transform 0.15s ease",
+                  transform: displayReposted ? "scale(1.08)" : "scale(1)",
+                }}
+              >
+                <path d="m17 2 4 4-4 4" />
+                <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                <path d="m7 22-4-4 4-4" />
+                <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+              </svg>
+            )}
+            {displayRepostsCount > 0 && (
               <span
-                title={`${repostsCount} ${repostsCount === 1 ? "repost" : "reposts"}`}
+                title={`${displayRepostsCount} ${displayRepostsCount === 1 ? "repost" : "reposts"}`}
                 style={{
                   fontSize: 14,
                   fontWeight: 600,
-                  color: canUndoRepost ? "#10b981" : "var(--text-secondary)",
+                  color: displayReposted ? "#10b981" : "var(--text-secondary)",
                 }}
               >
-                {formatCount(repostsCount)}
+                {formatCount(displayRepostsCount)}
               </span>
             )}
           </button>
