@@ -5,12 +5,22 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useChat } from "../context/ChatContext";
 import { chatApi } from "../api/chat";
+import { mediaApi } from "../api/media";
 import { formatRelativeTime } from "../utils/time";
 import { parseRichText, formatMessageSnippet } from "../utils/richText";
 import { GifPicker } from "../components/chat/GifPicker";
 import { LightboxModal } from "../components/LightboxModal";
 import { Avatar } from "../components/Avatar";
 import { soundEffects } from "../utils/soundEffects";
+import {
+  ChatAttachmentBubble,
+  PaperclipIcon,
+} from "../components/chat/ChatAttachmentBubble";
+import {
+  ChatAttachmentStaging,
+  type StagedAttachment,
+} from "../components/chat/ChatAttachmentStaging";
+import { ChatDropzoneOverlay } from "../components/chat/ChatDropzoneOverlay";
 import type { Message, ConversationSummary, TypingEvent } from "../types/chat";
 
 export default function MessagesPage() {
@@ -52,6 +62,12 @@ export default function MessagesPage() {
   // Input & Sending
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
+
+  // File Attachments & Drag-and-Drop
+  const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const dragDepthRef = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // GIF Picker & Lightbox
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
@@ -320,13 +336,113 @@ export default function MessagesPage() {
     scrollToBottom,
   ]);
 
-  // Handle Send Message
+  // Stage files for attachment
+  const stageFiles = (files: FileList | File[]) => {
+    const newStaged: StagedAttachment[] = [];
+    Array.from(files).forEach((file) => {
+      const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+      const isImage =
+        file.type.startsWith("image/") ||
+        [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext);
+      const isVideo =
+        file.type.startsWith("video/") ||
+        [".mp4", ".webm", ".mov", ".mkv", ".ogg", ".m4v"].includes(ext);
+
+      let type: "image" | "video" | "file" = "file";
+      let previewUrl: string | undefined = undefined;
+
+      if (isImage) {
+        type = "image";
+        previewUrl = URL.createObjectURL(file);
+      } else if (isVideo) {
+        type = "video";
+        previewUrl = URL.createObjectURL(file);
+      } else {
+        type = "file";
+      }
+
+      newStaged.push({
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        file,
+        previewUrl,
+        type,
+        name: file.name,
+        size: file.size,
+      });
+    });
+
+    setStagedAttachments((prev) => [...prev, ...newStaged]);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      stageFiles(e.target.files);
+      e.target.value = "";
+    }
+  };
+
+  const removeStagedAttachment = (id: string) => {
+    setStagedAttachments((prev) => {
+      const item = prev.find((a) => a.id === id);
+      if (item?.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+      return prev.filter((a) => a.id !== id);
+    });
+  };
+
+  // Drag and Drop handlers for entire chat thread area
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDraggingOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current -= 1;
+    if (dragDepthRef.current <= 0) {
+      dragDepthRef.current = 0;
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = 0;
+    setIsDraggingOver(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      stageFiles(e.dataTransfer.files);
+    }
+  };
+
+  // Handle Send Message (supports text and multi-file attachments)
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!selectedId || !inputText.trim() || isSending) return;
+    if (
+      !selectedId ||
+      (!inputText.trim() && stagedAttachments.length === 0) ||
+      isSending
+    ) {
+      return;
+    }
 
     const textToSend = inputText.trim();
+    const currentAttachments = [...stagedAttachments];
+
     setInputText("");
+    setStagedAttachments([]);
     inputRef.current?.focus();
     setIsSending(true);
 
@@ -334,35 +450,73 @@ export default function MessagesPage() {
     sendTyping(selectedId, false);
 
     try {
-      const created = await chatApi.sendMessage(selectedId, textToSend);
-      soundEffects.playChatSent();
+      if (currentAttachments.length > 0) {
+        let caption = textToSend;
+        for (const staged of currentAttachments) {
+          const uploadedUrl = await mediaApi.upload(staged.file, "chat");
+          const messageContent = caption ? `${caption}\n${uploadedUrl}` : uploadedUrl;
+          caption = ""; // Caption attached to first uploaded item
 
-      // Append locally if not already appended by SignalR
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === created.id)) return prev;
-        return [...prev, { ...created, isMine: true }];
-      });
+          const created = await chatApi.sendMessage(selectedId, messageContent);
+          soundEffects.playChatSent();
 
-      // Update sidebar conversations list
-      setConversations((prev) => {
-        const index = prev.findIndex((c) => c.id === selectedId);
-        if (index === -1) {
-          refreshConversations();
-          return prev;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === created.id)) return prev;
+            return [...prev, { ...created, isMine: true }];
+          });
+
+          // Update sidebar conversations list
+          setConversations((prev) => {
+            const index = prev.findIndex((c) => c.id === selectedId);
+            if (index === -1) {
+              refreshConversations();
+              return prev;
+            }
+            const updated = [...prev];
+            const conv = { ...updated[index] };
+            conv.lastMessage = created;
+            conv.updatedAt = created.createdAt;
+            updated.splice(index, 1);
+            return [conv, ...updated];
+          });
         }
-        const updated = [...prev];
-        const conv = { ...updated[index] };
-        conv.lastMessage = created;
-        conv.updatedAt = created.createdAt;
-        updated.splice(index, 1);
-        return [conv, ...updated];
-      });
+
+        // Clean up object URLs
+        currentAttachments.forEach((att) => {
+          if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+        });
+      } else {
+        const created = await chatApi.sendMessage(selectedId, textToSend);
+        soundEffects.playChatSent();
+
+        // Append locally if not already appended by SignalR
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === created.id)) return prev;
+          return [...prev, { ...created, isMine: true }];
+        });
+
+        // Update sidebar conversations list
+        setConversations((prev) => {
+          const index = prev.findIndex((c) => c.id === selectedId);
+          if (index === -1) {
+            refreshConversations();
+            return prev;
+          }
+          const updated = [...prev];
+          const conv = { ...updated[index] };
+          conv.lastMessage = created;
+          conv.updatedAt = created.createdAt;
+          updated.splice(index, 1);
+          return [conv, ...updated];
+        });
+      }
 
       setTimeout(() => scrollToBottom(true), 50);
     } catch (err) {
       console.error("Failed to send message:", err);
       // restore text on error
-      setInputText(textToSend);
+      if (textToSend) setInputText(textToSend);
+      if (currentAttachments.length > 0) setStagedAttachments(currentAttachments);
     } finally {
       setIsSending(false);
       inputRef.current?.focus();
@@ -790,6 +944,10 @@ export default function MessagesPage() {
       {/* RIGHT MAIN AREA: Active Chat Thread */}
       <div
         className={`messages-thread-pane ${!selectedId ? "messages-thread-hidden-mobile" : ""}`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
         style={{
           flex: 1,
           display: "flex",
@@ -846,6 +1004,12 @@ export default function MessagesPage() {
         ) : (
           /* Active Chat Window */
           <>
+            {/* Drag & Drop Overlay */}
+            <ChatDropzoneOverlay
+              isVisible={isDraggingOver}
+              targetName={activeConversation.otherParticipant.name}
+            />
+
             {/* Chat Top Header */}
             <div
               style={{
@@ -1252,74 +1416,36 @@ export default function MessagesPage() {
                                     </div>
                                   )}
 
-                                  {/* Embedded Media/GIF if message contains media */}
-                                  {!msg.isDeleted && parsed.mediaUrls.length > 0 && (
-                                    <div
-                                      style={{
-                                        marginTop: parsed.nodes.length > 0 ? 8 : 0,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: 6,
-                                      }}
-                                    >
-                                      {parsed.mediaUrls.map((mUrl, mIdx) => (
-                                        <div
-                                          key={mIdx}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setLightboxImages([mUrl]);
-                                            setIsLightboxOpen(true);
-                                          }}
-                                          title="Click to view full size"
-                                          style={{
-                                            position: "relative",
-                                            borderRadius: isPureMedia ? 16 : 12,
-                                            overflow: "hidden",
-                                            maxWidth: 320,
-                                            cursor: "pointer",
-                                            backgroundColor: "rgba(0,0,0,0.12)",
-                                            border: isPureMedia
-                                              ? "1px solid var(--border-color)"
-                                              : "none",
-                                            boxShadow: isPureMedia
-                                              ? "var(--shadow-md, 0 4px 12px rgba(0,0,0,0.18))"
-                                              : "none",
-                                          }}
-                                        >
-                                          <img
-                                            src={mUrl}
-                                            alt="Shared media"
-                                            loading="lazy"
-                                            style={{
-                                              maxWidth: "100%",
-                                              maxHeight: 280,
-                                              objectFit: "contain",
-                                              display: "block",
-                                              borderRadius: isPureMedia ? 16 : 12,
+                                  {/* Embedded Attachments (Images, Videos, Files, GIFs) */}
+                                  {!msg.isDeleted &&
+                                    parsed.attachments &&
+                                    parsed.attachments.length > 0 && (
+                                      <div
+                                        style={{
+                                          marginTop:
+                                            parsed.nodes.length > 0 ? 8 : 0,
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          gap: 6,
+                                        }}
+                                      >
+                                        {parsed.attachments.map((att, attIdx) => (
+                                          <ChatAttachmentBubble
+                                            key={attIdx}
+                                            attachment={att}
+                                            isMine={isMine}
+                                            isPureMedia={isPureMedia}
+                                            onImageClick={(url) => {
+                                              setLightboxImages([url]);
+                                              setIsLightboxOpen(true);
                                             }}
+                                            onMediaLoaded={() =>
+                                              scrollToBottom(false)
+                                            }
                                           />
-                                          <span
-                                            style={{
-                                              position: "absolute",
-                                              bottom: 6,
-                                              left: 6,
-                                              backgroundColor: "rgba(0,0,0,0.72)",
-                                              color: "#fff",
-                                              fontSize: 10,
-                                              fontWeight: 700,
-                                              padding: "2px 6px",
-                                              borderRadius: 4,
-                                              letterSpacing: "0.5px",
-                                              pointerEvents: "none",
-                                              backdropFilter: "blur(2px)",
-                                            }}
-                                          >
-                                            GIF
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
+                                        ))}
+                                      </div>
+                                    )}
 
                                   {/* (edited) tag if pure media was edited */}
                                   {msg.updatedAt && !msg.isDeleted && parsed.nodes.length === 0 && (
@@ -1470,6 +1596,13 @@ export default function MessagesPage() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Staged Attachments Preview Bar */}
+            <ChatAttachmentStaging
+              stagedAttachments={stagedAttachments}
+              onRemove={removeStagedAttachment}
+              isUploading={isSending}
+            />
+
             {/* Chat Bottom Input Bar */}
             <form
               onSubmit={handleSendMessage}
@@ -1493,10 +1626,57 @@ export default function MessagesPage() {
                 />
               )}
 
+              {/* Hidden File Input for Paperclip Attachments */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                style={{ display: "none" }}
+                accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z"
+              />
+
+              {/* Attachment Picker Button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach photo, video, or document"
+                aria-label="Attach files or media"
+                disabled={isSending}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 19,
+                  backgroundColor: "var(--bg-hover)",
+                  color: "var(--text-secondary)",
+                  border: "1px solid var(--border-color)",
+                  cursor: isSending ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s ease",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--border-color)";
+                  e.currentTarget.style.color = "var(--primary)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                }}
+              >
+                <PaperclipIcon size={18} />
+              </button>
+
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Type a message or paste a link/GIF..."
+                placeholder={
+                  stagedAttachments.length > 0
+                    ? "Add a caption (optional)..."
+                    : "Type a message or paste a link/GIF..."
+                }
                 value={inputText}
                 onChange={handleInputChange}
 
@@ -1564,18 +1744,23 @@ export default function MessagesPage() {
               {/* Send Button */}
               <button
                 type="submit"
-                disabled={isSending || !inputText.trim()}
+                disabled={
+                  isSending ||
+                  (!inputText.trim() && stagedAttachments.length === 0)
+                }
                 aria-label="Send message"
                 style={{
                   width: 40,
                   height: 40,
                   borderRadius: "50%",
                   backgroundColor:
-                    inputText.trim() && !isSending
+                    (inputText.trim() || stagedAttachments.length > 0) &&
+                    !isSending
                       ? "var(--primary)"
                       : "var(--bg-hover)",
                   color:
-                    inputText.trim() && !isSending
+                    (inputText.trim() || stagedAttachments.length > 0) &&
+                    !isSending
                       ? "#fff"
                       : "var(--text-muted)",
                   border: "none",
@@ -1583,19 +1768,35 @@ export default function MessagesPage() {
                   alignItems: "center",
                   justifyContent: "center",
                   cursor:
-                    inputText.trim() && !isSending ? "pointer" : "not-allowed",
+                    (inputText.trim() || stagedAttachments.length > 0) &&
+                    !isSending
+                      ? "pointer"
+                      : "not-allowed",
                   transition: "all 0.15s ease",
                   flexShrink: 0,
                 }}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                </svg>
+                {isSending ? (
+                  <div
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      border: "2px solid rgba(255,255,255,0.3)",
+                      borderTopColor: "#fff",
+                      animation: "spin 0.8s linear infinite",
+                    }}
+                  />
+                ) : (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                  </svg>
+                )}
               </button>
             </form>
           </>
