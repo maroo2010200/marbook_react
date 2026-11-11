@@ -31,6 +31,7 @@ export default function MessagesPage() {
     onMessageEdited,
     onMessageDeleted,
     onUserTyping,
+    isUserOnline,
   } = useChat();
 
   const [selectedId, setSelectedId] = useState<number | null>(
@@ -681,7 +682,24 @@ export default function MessagesPage() {
                   }}
                 >
                   {/* User Avatar */}
-                  <Avatar src={other.avatarUrl} name={other.name} size={48} />
+                  <div style={{ position: "relative", flexShrink: 0 }}>
+                    <Avatar src={other.avatarUrl} name={other.name} size={48} />
+                    {isUserOnline(other.id) && (
+                      <span
+                        title="Active now"
+                        style={{
+                          position: "absolute",
+                          bottom: 1,
+                          right: 1,
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          backgroundColor: "#22c55e",
+                          border: "2px solid var(--bg-card)",
+                        }}
+                      />
+                    )}
+                  </div>
 
                   {/* Info & Snippet */}
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -888,13 +906,28 @@ export default function MessagesPage() {
 
                 <Link
                   to={`/profile/${activeConversation.otherParticipant.id}`}
-                  style={{ textDecoration: "none", flexShrink: 0 }}
+                  style={{ textDecoration: "none", flexShrink: 0, position: "relative" }}
                 >
                   <Avatar
                     src={activeConversation.otherParticipant.avatarUrl}
                     name={activeConversation.otherParticipant.name}
                     size={40}
                   />
+                  {isUserOnline(activeConversation.otherParticipant.id) && (
+                    <span
+                      title="Active now"
+                      style={{
+                        position: "absolute",
+                        bottom: 0,
+                        right: 0,
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        backgroundColor: "#22c55e",
+                        border: "2px solid var(--bg-card)",
+                      }}
+                    />
+                  )}
                 </Link>
 
                 <div style={{ minWidth: 0, flex: 1 }}>
@@ -916,8 +949,15 @@ export default function MessagesPage() {
                   <span
                     style={{
                       fontSize: 12,
-                      color: typingUser ? "var(--primary)" : "var(--text-muted)",
-                      fontWeight: typingUser ? 600 : 400,
+                      color: typingUser
+                        ? "var(--primary)"
+                        : isUserOnline(activeConversation.otherParticipant.id)
+                        ? "#16a34a"
+                        : "var(--text-muted)",
+                      fontWeight:
+                        typingUser || isUserOnline(activeConversation.otherParticipant.id)
+                          ? 600
+                          : 400,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -926,9 +966,11 @@ export default function MessagesPage() {
                   >
                     {typingUser
                       ? `${typingUser} is typing...`
+                      : isUserOnline(activeConversation.otherParticipant.id)
+                      ? "Active now"
                       : activeConversation.otherParticipant.username
                       ? `@${activeConversation.otherParticipant.username}`
-                      : "Active on Marshmallow"}
+                      : "Offline"}
                   </span>
                 </div>
               </div>

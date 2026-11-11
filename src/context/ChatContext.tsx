@@ -58,6 +58,8 @@ interface ChatContextType {
   onConversationUpdated: (
     listener: (summary: ConversationSummary) => void
   ) => () => void;
+  onlineUserIds: Set<number>;
+  isUserOnline: (userId: number) => boolean;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -95,6 +97,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<number>>(new Set());
+
+  const isUserOnline = useCallback(
+    (userId: number) => onlineUserIds.has(userId),
+    [onlineUserIds]
+  );
+
   const [connectionState, setConnectionState] = useState<HubConnectionState>(
     HubConnectionState.Disconnected
   );
@@ -463,6 +472,25 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
+    connection.on("GetOnlineUsers", (userIds: number[]) => {
+      setOnlineUserIds(new Set(userIds));
+    });
+
+    connection.on(
+      "UserPresenceChanged",
+      (data: { userId: number; isOnline: boolean }) => {
+        setOnlineUserIds((prev) => {
+          const next = new Set(prev);
+          if (data.isOnline) {
+            next.add(data.userId);
+          } else {
+            next.delete(data.userId);
+          }
+          return next;
+        });
+      }
+    );
+
     connection
       .start()
       .then(() => {
@@ -570,6 +598,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       onUserTyping,
       onMessagesRead,
       onConversationUpdated,
+      onlineUserIds,
+      isUserOnline,
     }),
     [
       unreadChatCount,
@@ -591,6 +621,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       onUserTyping,
       onMessagesRead,
       onConversationUpdated,
+      onlineUserIds,
+      isUserOnline,
     ]
   );
 
