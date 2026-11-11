@@ -851,6 +851,15 @@ export default function SearchPage() {
                       onPostDeleted={(postId) =>
                         setExplorePosts((prev) => prev.filter((p) => p.id !== postId))
                       }
+                      onRepost={(_repost, targetId, isReposted, newCount) => {
+                        setExplorePosts((prev) =>
+                          prev.map((p) =>
+                            p.id === targetId
+                              ? { ...p, isReposted, repostsCount: newCount }
+                              : p
+                          )
+                        );
+                      }}
                     />
                   ))}
                 </div>
@@ -984,6 +993,15 @@ export default function SearchPage() {
                   onOpenComments={handleOpenComments}
                   onPostUpdated={handlePostUpdated}
                   onPostDeleted={handlePostDeleted}
+                  onRepost={(_repost, targetId, isReposted, newCount) => {
+                    setPosts((prev) =>
+                      prev.map((p) =>
+                        p.id === targetId
+                          ? { ...p, isReposted, repostsCount: newCount }
+                          : p
+                      )
+                    );
+                  }}
                 />
               ))}
             </div>
@@ -1083,6 +1101,15 @@ export default function SearchPage() {
                   onOpenComments={handleOpenComments}
                   onPostUpdated={handlePostUpdated}
                   onPostDeleted={handlePostDeleted}
+                  onRepost={(_repost, targetId, isReposted, newCount) => {
+                    setPosts((prev) =>
+                      prev.map((p) =>
+                        p.id === targetId
+                          ? { ...p, isReposted, repostsCount: newCount }
+                          : p
+                      )
+                    );
+                  }}
                 />
               ))}
 

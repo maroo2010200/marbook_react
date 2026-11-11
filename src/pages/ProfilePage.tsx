@@ -168,6 +168,7 @@ export function ProfilePage() {
     loadMore,
     updatePost,
     removePost,
+    addPost,
     createPost,
   } = usePosts(1, 10, {
     userId: (targetUserId && !Number.isNaN(targetUserId) ? targetUserId : profile?.id) ?? undefined,
@@ -1007,6 +1008,26 @@ export function ProfilePage() {
                   onOpenComments={handleOpenComments}
                   onPostUpdated={(updated) => updatePost(post.id, updated)}
                   onPostDeleted={handlePostDeleted}
+                  onRepost={(repostedPost, targetPostId, isReposted, newRepostsCount) => {
+                    updatePost(targetPostId, (p) => ({
+                      ...p,
+                      isReposted,
+                      repostsCount: newRepostsCount,
+                    }));
+
+                    if (isMe) {
+                      if (isReposted && repostedPost) {
+                        addPost(repostedPost);
+                      } else if (!isReposted && currentUser) {
+                        const myRepost = posts.find(
+                          (p) => p.userId === currentUser.id && p.originalPostId === targetPostId
+                        );
+                        if (myRepost) {
+                          removePost(myRepost.id);
+                        }
+                      }
+                    }
+                  }}
                 />
               ))}
 

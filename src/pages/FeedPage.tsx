@@ -20,6 +20,7 @@ function FeedPage() {
     updatePost,
     createPost,
     removePost,
+    addPost,
     loading,
     loadingMore,
     error,
@@ -547,6 +548,24 @@ function FeedPage() {
               }}
               onPostDeleted={(deletedId) => {
                 removePost(deletedId);
+              }}
+              onRepost={(repostedPost, targetPostId, isReposted, newRepostsCount) => {
+                updatePost(targetPostId, (p) => ({
+                  ...p,
+                  isReposted,
+                  repostsCount: newRepostsCount,
+                }));
+
+                if (isReposted && repostedPost) {
+                  addPost(repostedPost);
+                } else if (!isReposted && user) {
+                  const myRepost = posts.find(
+                    (p) => p.userId === user.id && p.originalPostId === targetPostId
+                  );
+                  if (myRepost) {
+                    removePost(myRepost.id);
+                  }
+                }
               }}
             />
           );

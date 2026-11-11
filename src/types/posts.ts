@@ -15,6 +15,10 @@ export interface Post {
   commentsCount?: number;
   isLiked?: boolean;
   imageUrls?: string[];
+  originalPostId?: number | null;
+  originalPost?: Post | null;
+  repostsCount?: number;
+  isReposted?: boolean;
 }
 
 export interface PostSearchResult extends Post {
@@ -25,6 +29,13 @@ export interface PostCreateDto {
   content: string;
   visibility?: PostVisibility;
   imageUrls?: string[];
+  originalPostId?: number;
+}
+
+export interface RepostResponse {
+  isReposted: boolean;
+  repostsCount: number;
+  post?: Post | null;
 }
 
 export interface PostUpdateDto {

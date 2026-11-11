@@ -1,5 +1,5 @@
 import api from "./api";
-import type { GetPostsParams, PagedResult, Post, PostSearchResult, PostVisibility } from "../types/posts";
+import type { GetPostsParams, PagedResult, Post, PostSearchResult, PostVisibility, RepostResponse } from "../types/posts";
 
 export const postsApi = {
   getAll: async (
@@ -31,17 +31,27 @@ export const postsApi = {
   createPost: async (
     content: string,
     visibility: PostVisibility = "Public",
-    imageUrls?: string[]
+    imageUrls?: string[],
+    originalPostId?: number
   ): Promise<Post> => {
     const payload: {
       content: string;
       visibility: PostVisibility;
       imageUrls?: string[];
+      originalPostId?: number;
     } = { content, visibility };
     if (imageUrls && imageUrls.length > 0) {
       payload.imageUrls = imageUrls;
     }
+    if (originalPostId !== undefined) {
+      payload.originalPostId = originalPostId;
+    }
     const response = await api.post<Post>("/posts", payload);
+    return response.data;
+  },
+
+  toggleRepost: async (id: number): Promise<RepostResponse> => {
+    const response = await api.post<RepostResponse>(`/posts/${id}/repost`);
     return response.data;
   },
 
