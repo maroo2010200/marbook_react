@@ -76,6 +76,11 @@ export const postsApi = {
     await api.delete(`/posts/${id}`);
   },
 
+  togglePinPost: async (id: number): Promise<{ postId: number; isPinned: boolean }> => {
+    const response = await api.post<{ postId: number; isPinned: boolean }>(`/posts/${id}/Pin`);
+    return response.data;
+  },
+
   searchPosts: async (
     search: string,
     pageNumber = 1,

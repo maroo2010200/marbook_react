@@ -53,6 +53,13 @@ interface ChatContextType {
       updatedAt?: string;
     }) => void
   ) => () => void;
+  onMessagePinned: (
+    listener: (data: {
+      conversationId: number;
+      messageId: number;
+      isPinned: boolean;
+    }) => void
+  ) => () => void;
   onUserTyping: (listener: (event: TypingEvent) => void) => () => void;
   onMessagesRead: (listener: (event: ReadReceiptEvent) => void) => () => void;
   onConversationUpdated: (
@@ -133,6 +140,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }) => void
     >
   >(new Set());
+  const messagePinnedListeners = useRef<
+    Set<
+      (data: {
+        conversationId: number;
+        messageId: number;
+        isPinned: boolean;
+      }) => void
+    >
+  >(new Set());
   const userTypingListeners = useRef<Set<(event: TypingEvent) => void>>(
     new Set()
   );
@@ -171,6 +187,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       messageDeletedListeners.current.add(listener);
       return () => {
         messageDeletedListeners.current.delete(listener);
+      };
+    },
+    []
+  );
+
+  const onMessagePinned = useCallback(
+    (
+      listener: (data: {
+        conversationId: number;
+        messageId: number;
+        isPinned: boolean;
+      }) => void
+    ) => {
+      messagePinnedListeners.current.add(listener);
+      return () => {
+        messagePinnedListeners.current.delete(listener);
       };
     },
     []
@@ -379,6 +411,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             return c;
           })
         );
+      }
+    );
+
+    connection.on(
+      "MessagePinned",
+      (data: {
+        conversationId: number;
+        messageId: number;
+        isPinned: boolean;
+      }) => {
+        messagePinnedListeners.current.forEach((listener) => {
+          try {
+            listener(data);
+          } catch (err) {
+            console.error("MessagePinned listener error:", err);
+          }
+        });
       }
     );
 
@@ -595,6 +644,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       onReceiveMessage,
       onMessageEdited,
       onMessageDeleted,
+      onMessagePinned,
       onUserTyping,
       onMessagesRead,
       onConversationUpdated,
@@ -618,6 +668,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       onReceiveMessage,
       onMessageEdited,
       onMessageDeleted,
+      onMessagePinned,
       onUserTyping,
       onMessagesRead,
       onConversationUpdated,

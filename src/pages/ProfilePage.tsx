@@ -20,7 +20,7 @@ import { ChatIcon } from "../components/ChatIcon";
 import { Avatar } from "../components/Avatar";
 import { MainLayout } from "../components/layout/MainLayout";
 import { MarshmallowLoader } from "../components/MarshmallowLoader";
-import { getMediaUrl, getPostOptimizedUrl } from "../utils/media";
+import { getMediaUrl, getPostOptimizedUrl, isVideoMedia } from "../utils/media";
 import { soundEffects } from "../utils/soundEffects";
 
 function formatMemberDate(dateString: string): string {
@@ -575,17 +575,8 @@ export function ProfilePage() {
 
   return (
     <MainLayout>
-      {/* Profile Card Header (Matching Socialio / Screenshot) */}
-      <div
-        style={{
-          backgroundColor: "var(--bg-card)",
-          borderRadius: 16,
-          boxShadow: "var(--shadow-card)",
-          border: "1px solid var(--border-color)",
-          overflow: "hidden",
-          marginBottom: 20,
-        }}
-      >
+      {/* Profile Card Header (Responsive Socialio Style) */}
+      <div className="profile-card-header">
         {/* Cover Accent Banner */}
         <div
           className="profile-cover-wrap"
@@ -613,106 +604,11 @@ export function ProfilePage() {
               pointerEvents: "none",
             }}
           />
+        </div>
 
-          {/* User Name & Handle on Cover Banner (Beside Avatar) */}
-          <div className="profile-header-name-box">
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 26,
-                fontWeight: 700,
-                color: "#ffffff",
-                letterSpacing: "-0.3px",
-                textShadow: "0 2px 6px rgba(0,0,0,0.5)",
-                lineHeight: 1.2,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              {profile.name}
-            </h1>
-            {/* Followers and Following stats */}
-            <div className="profile-header-stats">
-              <button
-                type="button"
-                className={`profile-header-stats-btn ${activeTab === "followers" ? "active" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveTab("followers");
-                }}
-              >
-                <strong>{profile.followersCount ?? 0}</strong>
-                <span>{profile.followersCount === 1 ? "Follower" : "Followers"}</span>
-              </button>
-              <button
-                type="button"
-                className={`profile-header-stats-btn ${activeTab === "following" ? "active" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveTab("following");
-                }}
-              >
-                <strong>{profile.followingCount ?? 0}</strong>
-                <span>Following</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Edit Profile Button on bottom-right of Cover */}
-          {isMe && (
-            <button
-              type="button"
-              id="profile-edit-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditModalOpen(true);
-              }}
-              style={{
-                position: "absolute",
-                bottom: 18,
-                right: 20,
-                backgroundColor: "rgba(0, 0, 0, 0.55)",
-                backdropFilter: "blur(8px)",
-                color: "#ffffff",
-                border: "1px solid rgba(255, 255, 255, 0.25)",
-                borderRadius: 8,
-                padding: "8px 16px",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
-                transition: "all 0.15s ease",
-                zIndex: 3,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.75)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.55)";
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              <span>Edit Profile</span>
-            </button>
-          )}
-
-          {/* Avatar overlapping bottom left */}
+        {/* Main Info: Avatar, Name, Stats & Action */}
+        <div className="profile-main-info">
+          {/* Avatar anchor overlapping bottom left */}
           <div
             className="profile-avatar-anchor"
             onClick={(e) => e.stopPropagation()}
@@ -749,38 +645,13 @@ export function ProfilePage() {
                   />
                   <button
                     type="button"
+                    className="profile-avatar-upload-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       avatarInputRef.current?.click();
                     }}
                     disabled={isUploadingAvatar}
                     title="Update profile picture"
-                    style={{
-                      position: "absolute",
-                      bottom: 4,
-                      right: 4,
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      backgroundColor: "var(--bg-card)",
-                      border: "2px solid var(--border-color)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      boxShadow: "var(--shadow-sm)",
-                      fontSize: 13,
-                      color: "var(--text-primary)",
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--bg-hover)";
-                      e.currentTarget.style.transform = "scale(1.08)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--bg-card)";
-                      e.currentTarget.style.transform = "scale(1)";
-                    }}
                   >
                     📷
                   </button>
@@ -788,6 +659,63 @@ export function ProfilePage() {
               )}
             </div>
           </div>
+
+          {/* User Name & Handle on Cover Banner (Beside Avatar) */}
+          <div className="profile-header-name-box">
+            <h1>{profile.name}</h1>
+            {/* Followers and Following stats */}
+            <div className="profile-header-stats">
+              <button
+                type="button"
+                className={`profile-header-stats-btn ${activeTab === "followers" ? "active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTab("followers");
+                }}
+              >
+                <strong>{profile.followersCount ?? 0}</strong>
+                <span>{profile.followersCount === 1 ? "Follower" : "Followers"}</span>
+              </button>
+              <button
+                type="button"
+                className={`profile-header-stats-btn ${activeTab === "following" ? "active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTab("following");
+                }}
+              >
+                <strong>{profile.followingCount ?? 0}</strong>
+                <span>Following</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Edit Profile Button on bottom-right of Cover */}
+          {isMe && (
+            <button
+              type="button"
+              id="profile-edit-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditModalOpen(true);
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span>Edit Profile</span>
+            </button>
+          )}
         </div>
 
         {/* Tab Navigation & Action Bar under Cover (Matching the screenshot) */}
@@ -804,7 +732,7 @@ export function ProfilePage() {
             {[
               { key: "posts", label: "Timeline" },
               { key: "about", label: "About" },
-              { key: "photos", label: "Photos" },
+              { key: "photos", label: "Photos & Videos" },
             ].map((tab) => {
               const isActive = activeTab === tab.key;
               return (
@@ -1819,7 +1747,7 @@ export function ProfilePage() {
                   margin: 0,
                 }}
               >
-                Photos
+                Photos & Videos
               </h2>
               <p
                 style={{
@@ -1828,7 +1756,7 @@ export function ProfilePage() {
                   margin: "4px 0 0",
                 }}
               >
-                Photos uploaded by {profile.name}
+                Media uploaded by {profile.name}
               </p>
             </div>
             <span
@@ -1841,7 +1769,7 @@ export function ProfilePage() {
                 color: "var(--text-secondary)",
               }}
             >
-              {profilePhotos.length} {profilePhotos.length === 1 ? "Photo" : "Photos"}
+              {profilePhotos.length} {profilePhotos.length === 1 ? "Item" : "Items"}
             </span>
           </div>
 
@@ -1862,10 +1790,10 @@ export function ProfilePage() {
                   marginBottom: 6,
                 }}
               >
-                No photos yet
+                No photos or videos yet
               </h3>
               <p style={{ fontSize: 14, maxWidth: 360, margin: "0 auto" }}>
-                Photos attached to {isMe ? "your posts" : `${profile.name}'s posts`} will appear here in the gallery.
+                Photos and videos attached to {isMe ? "your posts" : `${profile.name}'s posts`} will appear here in the gallery.
               </p>
             </div>
           ) : (
@@ -1876,97 +1804,156 @@ export function ProfilePage() {
                 gap: 12,
               }}
             >
-              {profilePhotos.map((photoUrl, idx) => (
-                <div
-                  key={photoUrl}
-                  onClick={() => {
-                    setLightboxImages(profilePhotos);
-                    setLightboxIndex(idx);
-                    setIsLightboxOpen(true);
-                  }}
-                  style={{
-                    position: "relative",
-                    aspectRatio: "1 / 1",
-                    borderRadius: "var(--radius-md)",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                    backgroundColor: "var(--bg-hover)",
-                    boxShadow: "var(--shadow-sm)",
-                  }}
-                  onMouseEnter={(e) => {
-                    const img = e.currentTarget.querySelector("img");
-                    if (img) img.style.transform = "scale(1.06)";
-                    const overlay = e.currentTarget.querySelector(
-                      ".photo-overlay"
-                    ) as HTMLElement | null;
-                    if (overlay) overlay.style.opacity = "1";
-                  }}
-                  onMouseLeave={(e) => {
-                    const img = e.currentTarget.querySelector("img");
-                    if (img) img.style.transform = "scale(1)";
-                    const overlay = e.currentTarget.querySelector(
-                      ".photo-overlay"
-                    ) as HTMLElement | null;
-                    if (overlay) overlay.style.opacity = "0";
-                  }}
-                >
-                  <img
-                    src={getPostOptimizedUrl(photoUrl, 400)}
-                    alt={`Photo ${idx + 1}`}
-                    loading="lazy"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      transition: "transform 0.25s ease",
-                      display: "block",
-                    }}
-                  />
+              {profilePhotos.map((mediaUrl, idx) => {
+                const isVideo = isVideoMedia(mediaUrl);
+                return (
                   <div
-                    className="photo-overlay"
+                    key={mediaUrl}
+                    onClick={() => {
+                      setLightboxImages(profilePhotos);
+                      setLightboxIndex(idx);
+                      setIsLightboxOpen(true);
+                    }}
                     style={{
-                      position: "absolute",
-                      inset: 0,
-                      backgroundColor: "rgba(0, 0, 0, 0.25)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity: 0,
-                      transition: "opacity 0.2s ease",
+                      position: "relative",
+                      aspectRatio: "1 / 1",
+                      borderRadius: "var(--radius-md)",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      backgroundColor: "var(--bg-hover)",
+                      boxShadow: "var(--shadow-sm)",
+                    }}
+                    onMouseEnter={(e) => {
+                      const el = e.currentTarget.querySelector("img, video") as HTMLElement | null;
+                      if (el) el.style.transform = "scale(1.06)";
+                      const overlay = e.currentTarget.querySelector(
+                        ".photo-overlay"
+                      ) as HTMLElement | null;
+                      if (overlay) overlay.style.opacity = "1";
+                    }}
+                    onMouseLeave={(e) => {
+                      const el = e.currentTarget.querySelector("img, video") as HTMLElement | null;
+                      if (el) el.style.transform = "scale(1)";
+                      const overlay = e.currentTarget.querySelector(
+                        ".photo-overlay"
+                      ) as HTMLElement | null;
+                      if (overlay) overlay.style.opacity = "0";
                     }}
                   >
+                    {isVideo ? (
+                      <video
+                        src={getMediaUrl(mediaUrl)}
+                        preload="metadata"
+                        muted
+                        playsInline
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          transition: "transform 0.25s ease",
+                          display: "block",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src={getPostOptimizedUrl(mediaUrl, 400)}
+                        alt={`Photo ${idx + 1}`}
+                        loading="lazy"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          transition: "transform 0.25s ease",
+                          display: "block",
+                        }}
+                      />
+                    )}
+
+                    {/* Video badge */}
+                    {isVideo && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          backgroundColor: "rgba(0, 0, 0, 0.65)",
+                          backdropFilter: "blur(4px)",
+                          color: "#fff",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 3,
+                          pointerEvents: "none",
+                          zIndex: 2,
+                        }}
+                      >
+                        <span>▶</span>
+                        <span>VIDEO</span>
+                      </div>
+                    )}
+
                     <div
+                      className="photo-overlay"
                       style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: "50%",
-                        backgroundColor: "rgba(0, 0, 0, 0.55)",
-                        backdropFilter: "blur(4px)",
-                        color: "#fff",
+                        position: "absolute",
+                        inset: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.25)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        opacity: 0,
+                        transition: "opacity 0.2s ease",
+                        zIndex: 3,
                       }}
                     >
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                      <div
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: "50%",
+                          backgroundColor: "rgba(0, 0, 0, 0.55)",
+                          backdropFilter: "blur(4px)",
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
                       >
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        <line x1="11" y1="8" x2="11" y2="14" />
-                        <line x1="8" y1="11" x2="14" y2="11" />
-                      </svg>
+                        {isVideo ? (
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <polygon points="5 3 19 12 5 21 5 3" />
+                          </svg>
+                        ) : (
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            <line x1="11" y1="8" x2="11" y2="14" />
+                            <line x1="8" y1="11" x2="14" y2="11" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

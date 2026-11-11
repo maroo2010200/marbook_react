@@ -602,6 +602,24 @@ export function PostCard({
         </div>
       )}
 
+      {/* Pinned Post Badge */}
+      {post.isPinned && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 8,
+            color: "#f59e0b",
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          <span>📌</span>
+          <span>Pinned Post</span>
+        </div>
+      )}
+
       {/* Header: Avatar, author name, timestamp, and optional author actions menu */}
       <div
         style={{
@@ -749,12 +767,47 @@ export function PostCard({
                   boxShadow: "var(--shadow-md)",
                   borderRadius: 8,
                   border: "1px solid var(--border-color)",
-                  width: 150,
+                  width: 170,
                   zIndex: 20,
                   overflow: "hidden",
                   padding: "4px 0",
                 }}
               >
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsMenuOpen(false);
+                    try {
+                      const res = await postsApi.togglePinPost(post.id);
+                      onPostUpdated({ ...post, isPinned: res.isPinned });
+                    } catch (err) {
+                      console.error("Failed to pin post:", err);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 14px",
+                    background: "none",
+                    border: "none",
+                    textAlign: "left",
+                    fontSize: 14,
+                    color: "var(--text-primary)",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "transparent")
+                  }
+                >
+                  <span style={{ fontSize: 14 }}>📌</span>
+                  <span>{post.isPinned ? "Unpin post" : "Pin to profile"}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleStartEdit}

@@ -38,6 +38,7 @@ export function FloatingChatDock() {
     onReceiveMessage,
     onMessageEdited,
     onMessageDeleted,
+    onMessagePinned,
     onUserTyping,
     isUserOnline,
   } = useChat();
@@ -212,10 +213,23 @@ export function FloatingChatDock() {
       }
     });
 
+    const unsubPinned = onMessagePinned(({ conversationId, messageId, isPinned }) => {
+      if (conversationId === floatingConversationId) {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id === messageId) return { ...m, isPinned };
+            if (isPinned) return { ...m, isPinned: false };
+            return m;
+          })
+        );
+      }
+    });
+
     return () => {
       unsubReceive();
       unsubEdited();
       unsubDeleted();
+      unsubPinned();
       unsubTyping();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
@@ -225,6 +239,7 @@ export function FloatingChatDock() {
     onReceiveMessage,
     onMessageEdited,
     onMessageDeleted,
+    onMessagePinned,
     onUserTyping,
     refreshUnreadCount,
     setConversations,
@@ -432,6 +447,22 @@ export function FloatingChatDock() {
     }
   };
 
+  const handleTogglePinMessage = async (messageId: number) => {
+    if (!floatingConversationId) return;
+    try {
+      const res = await chatApi.togglePinMessage(floatingConversationId, messageId);
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === messageId) return { ...m, isPinned: res.isPinned };
+          if (res.isPinned) return { ...m, isPinned: false };
+          return m;
+        })
+      );
+    } catch (err) {
+      console.error("Failed to pin message:", err);
+    }
+  };
+
   // If on full messenger or no active floating chat, don't display dock
   if (!floatingConversationId || location.pathname === "/messages") {
     return null;
@@ -570,6 +601,75 @@ export function FloatingChatDock() {
         </div>
       </div>
 
+      {/* Pinned Message Banner */}
+      {(() => {
+        const pinnedMsg = messages.find((m) => m.isPinned);
+        if (!pinnedMsg) return null;
+        return (
+          <div
+            style={{
+              backgroundColor: "var(--bg-hover)",
+              borderBottom: "1px solid var(--border-color)",
+              padding: "5px 12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontSize: 11.5,
+              zIndex: 2,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                overflow: "hidden",
+                cursor: "pointer",
+                flex: 1,
+                marginRight: 6,
+              }}
+              onClick={() => {
+                const el = document.getElementById(`dock-msg-${pinnedMsg.id}`);
+                el?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+              title="Click to view pinned message"
+            >
+              <span style={{ fontSize: 12 }}>📌</span>
+              <strong style={{ color: "var(--text-primary)", flexShrink: 0 }}>Pinned:</strong>
+              <span
+                style={{
+                  color: "var(--text-secondary)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {pinnedMsg.content.slice(0, 50)}
+              </span>
+            </div>
+            {currentUser && pinnedMsg.senderUserId === currentUser.id && (
+              <button
+                type="button"
+                onClick={() => handleTogglePinMessage(pinnedMsg.id)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: "1px 4px",
+                  borderRadius: 3,
+                  flexShrink: 0,
+                }}
+              >
+                Unpin
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Messages Stream */}
       <div
         style={{
@@ -610,6 +710,7 @@ export function FloatingChatDock() {
               return (
                 <div
                   key={m.id}
+                  id={`dock-msg-${m.id}`}
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -672,6 +773,26 @@ export function FloatingChatDock() {
                       gap: 4,
                     }}
                   >
+                    {m.isPinned && <span title="Pinned message">📌</span>}
+                    {isMine && !m.isDeleted && (
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePinMessage(m.id)}
+                        title={m.isPinned ? "Unpin message" : "Pin message"}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 0,
+                          fontSize: 10,
+                          color: m.isPinned ? "#f59e0b" : "var(--text-muted)",
+                          opacity: 0.7,
+                          lineHeight: 1,
+                        }}
+                      >
+                        📌
+                      </button>
+                    )}
                     <span>{formatRelativeTime(m.createdAt)}</span>
                     {isLastMine && (
                       <MessageStatus isSeen={isMessageSeen(m.createdAt)} variant="bullet" />

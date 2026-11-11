@@ -40,6 +40,7 @@ export default function MessagesPage() {
     onReceiveMessage,
     onMessageEdited,
     onMessageDeleted,
+    onMessagePinned,
     onUserTyping,
     isUserOnline,
   } = useChat();
@@ -329,12 +330,24 @@ export default function MessagesPage() {
       }
     });
 
-
+    // 5. Message pinned
+    const unsubPinned = onMessagePinned(({ conversationId, messageId, isPinned }) => {
+      if (conversationId === selectedId) {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id === messageId) return { ...m, isPinned };
+            if (isPinned) return { ...m, isPinned: false };
+            return m;
+          })
+        );
+      }
+    });
 
     return () => {
       unsubReceive();
       unsubEdited();
       unsubDeleted();
+      unsubPinned();
       unsubTyping();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -345,6 +358,7 @@ export default function MessagesPage() {
     onReceiveMessage,
     onMessageEdited,
     onMessageDeleted,
+    onMessagePinned,
     onUserTyping,
     refreshUnreadCount,
     scrollToBottom,
@@ -628,6 +642,22 @@ export default function MessagesPage() {
   const handlePromptDeleteMessage = (messageId: number) => {
     setDeleteMessageError(null);
     setMessageToDeleteId(messageId);
+  };
+
+  const handleTogglePinMessage = async (messageId: number) => {
+    if (!selectedId) return;
+    try {
+      const res = await chatApi.togglePinMessage(selectedId, messageId);
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === messageId) return { ...m, isPinned: res.isPinned };
+          if (res.isPinned) return { ...m, isPinned: false };
+          return m;
+        })
+      );
+    } catch (err) {
+      console.error("Failed to pin message:", err);
+    }
   };
 
   // Confirm delete message
@@ -1180,6 +1210,75 @@ export default function MessagesPage() {
               </Link>
             </div>
 
+            {/* Pinned Message Banner */}
+            {(() => {
+              const pinnedMsg = messages.find((m) => m.isPinned);
+              if (!pinnedMsg) return null;
+              return (
+                <div
+                  style={{
+                    backgroundColor: "var(--bg-hover)",
+                    borderBottom: "1px solid var(--border-color)",
+                    padding: "7px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: 12.5,
+                    zIndex: 2,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      flex: 1,
+                      marginRight: 8,
+                    }}
+                    onClick={() => {
+                      const el = document.getElementById(`msg-${pinnedMsg.id}`);
+                      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                    title="Click to view pinned message"
+                  >
+                    <span style={{ fontSize: 13 }}>📌</span>
+                    <strong style={{ color: "var(--text-primary)", flexShrink: 0 }}>Pinned:</strong>
+                    <span
+                      style={{
+                        color: "var(--text-secondary)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {pinnedMsg.content.slice(0, 80)}
+                    </span>
+                  </div>
+                  {(currentUser && pinnedMsg.senderUserId === currentUser.id) && (
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePinMessage(pinnedMsg.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-secondary)",
+                        cursor: "pointer",
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                        flexShrink: 0,
+                      }}
+                    >
+                      Unpin
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Messages Stream Container */}
             <div
               ref={messagesContainerRef}
@@ -1263,6 +1362,7 @@ export default function MessagesPage() {
                   return (
                     <div
                       key={msg.id || index}
+                      id={`msg-${msg.id}`}
                       style={{
                         display: "flex",
                         flexDirection: "column",
@@ -1492,6 +1592,21 @@ export default function MessagesPage() {
                           >
                             <button
                               type="button"
+                              onClick={() => handleTogglePinMessage(msg.id)}
+                              title={msg.isPinned ? "Unpin message" : "Pin message"}
+                              style={{
+                                border: "none",
+                                background: "none",
+                                cursor: "pointer",
+                                color: msg.isPinned ? "#f59e0b" : "var(--text-muted)",
+                                padding: "2px 4px",
+                                fontSize: 13,
+                              }}
+                            >
+                              📌
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => handleStartEdit(msg)}
                               title="Edit message"
                               style={{
@@ -1524,7 +1639,7 @@ export default function MessagesPage() {
                         )}
                       </div>
 
-                      {/* Timestamp */}
+                      {/* Timestamp & Pin Indicator */}
                       <span
                         style={{
                           fontSize: 11,
@@ -1532,8 +1647,12 @@ export default function MessagesPage() {
                           marginTop: 3,
                           marginRight: isMine ? 4 : 0,
                           marginLeft: !isMine ? 36 : 0,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
                         }}
                       >
+                        {msg.isPinned && <span title="Pinned message">📌</span>}
                         {new Date(msg.createdAt).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",

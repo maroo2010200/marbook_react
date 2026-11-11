@@ -14,6 +14,7 @@ export interface Comment {
   likeCount?: number;
   replyCount?: number;
   liked?: boolean;
+  isPinned?: boolean;
   replies?: Comment[];
 }
 

@@ -56,6 +56,7 @@ export function CommentsModal({
     handleSubmit,
     handleEditComment,
     handleDeleteComment,
+    handleTogglePinComment,
   } = useCommentsModal({ isOpen, post, onCommentAdded, onCommentDeleted });
 
   // Handle Escape key to close modal
@@ -252,6 +253,8 @@ export function CommentsModal({
                 currentUserId={user?.id}
                 onEditComment={handleEditComment}
                 onDeleteComment={handleDeleteComment}
+                postAuthorId={post.userId}
+                onTogglePinComment={handleTogglePinComment}
               />
             ))}
 

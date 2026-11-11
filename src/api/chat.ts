@@ -85,4 +85,16 @@ export const chatApi = {
   markAsRead: async (conversationId: number): Promise<void> => {
     await api.put(`/conversations/${conversationId}/read`);
   },
+
+  togglePinMessage: async (
+    conversationId: number,
+    messageId: number
+  ): Promise<{ conversationId: number; messageId: number; isPinned: boolean }> => {
+    const response = await api.post<{
+      conversationId: number;
+      messageId: number;
+      isPinned: boolean;
+    }>(`/conversations/${conversationId}/messages/${messageId}/pin`);
+    return response.data;
+  },
 };

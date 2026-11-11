@@ -431,6 +431,114 @@ export function useCommentsModal({
     [onCommentDeleted]
   );
 
+  const handleTogglePinComment = useCallback(
+    async (commentId: number): Promise<void> => {
+      try {
+        const res = await commentsApi.togglePinComment(commentId);
+        setComments((prev) => {
+          const updated = prev.map((c) => {
+            if (c.id === commentId) return { ...c, isPinned: res.isPinned };
+            if (res.isPinned) return { ...c, isPinned: false };
+            return c;
+          });
+          updated.sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+          commentsRef.current = updated;
+          return [...updated];
+        });
+      } catch (err) {
+        console.error("Failed to pin comment:", err);
+      }
+    },
+    []
+  );
+
+  // Live real-time comment updates
+  useEffect(() => {
+    if (!isOpen || !postId) return;
+
+    const handleLiveCommentCreated = (e: Event) => {
+      const data = (e as CustomEvent<{ postId: number; comment: Comment }>).detail;
+      if (!data || data.postId !== postId || !data.comment) return;
+      const incoming = data.comment;
+
+      setComments((prev) => {
+        if (findCommentInTree(prev, incoming.id)) return prev;
+
+        if (!incoming.parentCommentId) {
+          const updated = [incoming, ...prev];
+          commentsRef.current = updated;
+          return updated;
+        }
+
+        const ancestorIds = getAncestorIds(prev, incoming.parentCommentId) ?? [incoming.parentCommentId];
+        const updated = addReplyAndIncrementAncestors(prev, incoming.parentCommentId, ancestorIds, incoming);
+        commentsRef.current = updated;
+        return updated;
+      });
+      onCommentAdded?.(incoming);
+    };
+
+    const handleLiveCommentLiked = (e: Event) => {
+      const data = (e as CustomEvent<{ commentId: number; postId: number; likeCount: number }>).detail;
+      if (!data || data.postId !== postId) return;
+      setComments((prev) =>
+        updateCommentInTree(prev, data.commentId, (c) => ({
+          ...c,
+          likeCount: data.likeCount,
+        }))
+      );
+    };
+
+    const handleLiveCommentDeleted = (e: Event) => {
+      const data = (e as CustomEvent<{ commentId: number; postId: number }>).detail;
+      if (!data || data.postId !== postId) return;
+      const ancestorIds = getAncestorIds(commentsRef.current, data.commentId) ?? [];
+      const { updatedList, totalDeleted } = deleteCommentAndDecrementAncestors(
+        commentsRef.current,
+        data.commentId,
+        ancestorIds
+      );
+      setComments(updatedList);
+      commentsRef.current = updatedList;
+      onCommentDeleted?.(totalDeleted);
+    };
+
+    const handleLiveCommentPinned = (e: Event) => {
+      const data = (e as CustomEvent<{ commentId: number; postId: number; isPinned: boolean }>).detail;
+      if (!data || data.postId !== postId) return;
+      setComments((prev) => {
+        const updated = prev.map((c) => {
+          if (c.id === data.commentId) return { ...c, isPinned: data.isPinned };
+          if (data.isPinned) return { ...c, isPinned: false };
+          return c;
+        });
+        updated.sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        commentsRef.current = updated;
+        return [...updated];
+      });
+    };
+
+    window.addEventListener("marshmallow:live-comment-created", handleLiveCommentCreated);
+    window.addEventListener("marshmallow:live-comment-liked", handleLiveCommentLiked);
+    window.addEventListener("marshmallow:live-comment-deleted", handleLiveCommentDeleted);
+    window.addEventListener("marshmallow:live-comment-pinned", handleLiveCommentPinned);
+
+    return () => {
+      window.removeEventListener("marshmallow:live-comment-created", handleLiveCommentCreated);
+      window.removeEventListener("marshmallow:live-comment-liked", handleLiveCommentLiked);
+      window.removeEventListener("marshmallow:live-comment-deleted", handleLiveCommentDeleted);
+      window.removeEventListener("marshmallow:live-comment-pinned", handleLiveCommentPinned);
+    };
+  }, [isOpen, postId, onCommentAdded, onCommentDeleted]);
+
   return {
     comments,
     loading,
@@ -462,5 +570,6 @@ export function useCommentsModal({
     handleSubmit,
     handleEditComment,
     handleDeleteComment,
+    handleTogglePinComment,
   };
 }
