@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [birthdate, setBirthdate] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -464,29 +465,54 @@ export default function RegisterPage() {
             >
               Password *
             </label>
-            <input
-              id="reg-password"
-              type="password"
-              placeholder="At least 6 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-              style={{
-                width: "100%",
-                padding: "11px 14px",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--border-color)",
-                backgroundColor: "var(--bg-input)",
-                color: "var(--text-primary)",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                outline: "none",
-                transition: "border-color 0.15s ease",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                id="reg-password"
+                type={showPassword ? "text" : "password"}
+                placeholder="At least 6 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                style={{
+                  width: "100%",
+                  padding: "11px 42px 11px 14px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--bg-input)",
+                  color: "var(--text-primary)",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  outline: "none",
+                  transition: "border-color 0.15s ease",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
+                style={{
+                  position: "absolute",
+                  right: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-secondary)",
+                  fontSize: 16,
+                  padding: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
 
           <div>

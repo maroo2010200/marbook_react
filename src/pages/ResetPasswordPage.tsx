@@ -12,6 +12,7 @@ export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -285,7 +286,7 @@ export default function ResetPasswordPage() {
                     disabled={loading}
                     style={{
                       width: "100%",
-                      padding: "12px 40px 12px 14px",
+                      padding: "12px 42px 12px 14px",
                       borderRadius: "var(--radius-md)",
                       border: "1px solid var(--border-color)",
                       backgroundColor: "var(--bg-input)",
@@ -301,21 +302,25 @@ export default function ResetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
                     style={{
                       position: "absolute",
-                      right: "12px",
+                      right: 12,
                       top: "50%",
                       transform: "translateY(-50%)",
                       background: "none",
                       border: "none",
-                      color: "var(--text-secondary)",
                       cursor: "pointer",
-                      fontSize: "14px",
-                      padding: 0,
+                      color: "var(--text-secondary)",
+                      fontSize: 16,
+                      padding: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
-                    title={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? "👁️" : "🙈"}
+                    {showPassword ? "🙈" : "👁️"}
                   </button>
                 </div>
               </div>
@@ -334,30 +339,55 @@ export default function ResetPasswordPage() {
                 >
                   Confirm New Password
                 </label>
-                <input
-                  id="confirm-password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Repeat your new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  disabled={loading}
-                  style={{
-                    width: "100%",
-                    padding: "12px 14px",
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--border-color)",
-                    backgroundColor: "var(--bg-input)",
-                    color: "var(--text-primary)",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                    outline: "none",
-                    transition: "border-color 0.15s ease",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
-                />
+                <div style={{ position: "relative" }}>
+                  <input
+                    id="confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Repeat your new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    disabled={loading}
+                    style={{
+                      width: "100%",
+                      padding: "12px 42px 12px 14px",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--border-color)",
+                      backgroundColor: "var(--bg-input)",
+                      color: "var(--text-primary)",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                      outline: "none",
+                      transition: "border-color 0.15s ease",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--border-color)")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    title={showConfirmPassword ? "Hide password" : "Show password"}
+                    style={{
+                      position: "absolute",
+                      right: 12,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "var(--text-secondary)",
+                      fontSize: 16,
+                      padding: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {showConfirmPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
               </div>
 
               {/* Submit Button */}
