@@ -31,7 +31,7 @@ export default function VerifyPage() {
     if (!token) {
       setStatus("error");
       setMessage(
-        "Missing verification token. Please request a new verification email.",
+        "Missing verification token. Please check the link in your email or request a new one.",
       );
       return;
     }
@@ -134,34 +134,61 @@ export default function VerifyPage() {
 
   return (
     <div
+      className="verify-page-container"
       style={{
-        minHeight: "calc(100vh - 60px)",
+        minHeight: "100dvh",
         backgroundColor: "var(--bg-page)",
         color: "var(--text-primary)",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        padding: "24px 16px",
+        justifyContent: "flex-start",
+        paddingTop: "calc(56px + clamp(16px, 4vh, 36px))",
+        paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))",
+        paddingLeft: "clamp(12px, 3.5vw, 24px)",
+        paddingRight: "clamp(12px, 3.5vw, 24px)",
+        boxSizing: "border-box",
+        position: "relative",
+        overflowX: "hidden",
       }}
     >
+      {/* Warm Ambient Glow */}
       <div
         style={{
-          maxWidth: status === "success" ? "540px" : "480px",
+          position: "absolute",
+          top: "8%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "min(600px, 100vw)",
+          height: "360px",
+          background:
+            "radial-gradient(ellipse at center, rgba(201, 107, 50, 0.16) 0%, rgba(245, 158, 11, 0.06) 45%, transparent 70%)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+
+      <div
+        className="verify-page-card"
+        style={{
+          maxWidth: status === "success" ? "520px" : "460px",
           width: "100%",
-          padding: status === "success" ? "0 0 28px 0" : "36px 30px",
           backgroundColor: "var(--bg-card)",
-          borderRadius: "var(--radius-xl)",
+          borderRadius: "clamp(18px, 4vw, 24px)",
           border: "1px solid var(--border-color)",
           boxShadow: "var(--shadow-lg)",
           textAlign: "center",
           position: "relative",
           overflow: "hidden",
+          margin: "auto 0",
+          zIndex: 1,
+          boxSizing: "border-box",
           transition: "max-width 0.2s ease",
         }}
       >
         {/* Loading State */}
         {status === "loading" && (
-          <div style={{ padding: "20px 0" }}>
+          <div style={{ padding: "48px clamp(16px, 5vw, 36px)" }}>
             <MarshmallowLoader
               size="md"
               label="Verifying your email..."
@@ -176,42 +203,52 @@ export default function VerifyPage() {
             {/* Cover Banner Preview */}
             <div
               style={{
-                height: "120px",
+                height: "clamp(110px, 24vw, 135px)",
                 width: "100%",
                 backgroundColor: "var(--primary-light, #FAF4EB)",
                 backgroundImage: coverUrl
                   ? `url(${getMediaUrl(coverUrl)})`
-                  : "linear-gradient(135deg, rgba(201, 107, 50, 0.2) 0%, rgba(233, 185, 124, 0.3) 100%)",
+                  : "linear-gradient(135deg, rgba(201, 107, 50, 0.22) 0%, rgba(233, 185, 124, 0.32) 100%)",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 position: "relative",
                 display: "flex",
                 alignItems: "flex-end",
                 justifyContent: "flex-end",
-                padding: "10px",
+                padding: "10px 12px",
+                boxSizing: "border-box",
               }}
             >
               <button
                 type="button"
                 onClick={() => coverInputRef.current?.click()}
                 disabled={uploadingCover}
+                aria-label="Add or change banner"
                 style={{
                   padding: "6px 12px",
                   borderRadius: "var(--radius-full)",
                   backgroundColor: "rgba(0, 0, 0, 0.65)",
                   color: "#ffffff",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  border: "1px solid rgba(255, 255, 255, 0.25)",
                   fontSize: "12px",
                   fontWeight: 600,
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "6px",
-                  backdropFilter: "blur(4px)",
+                  backdropFilter: "blur(6px)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+                  minHeight: 32,
                 }}
               >
                 <span>📷</span>
-                <span>{uploadingCover ? "Uploading..." : coverUrl ? "Change Banner" : "Add Cover"}</span>
+                <span>
+                  {uploadingCover
+                    ? "Uploading..."
+                    : coverUrl
+                    ? "Change Banner"
+                    : "Add Cover"}
+                </span>
               </button>
 
               <input
@@ -227,14 +264,14 @@ export default function VerifyPage() {
             <div
               style={{
                 position: "relative",
-                marginTop: "-50px",
+                marginTop: "clamp(-44px, -11vw, -50px)",
                 display: "inline-block",
               }}
             >
               <div
                 style={{
-                  width: "100px",
-                  height: "100px",
+                  width: "clamp(88px, 22vw, 102px)",
+                  height: "clamp(88px, 22vw, 102px)",
                   borderRadius: "50%",
                   backgroundColor: "var(--primary-light, #FAF4EB)",
                   border: "4px solid var(--bg-card)",
@@ -260,7 +297,7 @@ export default function VerifyPage() {
                     }}
                   />
                 ) : (
-                  <MarshmallowLogo size={70} />
+                  <MarshmallowLogo size={62} />
                 )}
               </div>
 
@@ -269,23 +306,24 @@ export default function VerifyPage() {
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={uploadingAvatar}
+                aria-label="Change Avatar"
                 title="Change Avatar"
                 style={{
                   position: "absolute",
-                  bottom: "2px",
-                  right: "2px",
-                  width: "32px",
-                  height: "32px",
+                  bottom: "1px",
+                  right: "1px",
+                  width: "36px",
+                  height: "36px",
                   borderRadius: "50%",
                   backgroundColor: "var(--primary)",
                   color: "#ffffff",
-                  border: "2px solid var(--bg-card)",
+                  border: "3px solid var(--bg-card)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                  fontSize: "14px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                  fontSize: "15px",
+                  boxShadow: "0 3px 10px rgba(0, 0, 0, 0.25)",
                 }}
               >
                 📷
@@ -300,13 +338,50 @@ export default function VerifyPage() {
               />
             </div>
 
-            <div style={{ padding: "0 28px" }}>
+            <div
+              style={{
+                padding: "0 clamp(16px, 4vw, 28px) 24px",
+                boxSizing: "border-box",
+              }}
+            >
+              {/* Verified Pill Badge */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 12px",
+                  borderRadius: "var(--radius-full)",
+                  backgroundColor: "rgba(34, 197, 94, 0.12)",
+                  color: "#16a34a",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  margin: "12px auto 4px",
+                }}
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>Email Verified!</span>
+              </div>
+
               <h1
                 style={{
-                  fontSize: "22px",
+                  fontSize: "clamp(20px, 4.5vw, 24px)",
                   fontWeight: 800,
                   color: "var(--text-primary)",
-                  margin: "12px 0 4px",
+                  margin: "8px 0 6px",
+                  lineHeight: 1.25,
+                  wordBreak: "break-word",
                 }}
               >
                 Welcome, {user?.name || "Friend"}! 🎉
@@ -314,28 +389,54 @@ export default function VerifyPage() {
 
               <p
                 style={{
-                  fontSize: "13px",
+                  fontSize: "clamp(13px, 3.2vw, 14px)",
                   color: "var(--text-secondary)",
-                  margin: "0 0 20px",
+                  margin: "0 auto 18px",
+                  lineHeight: 1.5,
+                  maxWidth: "420px",
                 }}
               >
-                Your account @{user?.username || "handle"} is verified. Customize your look or jump straight in with the classic marshmallow!
+                Your account @{user?.username || "handle"} is verified. You can
+                customize your avatar and bio now, or jump straight in!
               </p>
 
               {/* Bio Input */}
-              <div style={{ textAlign: "left", marginBottom: "20px" }}>
-                <label
-                  htmlFor="onboarding-bio"
+              <div style={{ textAlign: "left", marginBottom: "18px" }}>
+                <div
                   style={{
-                    display: "block",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "var(--text-primary)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                     marginBottom: "6px",
                   }}
                 >
-                  Bio (optional)
-                </label>
+                  <label
+                    htmlFor="onboarding-bio"
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    Bio{" "}
+                    <span
+                      style={{
+                        fontWeight: 400,
+                        color: "var(--text-tertiary)",
+                      }}
+                    >
+                      (optional)
+                    </span>
+                  </label>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: "var(--text-tertiary)",
+                    }}
+                  >
+                    {bio.length}/160
+                  </span>
+                </div>
                 <textarea
                   id="onboarding-bio"
                   placeholder="Share a thought, your favorite campfire snack, or what brings you here..."
@@ -350,24 +451,33 @@ export default function VerifyPage() {
                     border: "1px solid var(--border-color)",
                     backgroundColor: "var(--bg-input)",
                     color: "var(--text-primary)",
-                    fontSize: "13px",
+                    fontSize: "15px",
+                    lineHeight: "1.4",
                     boxSizing: "border-box",
                     outline: "none",
                     resize: "none",
                     fontFamily: "inherit",
+                    transition: "border-color 0.15s ease",
                   }}
                 />
               </div>
 
-              {/* Buttons */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {/* Action Buttons */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                }}
+              >
                 <button
                   type="button"
                   onClick={handleSaveProfile}
                   disabled={saving || uploadingAvatar || uploadingCover}
                   style={{
                     width: "100%",
-                    padding: "13px 20px",
+                    minHeight: 46,
+                    padding: "12px 20px",
                     borderRadius: "var(--radius-full)",
                     backgroundColor: "var(--primary)",
                     color: "#ffffff",
@@ -380,16 +490,21 @@ export default function VerifyPage() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "8px",
-                    transition: "transform 0.15s ease",
+                    transition: "transform 0.15s ease, opacity 0.15s ease",
+                    opacity: saving ? 0.8 : 1,
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.transform = "translateY(-1px)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.transform = "translateY(0)")
+                  }
                 >
                   {saving ? (
                     <MarshmallowLoader size="sm" label="Saving profile..." />
                   ) : (
                     <>
-                      <span>Save & Enter Feed</span>
+                      <span>Save &amp; Enter Feed</span>
                       <span>→</span>
                     </>
                   )}
@@ -400,16 +515,23 @@ export default function VerifyPage() {
                   onClick={() => navigate("/feed", { replace: true })}
                   disabled={saving}
                   style={{
+                    width: "100%",
+                    minHeight: 40,
                     background: "none",
                     border: "none",
                     color: "var(--text-tertiary)",
-                    fontSize: "13px",
+                    fontSize: "13.5px",
                     fontWeight: 600,
                     cursor: "pointer",
                     padding: "8px",
+                    transition: "color 0.15s ease",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "var(--primary)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "var(--text-tertiary)")
+                  }
                 >
                   Skip for now →
                 </button>
@@ -420,7 +542,12 @@ export default function VerifyPage() {
 
         {/* Error State */}
         {status === "error" && (
-          <div>
+          <div
+            style={{
+              padding: "36px clamp(16px, 5vw, 32px)",
+              boxSizing: "border-box",
+            }}
+          >
             <div
               style={{
                 width: "56px",
@@ -441,7 +568,7 @@ export default function VerifyPage() {
 
             <h1
               style={{
-                fontSize: "22px",
+                fontSize: "clamp(20px, 4.5vw, 22px)",
                 fontWeight: 700,
                 color: "var(--text-primary)",
                 margin: "0 0 10px",
@@ -455,26 +582,35 @@ export default function VerifyPage() {
                 fontSize: "14px",
                 lineHeight: 1.5,
                 color: "#ef4444",
-                margin: "0 0 24px",
+                margin: "0 auto 24px",
+                maxWidth: "380px",
               }}
             >
               {message}
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
               <button
                 type="button"
                 onClick={() => navigate("/login")}
                 style={{
                   width: "100%",
+                  minHeight: 44,
                   padding: "12px 20px",
                   borderRadius: "var(--radius-full)",
-                  backgroundColor: "var(--bg-hover)",
-                  color: "var(--text-primary)",
-                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--primary)",
+                  color: "#ffffff",
+                  border: "none",
                   fontSize: "14px",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(201, 107, 50, 0.3)",
                 }}
               >
                 Go to Login

@@ -45,6 +45,7 @@ export function NotificationToast() {
 
   return (
     <div
+      className="app-notification-toast"
       style={{
         position: "fixed",
         bottom: 24,
