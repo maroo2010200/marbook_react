@@ -10,6 +10,7 @@ import { CommentsModal } from "../components/comments/CommentsModal";
 import { UserCard } from "../components/UserCard";
 import { MainLayout } from "../components/layout/MainLayout";
 import { MarshmallowLoader } from "../components/MarshmallowLoader";
+import { soundEffects } from "../utils/soundEffects";
 import type { UserSearchResult } from "../types/user";
 import type { Post } from "../types/posts";
 
@@ -285,6 +286,7 @@ export default function SearchPage() {
 
     try {
       if (newStatus) {
+        soundEffects.playFollow();
         await followsApi.follow(targetUser.id);
       } else {
         await followsApi.unfollow(targetUser.id);

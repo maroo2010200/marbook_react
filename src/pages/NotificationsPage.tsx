@@ -12,15 +12,15 @@ function getNotificationConfig(type: NotificationType) {
   switch (type) {
     case "PostLiked":
       return {
-        text: "liked your post",
-        icon: "❤️",
-        bgColor: "#ef4444",
+        text: "roasted your post 🔥",
+        icon: "🔥",
+        bgColor: "#ff6b35",
       };
     case "CommentLiked":
       return {
-        text: "liked your comment",
-        icon: "❤️",
-        bgColor: "#ef4444",
+        text: "roasted your comment 🔥",
+        icon: "🔥",
+        bgColor: "#ff6b35",
       };
     case "CommentCreated":
       return {

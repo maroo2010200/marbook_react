@@ -21,6 +21,7 @@ import { Avatar } from "../components/Avatar";
 import { MainLayout } from "../components/layout/MainLayout";
 import { MarshmallowLoader } from "../components/MarshmallowLoader";
 import { getMediaUrl, getPostOptimizedUrl } from "../utils/media";
+import { soundEffects } from "../utils/soundEffects";
 
 function formatMemberDate(dateString: string): string {
   try {
@@ -275,6 +276,7 @@ export function ProfilePage() {
           );
         }
       } else {
+        soundEffects.playFollow();
         await followsApi.follow(targetId);
         if (isMe) {
           setProfile((prev) =>
@@ -405,6 +407,7 @@ export function ProfilePage() {
 
     try {
       if (nextFollowing) {
+        soundEffects.playFollow();
         await followsApi.follow(profile.id);
       } else {
         await followsApi.unfollow(profile.id);

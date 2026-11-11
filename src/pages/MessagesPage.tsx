@@ -10,6 +10,7 @@ import { parseRichText, formatMessageSnippet } from "../utils/richText";
 import { GifPicker } from "../components/chat/GifPicker";
 import { LightboxModal } from "../components/LightboxModal";
 import { Avatar } from "../components/Avatar";
+import { soundEffects } from "../utils/soundEffects";
 import type { Message, ConversationSummary, TypingEvent } from "../types/chat";
 
 export default function MessagesPage() {
@@ -333,6 +334,7 @@ export default function MessagesPage() {
 
     try {
       const created = await chatApi.sendMessage(selectedId, textToSend);
+      soundEffects.playChatSent();
 
       // Append locally if not already appended by SignalR
       setMessages((prev) => {
@@ -375,6 +377,7 @@ export default function MessagesPage() {
 
     try {
       const created = await chatApi.sendMessage(selectedId, gifUrl);
+      soundEffects.playChatSent();
 
       setMessages((prev) => {
         if (prev.some((m) => m.id === created.id)) return prev;

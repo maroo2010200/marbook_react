@@ -9,6 +9,7 @@ import { LightboxModal } from "../LightboxModal";
 import { ImageAdjustModal } from "../ImageAdjustModal";
 import { Avatar } from "../Avatar";
 import { parseRichText } from "../../utils/richText";
+import { soundEffects } from "../../utils/soundEffects";
 
 interface PostCardProps {
   post: Post;
@@ -425,6 +426,7 @@ export function PostCard({
 
     try {
       await postsApi.deletePost(post.id);
+      soundEffects.playDelete();
       setIsDeleteModalOpen(false);
       onPostDeleted(post.id);
     } catch {
@@ -1168,11 +1170,17 @@ export function PostCard({
           borderTop: "1px solid var(--divider)",
         }}
       >
-        {/* Heart / Like Button */}
+        {/* Flame / Roast Button */}
         <button
           type="button"
-          onClick={() => onToggleLike(post.id)}
-          aria-label={isLiked ? "Unlike post" : "Like post"}
+          onClick={() => {
+            if (!isLiked) {
+              soundEffects.playRoast();
+            }
+            onToggleLike(post.id);
+          }}
+          aria-label={isLiked ? "Unroast post" : "Roast post"}
+          title={isLiked ? "Unroast" : "Roast"}
           style={{
             background: "none",
             border: "none",
@@ -1181,7 +1189,7 @@ export function PostCard({
             display: "flex",
             alignItems: "center",
             gap: 7,
-            color: isLiked ? "#ed4956" : "var(--text-secondary)",
+            color: isLiked ? "#ff6b35" : "var(--text-secondary)",
             transition: "transform 0.1s ease",
           }}
           onMouseDown={(e) =>
@@ -1195,23 +1203,25 @@ export function PostCard({
             width="22"
             height="22"
             viewBox="0 0 24 24"
-            fill={isLiked ? "#ed4956" : "none"}
-            stroke={isLiked ? "#ed4956" : "var(--text-secondary)"}
+            fill={isLiked ? "#ff6b35" : "none"}
+            stroke={isLiked ? "#ff6b35" : "var(--text-secondary)"}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             style={{
-              transition: "fill 0.15s ease, stroke 0.15s ease",
+              transition: "fill 0.15s ease, stroke 0.15s ease, transform 0.15s ease",
+              transform: isLiked ? "scale(1.08)" : "scale(1)",
             }}
           >
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z" />
           </svg>
           {likesCount > 0 && (
             <span
+              title={`${likesCount} ${likesCount === 1 ? "roast" : "roasts"}`}
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: isLiked ? "#ed4956" : "var(--text-secondary)",
+                color: isLiked ? "#ff6b35" : "var(--text-secondary)",
               }}
             >
               {formatCount(likesCount)}
