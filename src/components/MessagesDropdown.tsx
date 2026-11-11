@@ -14,7 +14,7 @@ interface MessagesDropdownProps {
 
 export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
   const { user: currentUser } = useAuth();
-  const { conversations, refreshConversations, openFloatingChat } = useChat();
+  const { conversations, refreshConversations, openFloatingChat, isUserOnline } = useChat();
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -176,7 +176,24 @@ export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
                 }
               >
                 {/* Avatar */}
-                <Avatar src={other.avatarUrl} name={other.name} size={44} />
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <Avatar src={other.avatarUrl} name={other.name} size={44} />
+                  {isUserOnline(other.id) && (
+                    <span
+                      title="Active now"
+                      style={{
+                        position: "absolute",
+                        bottom: 0,
+                        right: 0,
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        backgroundColor: "#22c55e",
+                        border: "2px solid var(--bg-card)",
+                      }}
+                    />
+                  )}
+                </div>
 
                 {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>

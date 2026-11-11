@@ -11,7 +11,7 @@ import type { UserSearchResult } from "../../types/user";
 
 export function RightSidebar() {
   const { user } = useAuth();
-  const { conversations, openFloatingChat, unreadChatCount } = useChat();
+  const { conversations, openFloatingChat, unreadChatCount, isUserOnline } = useChat();
   const [suggestedUsers, setSuggestedUsers] = useState<UserSearchResult[]>([]);
   const [followedIds, setFollowedIds] = useState<Set<number>>(new Set());
   const [loadingFollowId, setLoadingFollowId] = useState<number | null>(null);
@@ -201,18 +201,21 @@ export function RightSidebar() {
                 >
                   <div style={{ position: "relative", flexShrink: 0 }}>
                     <Avatar src={other.avatarUrl} name={other.name} size={36} />
-                    <span
-                      style={{
-                        position: "absolute",
-                        bottom: 0,
-                        right: 0,
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        backgroundColor: "#22c55e",
-                        border: "2px solid var(--bg-card)",
-                      }}
-                    />
+                    {isUserOnline(other.id) && (
+                      <span
+                        title="Active now"
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          right: 0,
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          backgroundColor: "#22c55e",
+                          border: "2px solid var(--bg-card)",
+                        }}
+                      />
+                    )}
                   </div>
 
                   <div style={{ minWidth: 0, flex: 1 }}>

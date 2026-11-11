@@ -29,6 +29,7 @@ export function FloatingChatDock() {
     onMessageEdited,
     onMessageDeleted,
     onUserTyping,
+    isUserOnline,
   } = useChat();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -328,18 +329,21 @@ export function FloatingChatDock() {
         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
             <Avatar src={otherParticipant?.avatarUrl} name={otherParticipant?.name || "Chat"} size={32} />
-            <span
-              style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                width: 9,
-                height: 9,
-                borderRadius: "50%",
-                backgroundColor: "#22c55e",
-                border: "2px solid var(--bg-card)",
-              }}
-            />
+            {otherParticipant && isUserOnline(otherParticipant.id) && (
+              <span
+                title="Active now"
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  right: 0,
+                  width: 9,
+                  height: 9,
+                  borderRadius: "50%",
+                  backgroundColor: "#22c55e",
+                  border: "2px solid var(--bg-card)",
+                }}
+              />
+            )}
           </div>
           <div style={{ minWidth: 0 }}>
             <div
@@ -364,7 +368,13 @@ export function FloatingChatDock() {
                 marginTop: 2,
               }}
             >
-              {isOtherTyping ? "Typing..." : "Active now"}
+              {isOtherTyping
+                ? "Typing..."
+                : otherParticipant && isUserOnline(otherParticipant.id)
+                ? "Active now"
+                : otherParticipant?.username
+                ? `@${otherParticipant.username}`
+                : "Offline"}
             </div>
           </div>
         </div>
