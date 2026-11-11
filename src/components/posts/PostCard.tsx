@@ -265,6 +265,17 @@ export function PostCard({
   const commentsCount = post.commentsCount ?? 0;
   const isReposted = Boolean(post.isReposted);
   const repostsCount = post.repostsCount ?? 0;
+  const isOwnRepost = Boolean(
+    post.originalPostId && currentUserId && post.userId === currentUserId
+  );
+  const canUndoRepost = isReposted || isOwnRepost;
+  const isTargetPublic = post.originalPostId
+    ? Boolean(
+        post.originalPost &&
+          (post.originalPost.visibility ?? "Public") === "Public"
+      )
+    : (post.visibility ?? "Public") === "Public";
+  const canShowRepostButton = isTargetPublic || canUndoRepost;
 
   const handleToggleRepost = async () => {
     if (!currentUserId) {
@@ -272,11 +283,16 @@ export function PostCard({
       return;
     }
     if (isReposting) return;
+    if (!isTargetPublic && !canUndoRepost) {
+      setRepostFeedback("Only public posts can be reposted.");
+      setTimeout(() => setRepostFeedback(null), 3000);
+      return;
+    }
 
     const targetId = post.originalPostId ? (post.originalPost?.id ?? post.originalPostId) : post.id;
     setIsReposting(true);
 
-    if (!isReposted) {
+    if (!canUndoRepost) {
       soundEffects.playRepost();
     }
 
@@ -1686,64 +1702,66 @@ export function PostCard({
           )}
         </button>
 
-        {/* Repost Button */}
-        <button
-          type="button"
-          onClick={handleToggleRepost}
-          disabled={isReposting}
-          aria-label={isReposted ? "Undo repost" : "Repost post"}
-          title={isReposted ? "Undo Repost" : "Repost to your feed"}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: isReposting ? "wait" : "pointer",
-            padding: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            color: isReposted ? "#10b981" : "var(--text-secondary)",
-            transition: "transform 0.1s ease, color 0.15s ease",
-            opacity: isReposting ? 0.6 : 1,
-          }}
-          onMouseDown={(e) =>
-            (e.currentTarget.style.transform = "scale(0.92)")
-          }
-          onMouseUp={(e) =>
-            (e.currentTarget.style.transform = "scale(1)")
-          }
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={isReposted ? "#10b981" : "var(--text-secondary)"}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {/* Repost Button (only for public posts or to undo an existing repost) */}
+        {canShowRepostButton && (
+          <button
+            type="button"
+            onClick={handleToggleRepost}
+            disabled={isReposting}
+            aria-label={canUndoRepost ? "Undo repost" : "Repost post"}
+            title={canUndoRepost ? "Undo Repost" : "Repost to your feed"}
             style={{
-              transition: "stroke 0.15s ease, transform 0.15s ease",
-              transform: isReposted ? "scale(1.08)" : "scale(1)",
+              background: "none",
+              border: "none",
+              cursor: isReposting ? "wait" : "pointer",
+              padding: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              color: canUndoRepost ? "#10b981" : "var(--text-secondary)",
+              transition: "transform 0.1s ease, color 0.15s ease",
+              opacity: isReposting ? 0.6 : 1,
             }}
+            onMouseDown={(e) =>
+              (e.currentTarget.style.transform = "scale(0.92)")
+            }
+            onMouseUp={(e) =>
+              (e.currentTarget.style.transform = "scale(1)")
+            }
           >
-            <path d="m17 2 4 4-4 4" />
-            <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
-            <path d="m7 22-4-4 4-4" />
-            <path d="M21 13v1a4 4 0 0 1-4 4H3" />
-          </svg>
-          {repostsCount > 0 && (
-            <span
-              title={`${repostsCount} ${repostsCount === 1 ? "repost" : "reposts"}`}
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={canUndoRepost ? "#10b981" : "var(--text-secondary)"}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: isReposted ? "#10b981" : "var(--text-secondary)",
+                transition: "stroke 0.15s ease, transform 0.15s ease",
+                transform: canUndoRepost ? "scale(1.08)" : "scale(1)",
               }}
             >
-              {formatCount(repostsCount)}
-            </span>
-          )}
-        </button>
+              <path d="m17 2 4 4-4 4" />
+              <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+              <path d="m7 22-4-4 4-4" />
+              <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+            </svg>
+            {repostsCount > 0 && (
+              <span
+                title={`${repostsCount} ${repostsCount === 1 ? "repost" : "reposts"}`}
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: canUndoRepost ? "#10b981" : "var(--text-secondary)",
+                }}
+              >
+                {formatCount(repostsCount)}
+              </span>
+            )}
+          </button>
+        )}
 
         {/* Repost feedback badge */}
         {repostFeedback && (
