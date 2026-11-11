@@ -714,6 +714,74 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==========================================================================
+   Responsive Navbar Dropdowns (Messages, Notifications & Profile)
+   ========================================================================== */
+.app-dropdown-backdrop {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .app-dropdown-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: 56px;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 2400;
+  }
+
+  .app-dropdown-menu {
+    position: fixed !important;
+    top: 56px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - 72px) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3) !important;
+    z-index: 2500 !important;
+  }
+}
+
+/* ==========================================================================
+   Messages Page Mobile Responsiveness (Full-screen Master/Detail)
+   ========================================================================== */
+@media (max-width: 767px) {
+  .messages-page-layout {
+    height: calc(100dvh - 56px) !important;
+  }
+
+  .messages-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    border-right: none !important;
+  }
+
+  .messages-sidebar-hidden-mobile {
+    display: none !important;
+  }
+
+  .messages-thread-pane {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  .messages-thread-hidden-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .messages-back-btn {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
    Profile Header & Tabs (Socialio Style)
    ========================================================================== */
 .profile-cover-wrap {
