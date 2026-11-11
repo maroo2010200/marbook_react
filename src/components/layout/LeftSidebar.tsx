@@ -28,6 +28,8 @@ export function LeftSidebar() {
         : unreadChatCount.totalUnreadMessages
       : null;
 
+  const profileUrl = user.username ? `/@${user.username}` : `/profile/${user.id}`;
+
   const navItems = [
     {
       to: "/feed",
@@ -75,9 +77,12 @@ export function LeftSidebar() {
       ),
     },
     {
-      to: `/profile/${user.id}`,
+      to: profileUrl,
       label: "Profile",
-      active: location.pathname === `/profile/${user.id}`,
+      active:
+        location.pathname === profileUrl ||
+        location.pathname === `/profile/${user.id}` ||
+        (Boolean(user.username) && location.pathname === `/@${user.username}`),
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -133,7 +138,7 @@ export function LeftSidebar() {
       {/* Mini User Card at bottom of left rail */}
       <div className="app-left-rail-user-card">
         <Link
-          to={`/profile/${user.id}`}
+          to={profileUrl}
           className="app-left-rail-user-link"
           title={`View ${user.name}'s profile`}
         >

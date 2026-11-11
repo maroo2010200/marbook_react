@@ -141,6 +141,11 @@ export function ProfilePage() {
       }
 
       setProfile(data);
+
+      // Cleanly sync URL to /@username in browser address bar
+      if (data.username && (isNumericId || rawId === "me")) {
+        window.history.replaceState(null, "", `/@${data.username}`);
+      }
     } catch {
       setProfileError("Failed to load user profile. The user may not exist.");
     } finally {

@@ -135,9 +135,9 @@ export function SearchBar({ onSearchSubmit, className, style }: SearchBarProps) 
     executeFullSearch();
   };
 
-  const handleUserClick = (userId: number) => {
+  const handleUserClick = (u: { id: number; username?: string | null }) => {
     setIsOpen(false);
-    navigate(`/profile/${userId}`);
+    navigate(u.username ? `/@${u.username}` : `/profile/${u.id}`);
   };
 
   const handlePostClick = (postId: number) => {
@@ -329,7 +329,7 @@ export function SearchBar({ onSearchSubmit, className, style }: SearchBarProps) 
               {previewUsers.map((user) => (
                 <div
                   key={user.id}
-                  onClick={() => handleUserClick(user.id)}
+                  onClick={() => handleUserClick(user)}
                   style={{
                     display: "flex",
                     alignItems: "center",
