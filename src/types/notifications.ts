@@ -3,7 +3,8 @@ export type NotificationType =
   | "CommentLiked"
   | "CommentCreated"
   | "ReplyCreated"
-  | "UserFollowed";
+  | "UserFollowed"
+  | "PostReposted";
 
 export interface NotificationItem {
   id: number;

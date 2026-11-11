@@ -10,6 +10,7 @@ import { ImageAdjustModal } from "../ImageAdjustModal";
 import { Avatar } from "../Avatar";
 import { parseRichText } from "../../utils/richText";
 import { soundEffects } from "../../utils/soundEffects";
+import { formatRelativeTime } from "../../utils/time";
 
 interface PostCardProps {
   post: Post;
@@ -19,6 +20,12 @@ interface PostCardProps {
   onOpenComments: (post: Post) => void;
   onPostUpdated: (updatedPost: Post) => void;
   onPostDeleted: (postId: number) => void;
+  onRepost?: (
+    repostPost: Post | null,
+    targetPostId: number,
+    isReposted: boolean,
+    newRepostsCount: number
+  ) => void;
 }
 
 const MAX_CHAR_COUNT = 500;
@@ -132,12 +139,18 @@ export function PostCard({
   onOpenComments,
   onPostUpdated,
   onPostDeleted,
+  onRepost,
 }: PostCardProps) {
   const isAuthor = Boolean(currentUserId && currentUserId === post.userId);
 
   // Menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // Repost state
+  const [isReposting, setIsReposting] = useState(false);
+  const [repostFeedback, setRepostFeedback] = useState<string | null>(null);
+  const [originalLightboxIndex, setOriginalLightboxIndex] = useState<number | null>(null);
 
   // Edit mode state
   const [isEditing, setIsEditing] = useState(false);
@@ -249,6 +262,53 @@ export function PostCard({
 
   const likesCount = post.likesCount ?? (isLiked ? 1 : 0);
   const commentsCount = post.commentsCount ?? 0;
+  const isReposted = Boolean(post.isReposted);
+  const repostsCount = post.repostsCount ?? 0;
+
+  const handleToggleRepost = async () => {
+    if (!currentUserId) {
+      alert("Please log in to repost!");
+      return;
+    }
+    if (isReposting) return;
+
+    const targetId = post.originalPostId ? (post.originalPost?.id ?? post.originalPostId) : post.id;
+    setIsReposting(true);
+
+    if (!isReposted) {
+      soundEffects.playRepost();
+    }
+
+    try {
+      const res = await postsApi.toggleRepost(targetId);
+      if (res.isReposted) {
+        setRepostFeedback("Reposted to your feed! 🔁");
+        setTimeout(() => setRepostFeedback(null), 3000);
+      } else {
+        setRepostFeedback("Removed repost");
+        setTimeout(() => setRepostFeedback(null), 2500);
+      }
+
+      if (onRepost) {
+        onRepost(res.post ?? null, targetId, res.isReposted, res.repostsCount);
+      } else {
+        onPostUpdated({
+          ...post,
+          isReposted: res.isReposted,
+          repostsCount: res.repostsCount,
+        });
+      }
+    } catch (err: unknown) {
+      console.error("Failed to repost:", err);
+      const errMsg =
+        (err as { response?: { data?: string } })?.response?.data ||
+        "Failed to repost";
+      setRepostFeedback(typeof errMsg === "string" ? errMsg : "Failed to repost");
+      setTimeout(() => setRepostFeedback(null), 3000);
+    } finally {
+      setIsReposting(false);
+    }
+  };
 
   // Edit handlers
   const handleStartEdit = () => {
@@ -463,6 +523,57 @@ export function PostCard({
         transition: "all 0.2s ease",
       }}
     >
+      {/* Repost Header Banner (Facebook / Twitter style) */}
+      {post.originalPostId && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            marginBottom: 12,
+            paddingBottom: 8,
+            borderBottom: "1px dashed var(--divider, var(--border-color))",
+            fontSize: 13,
+            color: "var(--text-secondary)",
+          }}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#10b981"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m17 2 4 4-4 4" />
+            <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+            <path d="m7 22-4-4 4-4" />
+            <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+          </svg>
+          <span>
+            <Link
+              to={`/profile/${post.userId}`}
+              style={{
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                textDecoration: "none",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.textDecoration = "underline")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.textDecoration = "none")
+              }
+            >
+              {post.userName}
+            </Link>{" "}
+            reposted
+          </span>
+        </div>
+      )}
+
       {/* Header: Avatar, author name, timestamp, and optional author actions menu */}
       <div
         style={{
@@ -1156,10 +1267,140 @@ export function PostCard({
               onImageClick={(idx) => setLightboxIndex(idx)}
             />
           )}
+
+          {/* Embedded Original Post for Reposts (Facebook style) */}
+          {post.originalPostId && (
+            <div
+              style={{
+                marginTop: 12,
+                borderRadius: 12,
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-hover)",
+                padding: "14px 16px",
+                transition: "border-color 0.15s ease",
+              }}
+            >
+              {post.originalPost ? (
+                <>
+                  {/* Original Author Header */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <Link
+                        to={`/profile/${post.originalPost.userId}`}
+                        style={{ textDecoration: "none", flexShrink: 0 }}
+                        title={`View ${post.originalPost.userName}'s profile`}
+                      >
+                        <Avatar
+                          src={post.originalPost.userAvatarUrl}
+                          name={post.originalPost.userName}
+                          size={36}
+                          style={{ cursor: "pointer" }}
+                        />
+                      </Link>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Link
+                          to={`/profile/${post.originalPost.userId}`}
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 14,
+                            color: "var(--text-primary)",
+                            lineHeight: 1.25,
+                            textDecoration: "none",
+                            cursor: "pointer",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.textDecoration = "underline")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.textDecoration = "none")
+                          }
+                        >
+                          {post.originalPost.userName}
+                        </Link>
+                        <div
+                          style={{
+                            color: "var(--text-secondary)",
+                            fontSize: 11,
+                            lineHeight: 1.2,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <span>{formatRelativeTime(post.originalPost.createdAt)}</span>
+                          <span style={{ color: "var(--text-tertiary)" }}>•</span>
+                          <span
+                            title={`Audience: ${post.originalPost.visibility || "Public"}`}
+                            style={{ display: "inline-flex", alignItems: "center" }}
+                          >
+                            <AudienceIcon
+                              visibility={post.originalPost.visibility}
+                              size={11}
+                            />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Original Post Content */}
+                  {post.originalPost.content && (
+                    <p
+                      style={{
+                        margin: "6px 0 0",
+                        fontSize: 14,
+                        lineHeight: 1.5,
+                        color: "var(--text-primary)",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {parseRichText(post.originalPost.content, { linkColor: "#1877f2", hidePureMediaUrl: false }).nodes}
+                    </p>
+                  )}
+
+                  {/* Original Post Images */}
+                  {post.originalPost.imageUrls && post.originalPost.imageUrls.length > 0 && (
+                    <div style={{ marginTop: 10 }}>
+                      <PostImagesGrid
+                        images={post.originalPost.imageUrls}
+                        onImageClick={(idx) => setOriginalLightboxIndex(idx)}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    color: "var(--text-secondary)",
+                    fontSize: 13,
+                    fontStyle: "italic",
+                    padding: "6px 0",
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <span>This original post is no longer available.</span>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 
-      {/* Post Actions: Like & Comment */}
+      {/* Post Actions: Roast, Comment & Repost */}
       <div
         style={{
           display: "flex",
@@ -1276,6 +1517,79 @@ export function PostCard({
             </span>
           )}
         </button>
+
+        {/* Repost Button */}
+        <button
+          type="button"
+          onClick={handleToggleRepost}
+          disabled={isReposting}
+          aria-label={isReposted ? "Undo repost" : "Repost post"}
+          title={isReposted ? "Undo Repost" : "Repost to your feed"}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: isReposting ? "wait" : "pointer",
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            color: isReposted ? "#10b981" : "var(--text-secondary)",
+            transition: "transform 0.1s ease, color 0.15s ease",
+            opacity: isReposting ? 0.6 : 1,
+          }}
+          onMouseDown={(e) =>
+            (e.currentTarget.style.transform = "scale(0.92)")
+          }
+          onMouseUp={(e) =>
+            (e.currentTarget.style.transform = "scale(1)")
+          }
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={isReposted ? "#10b981" : "var(--text-secondary)"}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transition: "stroke 0.15s ease, transform 0.15s ease",
+              transform: isReposted ? "scale(1.08)" : "scale(1)",
+            }}
+          >
+            <path d="m17 2 4 4-4 4" />
+            <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+            <path d="m7 22-4-4 4-4" />
+            <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+          </svg>
+          {repostsCount > 0 && (
+            <span
+              title={`${repostsCount} ${repostsCount === 1 ? "repost" : "reposts"}`}
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: isReposted ? "#10b981" : "var(--text-secondary)",
+              }}
+            >
+              {formatCount(repostsCount)}
+            </span>
+          )}
+        </button>
+
+        {/* Repost feedback badge */}
+        {repostFeedback && (
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#10b981",
+              marginLeft: -8,
+            }}
+          >
+            {repostFeedback}
+          </span>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}
@@ -1401,6 +1715,14 @@ export function PostCard({
         images={post.imageUrls || []}
         initialIndex={lightboxIndex ?? 0}
         onClose={() => setLightboxIndex(null)}
+      />
+
+      {/* Lightbox for Original Post Images */}
+      <LightboxModal
+        isOpen={originalLightboxIndex !== null}
+        images={post.originalPost?.imageUrls || []}
+        initialIndex={originalLightboxIndex ?? 0}
+        onClose={() => setOriginalLightboxIndex(null)}
       />
 
       {/* Re-adjust Existing Attached Image in Edit Mode */}

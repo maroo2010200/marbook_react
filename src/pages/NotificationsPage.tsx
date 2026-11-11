@@ -40,6 +40,12 @@ function getNotificationConfig(type: NotificationType) {
         icon: "👤",
         bgColor: "#10b981",
       };
+    case "PostReposted":
+      return {
+        text: "reposted your post 🔁",
+        icon: "🔁",
+        bgColor: "#059669",
+      };
     default:
       return {
         text: "interacted with you",
