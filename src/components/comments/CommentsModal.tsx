@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useCommentsModal } from "../../hooks/useCommentsModal";
 import { CommentItem } from "./CommentItem";
@@ -7,6 +7,9 @@ import type { Post } from "../../types/posts";
 import type { Comment } from "../../types/comments";
 import { Avatar } from "../Avatar";
 import { MarshmallowLoader } from "../MarshmallowLoader";
+import { PostImagesGrid } from "../posts/PostImagesGrid";
+import { LightboxModal } from "../LightboxModal";
+import { parseRichText } from "../../utils/richText";
 
 interface CommentsModalProps {
   post: Post | null;
@@ -59,26 +62,55 @@ export function CommentsModal({
     handleTogglePinComment,
   } = useCommentsModal({ isOpen, post, onCommentAdded, onCommentDeleted });
 
-  // Handle Escape key to close modal
+  const [lightboxState, setLightboxState] = useState<{
+    images: string[];
+    index: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setLightboxState(null);
+    }
+  }, [isOpen, post?.id]);
+
+  // Handle Escape key to close modal (let LightboxModal handle Escape first when open)
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && !lightboxState) {
         onClose();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, lightboxState]);
 
   if (!isOpen || !post) return null;
 
-  const postDate = new Date(post.createdAt).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const formatPostDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+  const postDate = formatPostDate(post.createdAt);
+  const hasCaption = Boolean(post.content?.trim());
+  const hasMedia = Boolean(post.imageUrls && post.imageUrls.length > 0);
+  const hasRepost = Boolean(post.originalPostId);
+  const showPostPreview = hasCaption || hasMedia || hasRepost;
+
+  const renderPostPreviewMedia = (urls: string[] | undefined, maxHeight: number) => {
+    if (!urls || urls.length === 0) return null;
+    return (
+      <PostImagesGrid
+        images={urls}
+        maxHeight={maxHeight}
+        onImageClick={(idx) => setLightboxState({ images: urls, index: idx })}
+      />
+    );
+  };
 
   return (
     <div
@@ -165,27 +197,102 @@ export function CommentsModal({
             gap: 16,
           }}
         >
-          {/* Post Caption Preview */}
-          <div
-            style={{
-              paddingBottom: 16,
-              borderBottom: "1px solid var(--divider)",
-            }}
-          >
-            <p
+          {/* Post Content & Media Preview */}
+          {showPostPreview && (
+            <div
               style={{
-                margin: 0,
-                fontSize: 15,
-                lineHeight: 1.5,
-                color: "var(--text-primary)",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
+                paddingBottom: 16,
+                borderBottom: "1px solid var(--divider)",
               }}
             >
-              <strong style={{ marginRight: 6 }}>{post.userName}</strong>
-              {post.content}
-            </p>
-          </div>
+              {hasCaption && (
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 15,
+                    lineHeight: 1.5,
+                    color: "var(--text-primary)",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  <strong style={{ marginRight: 6 }}>{post.userName}</strong>
+                  {parseRichText(post.content, {
+                    linkColor: "#1877f2",
+                    hidePureMediaUrl: false,
+                  }).nodes}
+                </p>
+              )}
+
+              {hasMedia && (
+                <div style={{ marginTop: hasCaption ? 8 : 0 }}>
+                  {renderPostPreviewMedia(post.imageUrls, 360)}
+                </div>
+              )}
+
+              {hasRepost && (
+                <div
+                  style={{
+                    marginTop: hasCaption || hasMedia ? 12 : 0,
+                    borderRadius: 10,
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-hover)",
+                    padding: "12px 14px",
+                  }}
+                >
+                  {post.originalPost ? (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <Avatar
+                          src={post.originalPost.userAvatarUrl}
+                          name={post.originalPost.userName}
+                          size={28}
+                        />
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-primary)" }}>
+                            {post.originalPost.userName}
+                          </div>
+                          <small style={{ color: "var(--text-secondary)", fontSize: 11 }}>
+                            {formatPostDate(post.originalPost.createdAt)}
+                          </small>
+                        </div>
+                      </div>
+
+                      {post.originalPost.content?.trim() && (
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: 14,
+                            lineHeight: 1.45,
+                            color: "var(--text-primary)",
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {parseRichText(post.originalPost.content, {
+                            linkColor: "#1877f2",
+                            hidePureMediaUrl: false,
+                          }).nodes}
+                        </p>
+                      )}
+
+                      {renderPostPreviewMedia(post.originalPost.imageUrls, 320)}
+                    </>
+                  ) : (
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "var(--text-secondary)",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Original post is no longer available.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Initial Loading Spinner */}
           {loading && (
@@ -336,6 +443,15 @@ export function CommentsModal({
           onAttachImage={setAttachedImageUrl}
           isUploadingImage={isUploadingImage}
           onUploadingChange={setIsUploadingImage}
+        />
+      </div>
+
+      <div onClick={(e) => e.stopPropagation()}>
+        <LightboxModal
+          isOpen={Boolean(lightboxState)}
+          images={lightboxState?.images ?? []}
+          initialIndex={lightboxState?.index ?? 0}
+          onClose={() => setLightboxState(null)}
         />
       </div>
     </div>

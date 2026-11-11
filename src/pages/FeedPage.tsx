@@ -114,30 +114,30 @@ function FeedPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const targetPostIdParam = searchParams.get("postId");
   const openCommentsParam = searchParams.get("openComments");
+  const isMountedRef = useRef(true);
+  const activeTargetPostIdRef = useRef<number | null>(null);
+  const fetchedTargetPostIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!targetPostIdParam) return;
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!targetPostIdParam) {
+      activeTargetPostIdRef.current = null;
+      fetchedTargetPostIdRef.current = null;
+      return;
+    }
+
     const targetPostId = Number(targetPostIdParam);
     if (!targetPostId || isNaN(targetPostId)) return;
 
-    const foundPost = posts.find((p) => p.id === targetPostId);
+    activeTargetPostIdRef.current = targetPostId;
 
-    if (foundPost) {
-      const el = document.getElementById(`post-${targetPostId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.style.transition = "box-shadow 0.3s ease";
-        el.style.boxShadow =
-          "0 0 0 2px #1877f2, 0 4px 12px rgba(24, 119, 242, 0.25)";
-        setTimeout(() => {
-          el.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.05)";
-        }, 2500);
-      }
-
-      if (openCommentsParam === "true") {
-        handleOpenComments(foundPost);
-      }
-
+    const clearTargetParams = () => {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -147,31 +147,55 @@ function FeedPage() {
         },
         { replace: true }
       );
-    } else if (!loading) {
-      // If the post is not in the first page of feed, fetch it directly
+    };
+
+    const foundPost = posts.find((p) => p.id === targetPostId);
+
+    if (foundPost) {
+      fetchedTargetPostIdRef.current = null;
+
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`post-${targetPostId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.style.transition = "box-shadow 0.3s ease";
+          el.style.boxShadow =
+            "0 0 0 2px #1877f2, 0 4px 12px rgba(24, 119, 242, 0.25)";
+          setTimeout(() => {
+            el.style.boxShadow = "var(--shadow-card)";
+          }, 2500);
+        }
+      });
+
+      if (openCommentsParam === "true") {
+        handleOpenComments(foundPost);
+      }
+
+      clearTargetParams();
+    } else if (!loading && fetchedTargetPostIdRef.current !== targetPostId) {
+      // Post is outside the currently loaded feed slice: fetch it directly and inject into feed
+      fetchedTargetPostIdRef.current = targetPostId;
+
       api
         .get<Post>(`/posts/${targetPostId}`)
         .then((res) => {
-          if (openCommentsParam === "true") {
-            handleOpenComments(res.data);
+          if (!isMountedRef.current || activeTargetPostIdRef.current !== targetPostId) {
+            return;
+          }
+          if (res.data?.id) {
+            addPost(res.data);
+          } else {
+            clearTargetParams();
           }
         })
         .catch(() => {
-          // ignore if post was deleted or not accessible
-        })
-        .finally(() => {
-          setSearchParams(
-            (prev) => {
-              const next = new URLSearchParams(prev);
-              next.delete("postId");
-              next.delete("openComments");
-              return next;
-            },
-            { replace: true }
-          );
+          if (!isMountedRef.current || activeTargetPostIdRef.current !== targetPostId) {
+            return;
+          }
+          clearTargetParams();
         });
     }
-  }, [targetPostIdParam, openCommentsParam, posts, loading, setSearchParams]);
+  }, [targetPostIdParam, openCommentsParam, posts, loading, addPost, setSearchParams]);
 
   // Toggle Like / Unlike (Instagram-style)
   const handleToggleLike = async (postId: number) => {

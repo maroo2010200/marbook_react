@@ -15,6 +15,43 @@ import {
 
 const PAGE_SIZE = 10;
 
+function sortTopLevelComments(list: Comment[]): Comment[] {
+  return [...list].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
+function applyPinStateInTree(
+  list: Comment[],
+  targetId: number,
+  isPinned: boolean,
+  isTopLevel = true
+): Comment[] {
+  const mapped = list.map((c) => {
+    const updatedReplies =
+      c.replies && c.replies.length > 0
+        ? applyPinStateInTree(c.replies, targetId, isPinned, false)
+        : c.replies;
+    const nextPinned = c.id === targetId ? isPinned : isPinned ? false : c.isPinned;
+    return {
+      ...c,
+      isPinned: nextPinned,
+      replies: updatedReplies,
+    };
+  });
+
+  if (isTopLevel) {
+    return sortTopLevelComments(mapped);
+  }
+  return [...mapped].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+}
+
 interface UseCommentsModalOptions {
   isOpen: boolean;
   post: Post | null;
@@ -373,7 +410,7 @@ export function useCommentsModal({
           content,
           attachedImageUrl || undefined
         );
-        const updated = [created, ...commentsRef.current];
+        const updated = sortTopLevelComments([created, ...commentsRef.current]);
         setComments(updated);
         commentsRef.current = updated;
         setNewComment("");
@@ -436,18 +473,9 @@ export function useCommentsModal({
       try {
         const res = await commentsApi.togglePinComment(commentId);
         setComments((prev) => {
-          const updated = prev.map((c) => {
-            if (c.id === commentId) return { ...c, isPinned: res.isPinned };
-            if (res.isPinned) return { ...c, isPinned: false };
-            return c;
-          });
-          updated.sort((a, b) => {
-            if (a.isPinned && !b.isPinned) return -1;
-            if (!a.isPinned && b.isPinned) return 1;
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          });
+          const updated = applyPinStateInTree(prev, commentId, res.isPinned);
           commentsRef.current = updated;
-          return [...updated];
+          return updated;
         });
       } catch (err) {
         console.error("Failed to pin comment:", err);
@@ -469,7 +497,7 @@ export function useCommentsModal({
         if (findCommentInTree(prev, incoming.id)) return prev;
 
         if (!incoming.parentCommentId) {
-          const updated = [incoming, ...prev];
+          const updated = sortTopLevelComments([incoming, ...prev]);
           commentsRef.current = updated;
           return updated;
         }
@@ -511,18 +539,9 @@ export function useCommentsModal({
       const data = (e as CustomEvent<{ commentId: number; postId: number; isPinned: boolean }>).detail;
       if (!data || data.postId !== postId) return;
       setComments((prev) => {
-        const updated = prev.map((c) => {
-          if (c.id === data.commentId) return { ...c, isPinned: data.isPinned };
-          if (data.isPinned) return { ...c, isPinned: false };
-          return c;
-        });
-        updated.sort((a, b) => {
-          if (a.isPinned && !b.isPinned) return -1;
-          if (!a.isPinned && b.isPinned) return 1;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
+        const updated = applyPinStateInTree(prev, data.commentId, data.isPinned);
         commentsRef.current = updated;
-        return [...updated];
+        return updated;
       });
     };
 

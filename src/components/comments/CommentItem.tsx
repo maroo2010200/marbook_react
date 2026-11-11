@@ -46,7 +46,8 @@ export function CommentItem({
   const isAuthor = Boolean(currentUserId && currentUserId === comment.userId);
   const canPin = Boolean(
     currentUserId &&
-    (currentUserId === postAuthorId || currentUserId === comment.userId) &&
+    postAuthorId &&
+    currentUserId === postAuthorId &&
     onTogglePinComment
   );
 
