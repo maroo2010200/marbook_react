@@ -8,6 +8,7 @@ import { chatApi } from "../../api/chat";
 import { Avatar } from "../Avatar";
 import { formatRelativeTime } from "../../utils/time";
 import { parseRichText } from "../../utils/richText";
+import { GifPicker } from "./GifPicker";
 import type { Message, ConversationSummary } from "../../types/chat";
 
 export function FloatingChatDock() {
@@ -34,6 +35,7 @@ export function FloatingChatDock() {
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
   const [conversationDetails, setConversationDetails] = useState<ConversationSummary | null>(null);
   const { isMessageSeen } = useConversationReadReceipt(
     floatingConversationId,
@@ -250,6 +252,36 @@ export function FloatingChatDock() {
     }
   };
 
+  // Handle Send GIF
+  const handleSendGif = async (gifUrl: string) => {
+    if (!floatingConversationId || isSending) return;
+    setIsSending(true);
+    setIsGifPickerOpen(false);
+
+    try {
+      if (userTypingSendTimeoutRef.current) {
+        clearTimeout(userTypingSendTimeoutRef.current);
+        userTypingSendTimeoutRef.current = null;
+        sendTyping(floatingConversationId, false).catch(() => {});
+      }
+
+      const newMsg = await chatApi.sendMessage(floatingConversationId, gifUrl);
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === newMsg.id)) {
+          return prev;
+        }
+        return [...prev, { ...newMsg, isMine: true }];
+      });
+      refreshConversations().catch(() => {});
+      setTimeout(scrollToBottom, 50);
+    } catch (err) {
+      console.error("Failed to send floating chat GIF:", err);
+    } finally {
+      setIsSending(false);
+      inputRef.current?.focus();
+    }
+  };
+
   // If on full messenger or no active floating chat, don't display dock
   if (!floatingConversationId || location.pathname === "/messages") {
     return null;
@@ -401,7 +433,9 @@ export function FloatingChatDock() {
                 ? m.senderUserId === currentUser.id
                 : m.isMine;
               const isLastMine = isMine && index === lastMineIndex;
-
+              const parsed = parseRichText(m.content);
+              const isPureMedia =
+                !m.isDeleted && parsed.mediaUrls.length > 0 && parsed.nodes.length === 0;
 
               return (
                 <div
@@ -414,23 +448,90 @@ export function FloatingChatDock() {
                     alignSelf: isMine ? "flex-end" : "flex-start",
                   }}
                 >
-                  <div
-                    style={{
-                      backgroundColor: isMine ? "var(--primary)" : "var(--bg-card)",
-                      color: isMine ? "#ffffff" : "var(--text-primary)",
-                      padding: "8px 12px",
-                      borderRadius: isMine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                      fontSize: 13,
-                      lineHeight: 1.4,
-                      wordBreak: "break-word",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-                      border: isMine ? "none" : "1px solid var(--border-color)",
-                      fontStyle: m.isDeleted ? "italic" : "normal",
-                      opacity: m.isDeleted ? 0.75 : 1,
-                    }}
-                  >
-                    {parseRichText(m.content).nodes}
-                  </div>
+                  {/* Bubble for text content (if not pure media or if deleted) */}
+                  {(parsed.nodes.length > 0 || m.isDeleted) && (
+                    <div
+                      style={{
+                        backgroundColor: isMine ? "var(--primary)" : "var(--bg-card)",
+                        color: isMine ? "#ffffff" : "var(--text-primary)",
+                        padding: "8px 12px",
+                        borderRadius: isMine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                        fontSize: 13,
+                        lineHeight: 1.4,
+                        wordBreak: "break-word",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                        border: isMine ? "none" : "1px solid var(--border-color)",
+                        fontStyle: m.isDeleted ? "italic" : "normal",
+                        opacity: m.isDeleted ? 0.75 : 1,
+                      }}
+                    >
+                      {parsed.nodes}
+                    </div>
+                  )}
+
+                  {/* Embedded Media / GIF if message contains media URLs */}
+                  {!m.isDeleted && parsed.mediaUrls.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: parsed.nodes.length > 0 ? 6 : 0,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 4,
+                      }}
+                    >
+                      {parsed.mediaUrls.map((mUrl, mIdx) => (
+                        <div
+                          key={mIdx}
+                          onClick={() => window.open(mUrl, "_blank", "noopener,noreferrer")}
+                          title="Click to view full size"
+                          style={{
+                            position: "relative",
+                            borderRadius: isPureMedia ? 14 : 10,
+                            overflow: "hidden",
+                            maxWidth: 220,
+                            cursor: "pointer",
+                            backgroundColor: "rgba(0,0,0,0.08)",
+                            border: isPureMedia
+                              ? "1px solid var(--border-color)"
+                              : "none",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                          }}
+                        >
+                          <img
+                            src={mUrl}
+                            alt="Shared GIF"
+                            loading="lazy"
+                            onLoad={scrollToBottom}
+                            style={{
+                              maxWidth: "100%",
+                              maxHeight: 180,
+                              objectFit: "contain",
+                              display: "block",
+                              borderRadius: isPureMedia ? 14 : 10,
+                            }}
+                          />
+                          <span
+                            style={{
+                              position: "absolute",
+                              bottom: 4,
+                              left: 4,
+                              backgroundColor: "rgba(0,0,0,0.72)",
+                              color: "#fff",
+                              fontSize: 9,
+                              fontWeight: 700,
+                              padding: "1px 5px",
+                              borderRadius: 3,
+                              letterSpacing: "0.5px",
+                              pointerEvents: "none",
+                            }}
+                          >
+                            GIF
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <span
                     style={{
                       fontSize: 10,
@@ -476,6 +577,28 @@ export function FloatingChatDock() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* GIF Picker Popover */}
+      {isGifPickerOpen && (
+        <GifPicker
+          onSelectGif={handleSendGif}
+          onClose={() => setIsGifPickerOpen(false)}
+          style={{
+            position: "absolute",
+            bottom: 49,
+            left: 0,
+            right: 0,
+            width: "100%",
+            height: 320,
+            maxHeight: 320,
+            borderRadius: "12px 12px 0 0",
+            borderLeft: "none",
+            borderRight: "none",
+            boxShadow: "0 -6px 20px rgba(0,0,0,0.2)",
+            zIndex: 100,
+          }}
+        />
+      )}
+
       {/* Input Composer */}
       <form
         onSubmit={handleSendMessage}
@@ -485,10 +608,42 @@ export function FloatingChatDock() {
           backgroundColor: "var(--bg-card)",
           display: "flex",
           alignItems: "center",
-          gap: 8,
+          gap: 6,
           flexShrink: 0,
         }}
       >
+        {/* GIF Picker Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setIsGifPickerOpen((prev) => !prev)}
+          onMouseDown={(e) => e.stopPropagation()}
+          title="Choose a GIF"
+          aria-label="Choose a GIF"
+          style={{
+            height: 32,
+            padding: "0 8px",
+            borderRadius: 16,
+            backgroundColor: isGifPickerOpen
+              ? "var(--primary-light)"
+              : "var(--bg-hover)",
+            color: isGifPickerOpen
+              ? "var(--primary)"
+              : "var(--text-secondary)",
+            border: "1px solid var(--border-color)",
+            fontSize: 11,
+            fontWeight: 800,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.15s ease",
+            flexShrink: 0,
+            letterSpacing: "0.5px",
+          }}
+        >
+          GIF
+        </button>
+
         <input
           ref={inputRef}
           type="text"
@@ -497,6 +652,7 @@ export function FloatingChatDock() {
           placeholder="Type a message..."
           style={{
             flex: 1,
+            minWidth: 0,
             padding: "8px 12px",
             fontSize: 13,
             backgroundColor: "var(--bg-hover)",
