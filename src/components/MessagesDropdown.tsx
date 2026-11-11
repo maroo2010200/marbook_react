@@ -53,12 +53,17 @@ export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
 
   const handleSelectConversation = (conversation: ConversationSummary) => {
     onClose();
-    openFloatingChat(conversation.id);
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      navigate(`/messages?conversationId=${conversation.id}`);
+    } else {
+      openFloatingChat(conversation.id);
+    }
   };
 
   return (
     <div
       ref={dropdownRef}
+      className="app-dropdown-menu app-messages-dropdown"
       style={{
         position: "absolute",
         top: 48,

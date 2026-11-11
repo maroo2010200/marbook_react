@@ -418,6 +418,7 @@ function Navbar() {
               {/* Profile Dropdown Popup */}
               {isProfileMenuOpen && (
                 <div
+                  className="app-dropdown-menu app-profile-dropdown"
                   style={{
                     position: "absolute",
                     top: "calc(100% + 8px)",
@@ -675,6 +676,18 @@ function Navbar() {
           </div>
         )}
       </div>
+
+      {/* Mobile Dropdown Backdrop */}
+      {(isMessagesOpen || isNotificationsOpen || isProfileMenuOpen) && (
+        <div
+          className="app-dropdown-backdrop"
+          onClick={() => {
+            setIsMessagesOpen(false);
+            setIsNotificationsOpen(false);
+            setIsProfileMenuOpen(false);
+          }}
+        />
+      )}
 
       {/* Logout Confirmation Modal */}
       {isLogoutModalOpen && (

@@ -10,7 +10,8 @@ export function MobileBottomNav() {
   const { unreadCount } = useNotifications();
   const { unreadChatCount } = useChat();
 
-  // Hide on guest, login, register, password reset, and verify pages
+  // Hide on guest, login, register, password reset, verify pages,
+  // or when the user is inside an active chat thread on mobile
   const hiddenPaths = [
     "/",
     "/login",
@@ -20,7 +21,16 @@ export function MobileBottomNav() {
     "/verify",
   ];
 
-  if (!isAuthenticated || !user || hiddenPaths.includes(location.pathname)) {
+  const searchParams = new URLSearchParams(location.search);
+  const isInsideChat =
+    location.pathname === "/messages" && Boolean(searchParams.get("conversationId"));
+
+  if (
+    !isAuthenticated ||
+    !user ||
+    hiddenPaths.includes(location.pathname) ||
+    isInsideChat
+  ) {
     return null;
   }
 

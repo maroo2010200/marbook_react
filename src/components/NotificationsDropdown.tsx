@@ -167,6 +167,7 @@ export function NotificationsDropdown({
   return (
     <div
       ref={containerRef}
+      className="app-dropdown-menu app-notifications-dropdown"
       style={{
         position: "absolute",
         top: "calc(100% + 8px)",

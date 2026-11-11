@@ -511,9 +511,10 @@ export default function MessagesPage() {
 
   return (
     <div
+      className="messages-page-layout"
       style={{
         display: "flex",
-        height: "calc(100vh - 56px)",
+        height: "calc(100dvh - 56px)",
         marginTop: 56,
         width: "100%",
         maxWidth: "100vw",
@@ -525,6 +526,7 @@ export default function MessagesPage() {
     >
       {/* LEFT SIDEBAR: Conversations List */}
       <div
+        className={`messages-sidebar ${selectedId ? "messages-sidebar-hidden-mobile" : ""}`}
         style={{
           width: "clamp(260px, 28vw, 360px)",
           borderRight: "1px solid var(--border-color)",
@@ -769,6 +771,7 @@ export default function MessagesPage() {
 
       {/* RIGHT MAIN AREA: Active Chat Thread */}
       <div
+        className={`messages-thread-pane ${!selectedId ? "messages-thread-hidden-mobile" : ""}`}
         style={{
           flex: 1,
           display: "flex",
@@ -828,7 +831,7 @@ export default function MessagesPage() {
             {/* Chat Top Header */}
             <div
               style={{
-                padding: "10px 20px",
+                padding: "10px clamp(10px, 3vw, 16px)",
                 borderBottom: "1px solid var(--border-color)",
                 display: "flex",
                 alignItems: "center",
@@ -836,9 +839,53 @@ export default function MessagesPage() {
                 backgroundColor: "var(--bg-card)",
                 boxShadow: "var(--shadow-sm)",
                 zIndex: 10,
+                gap: 8,
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "clamp(6px, 2vw, 12px)",
+                  minWidth: 0,
+                  flex: 1,
+                }}
+              >
+                {/* Back button on mobile */}
+                <button
+                  type="button"
+                  className="messages-back-btn"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setSearchParams({});
+                  }}
+                  aria-label="Back to conversations"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-primary)",
+                    cursor: "pointer",
+                    padding: "6px 6px 6px 0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+
                 <Link
                   to={`/profile/${activeConversation.otherParticipant.id}`}
                   style={{ textDecoration: "none", flexShrink: 0 }}
@@ -846,19 +893,22 @@ export default function MessagesPage() {
                   <Avatar
                     src={activeConversation.otherParticipant.avatarUrl}
                     name={activeConversation.otherParticipant.name}
-                    size={42}
+                    size={40}
                   />
                 </Link>
 
-                <div>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <Link
                     to={`/profile/${activeConversation.otherParticipant.id}`}
                     style={{
                       textDecoration: "none",
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: 700,
                       color: "var(--text-primary)",
                       display: "block",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {activeConversation.otherParticipant.name}
@@ -868,6 +918,10 @@ export default function MessagesPage() {
                       fontSize: 12,
                       color: typingUser ? "var(--primary)" : "var(--text-muted)",
                       fontWeight: typingUser ? 600 : 400,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      display: "block",
                     }}
                   >
                     {typingUser
@@ -882,15 +936,18 @@ export default function MessagesPage() {
               {/* View Profile Action */}
               <Link
                 to={`/profile/${activeConversation.otherParticipant.id}`}
+                className="messages-header-profile-btn"
                 style={{
                   textDecoration: "none",
                   backgroundColor: "var(--bg-hover)",
                   color: "var(--text-primary)",
-                  padding: "6px 14px",
-                  borderRadius: 6,
-                  fontSize: 13,
+                  padding: "6px 12px",
+                  borderRadius: "var(--radius-full)",
+                  fontSize: 12.5,
                   fontWeight: 600,
                   transition: "background-color 0.15s ease",
+                  flexShrink: 0,
+                  whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.backgroundColor = "var(--border-color)")
@@ -899,7 +956,7 @@ export default function MessagesPage() {
                   (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
                 }
               >
-                View Profile
+                Profile
               </Link>
             </div>
 
@@ -909,7 +966,7 @@ export default function MessagesPage() {
               style={{
                 flex: 1,
                 overflowY: "auto",
-                padding: "20px 24px",
+                padding: "16px clamp(10px, 3vw, 20px)",
                 display: "flex",
                 flexDirection: "column",
                 gap: 10,
@@ -1374,13 +1431,15 @@ export default function MessagesPage() {
             {/* Chat Bottom Input Bar */}
             <form
               onSubmit={handleSendMessage}
+              className="messages-input-form"
               style={{
-                padding: "12px 20px",
+                padding: "10px clamp(8px, 2.5vw, 16px)",
+                paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))",
                 backgroundColor: "var(--bg-card)",
                 borderTop: "1px solid var(--border-color)",
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
+                gap: 8,
                 position: "relative",
               }}
             >
@@ -1401,12 +1460,13 @@ export default function MessagesPage() {
 
                 style={{
                   flex: 1,
-                  padding: "10px 16px",
+                  minWidth: 0,
+                  padding: "10px 14px",
                   borderRadius: 22,
                   border: "1px solid var(--border-color)",
                   backgroundColor: "var(--bg-hover)",
                   color: "var(--text-primary)",
-                  fontSize: 14,
+                  fontSize: 15,
                   outline: "none",
                   transition: "border-color 0.15s ease",
                 }}
