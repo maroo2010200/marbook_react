@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import type { Post, PostVisibility } from "../../types/posts";
 import { postsApi } from "../../api/posts";
 import { mediaApi } from "../../api/media";
-import { getMediaUrl } from "../../utils/media";
+import { getMediaUrl, isVideoMedia } from "../../utils/media";
 import { PostImagesGrid } from "./PostImagesGrid";
 import { LightboxModal } from "../LightboxModal";
 import { ImageAdjustModal } from "../ImageAdjustModal";
@@ -170,6 +170,7 @@ export function PostCard({
   );
   const [isUploadingEditImages, setIsUploadingEditImages] = useState(false);
   const editFileInputRef = useRef<HTMLInputElement | null>(null);
+  const editVideoInputRef = useRef<HTMLInputElement | null>(null);
   const [adjustingEditIndex, setAdjustingEditIndex] = useState<number | null>(
     null
   );
@@ -330,46 +331,73 @@ export function PostCard({
     setEditError(null);
   };
 
-  const handleEditFilesSelected = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const processEditFiles = async (filesList: File[]) => {
+    if (!filesList || filesList.length === 0) return;
 
-    if (editImageUrls.length + files.length > 10) {
-      setEditError("You can attach a maximum of 10 images per post.");
-      e.target.value = "";
+    if (editImageUrls.length + filesList.length > 10) {
+      setEditError("You can attach a maximum of 10 media files per post.");
       return;
     }
 
-    if (files.length === 1) {
-      const file = files[0];
+    for (const f of filesList) {
+      const isVideo = f.type.startsWith("video/") || isVideoMedia(f.name);
+      const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (f.size > maxSize) {
+        setEditError(
+          `"${f.name}" exceeds the ${isVideo ? "100MB video" : "10MB photo"} limit.`
+        );
+        return;
+      }
+    }
+
+    if (
+      filesList.length === 1 &&
+      !filesList[0].type.startsWith("video/") &&
+      !isVideoMedia(filesList[0].name)
+    ) {
+      const file = filesList[0];
       const objectUrl = URL.createObjectURL(file);
       setPendingEditAdjust({
         file,
         objectUrl,
         fileName: file.name,
       });
-      if (editFileInputRef.current) editFileInputRef.current.value = "";
       return;
     }
 
     setIsUploadingEditImages(true);
     setEditError(null);
     try {
-      const newUrls = await mediaApi.uploadMultiple(Array.from(files), "posts");
+      const newUrls: string[] = [];
+      for (const file of filesList) {
+        const url = await mediaApi.upload(file, "posts");
+        newUrls.push(url);
+      }
       setEditImageUrls((prev) => [...prev, ...newUrls]);
     } catch (err: any) {
       setEditError(
         err.response?.data?.message ||
-          "Failed to upload image(s). Only JPG, PNG, WebP, and GIF under 10MB are supported."
+          "Failed to upload media. Supported: JPG, PNG, WebP, GIF (up to 10MB) and MP4, WebM, MOV (up to 100MB)."
       );
     } finally {
       setIsUploadingEditImages(false);
-      if (editFileInputRef.current) {
-        editFileInputRef.current.value = "";
-      }
     }
+  };
+
+  const handleEditFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length > 0) {
+      processEditFiles(files);
+    }
+    if (editFileInputRef.current) editFileInputRef.current.value = "";
+  };
+
+  const handleEditVideoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length > 0) {
+      processEditFiles(files);
+    }
+    if (editVideoInputRef.current) editVideoInputRef.current.value = "";
   };
 
   const handleAdjustEditConfirm = async (croppedFile: File) => {
@@ -1112,95 +1140,134 @@ export function PostCard({
                 borderRadius: 8,
               }}
             >
-              {editImageUrls.map((url, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    position: "relative",
-                    width: 80,
-                    height: 80,
-                    borderRadius: 8,
-                    overflow: "hidden",
-                    border: "1px solid var(--border-color)",
-                    backgroundColor: "var(--bg-card)",
-                    boxShadow: "var(--shadow-sm)",
-                  }}
-                >
-                  <img
-                    src={getMediaUrl(url)}
-                    alt=""
-                    onClick={() => setAdjustingEditIndex(idx)}
-                    title="Click to adjust & crop"
+              {editImageUrls.map((url, idx) => {
+                const isVideo = isVideoMedia(url);
+                return (
+                  <div
+                    key={idx}
                     style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      cursor: "pointer",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setAdjustingEditIndex(idx)}
-                    title="Adjust (Zoom, Pan, Crop)"
-                    style={{
-                      position: "absolute",
-                      bottom: 3,
-                      left: 3,
-                      right: 3,
-                      height: 20,
-                      borderRadius: 4,
-                      backgroundColor: "rgba(0, 0, 0, 0.72)",
-                      color: "#fff",
-                      border: "none",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 2,
-                      backdropFilter: "blur(2px)",
+                      position: "relative",
+                      width: isVideo ? 110 : 80,
+                      height: 80,
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      border: "1px solid var(--border-color)",
+                      backgroundColor: "#000",
+                      boxShadow: "var(--shadow-sm)",
                     }}
                   >
-                    <span>✂️</span>
-                    <span>Adjust</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEditImageUrls((prev) =>
-                        prev.filter((_, i) => i !== idx)
-                      )
-                    }
-                    title="Remove image"
-                    style={{
-                      position: "absolute",
-                      top: 3,
-                      right: 3,
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      backgroundColor: "rgba(0,0,0,0.72)",
-                      color: "#fff",
-                      border: "none",
-                      fontSize: 11,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      lineHeight: 1,
-                      backdropFilter: "blur(2px)",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                    {isVideo ? (
+                      <>
+                        <video
+                          src={getMediaUrl(url)}
+                          preload="metadata"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: 3,
+                            left: 3,
+                            padding: "2px 5px",
+                            borderRadius: 4,
+                            backgroundColor: "rgba(0, 0, 0, 0.72)",
+                            color: "#fff",
+                            fontSize: 9,
+                            fontWeight: 700,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                          }}
+                        >
+                          🎥 Video
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src={getMediaUrl(url)}
+                          alt=""
+                          onClick={() => setAdjustingEditIndex(idx)}
+                          title="Click to adjust & crop"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            cursor: "pointer",
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setAdjustingEditIndex(idx)}
+                          title="Adjust (Zoom, Pan, Crop)"
+                          style={{
+                            position: "absolute",
+                            bottom: 3,
+                            left: 3,
+                            right: 3,
+                            height: 20,
+                            borderRadius: 4,
+                            backgroundColor: "rgba(0, 0, 0, 0.72)",
+                            color: "#fff",
+                            border: "none",
+                            fontSize: 10,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 2,
+                            backdropFilter: "blur(2px)",
+                          }}
+                        >
+                          <span>✂️</span>
+                          <span>Adjust</span>
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditImageUrls((prev) =>
+                          prev.filter((_, i) => i !== idx)
+                        )
+                      }
+                      title="Remove media"
+                      style={{
+                        position: "absolute",
+                        top: 3,
+                        right: 3,
+                        width: 20,
+                        height: 20,
+                        borderRadius: "50%",
+                        backgroundColor: "rgba(0,0,0,0.72)",
+                        color: "#fff",
+                        border: "none",
+                        fontSize: 11,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        lineHeight: 1,
+                        backdropFilter: "blur(2px)",
+                        zIndex: 3,
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          {/* Add image button in edit mode */}
-          <div style={{ marginTop: 8 }}>
+          {/* Add media buttons in edit mode */}
+          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
             <input
               ref={editFileInputRef}
               type="file"
@@ -1209,12 +1276,23 @@ export function PostCard({
               onChange={handleEditFilesSelected}
               style={{ display: "none" }}
             />
+
+            <input
+              ref={editVideoInputRef}
+              type="file"
+              multiple
+              accept="video/mp4,video/webm,video/quicktime,video/x-matroska,video/ogg,video/x-m4v"
+              onChange={handleEditVideoSelected}
+              style={{ display: "none" }}
+            />
+
             <button
               type="button"
               onClick={() => editFileInputRef.current?.click()}
               disabled={
                 isUploadingEditImages || editImageUrls.length >= 10
               }
+              title="Add photos"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -1240,6 +1318,42 @@ export function PostCard({
               </svg>
               <span style={{ color: "var(--text-secondary)" }}>
                 {isUploadingEditImages ? "Uploading..." : "Add photos"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => editVideoInputRef.current?.click()}
+              disabled={
+                isUploadingEditImages || editImageUrls.length >= 10
+              }
+              title="Add video (up to 100MB)"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 8px",
+                borderRadius: 6,
+                border: "1px solid var(--border-color)",
+                background: "var(--bg-hover)",
+                cursor:
+                  editImageUrls.length >= 10 ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#f02849",
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <polygon points="23 7 16 12 23 17 23 7" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
+              <span style={{ color: "var(--text-secondary)" }}>
+                {isUploadingEditImages ? "Uploading..." : "Add video"}
               </span>
             </button>
           </div>

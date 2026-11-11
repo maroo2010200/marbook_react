@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import type { Post, PostVisibility } from "../../types/posts";
 import { mediaApi } from "../../api/media";
-import { getMediaUrl } from "../../utils/media";
+import { getMediaUrl, isVideoMedia } from "../../utils/media";
 import { ImageAdjustModal } from "../ImageAdjustModal";
 import { Avatar } from "../Avatar";
 
@@ -124,7 +124,12 @@ export function PostComposer({
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
   const [adjustingIndex, setAdjustingIndex] = useState<number | null>(null);
+
+  // Drag and drop state
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const dragCounter = useRef(0);
 
   // Auto-adjust modal for newly picked image before upload
   const [pendingAdjust, setPendingAdjust] = useState<{
@@ -185,47 +190,110 @@ export function PostComposer({
     AUDIENCE_OPTIONS.find((opt) => opt.value === visibility) ||
     AUDIENCE_OPTIONS[0];
 
-  const handleFilesSelected = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const processFiles = async (filesList: File[]) => {
+    if (!filesList || filesList.length === 0) return;
 
-    if (imageUrls.length + files.length > 10) {
-      setError("You can attach a maximum of 10 images per post.");
-      e.target.value = "";
+    if (imageUrls.length + filesList.length > 10) {
+      setError("You can attach a maximum of 10 media files per post.");
       return;
     }
 
-    if (files.length === 1) {
-      // Single image selected: immediately open adjuster modal so user can zoom, pan & adjust!
-      const file = files[0];
+    // Size validation: 100MB for video, 10MB for images
+    for (const f of filesList) {
+      const isVideo = f.type.startsWith("video/") || isVideoMedia(f.name);
+      const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (f.size > maxSize) {
+        setError(
+          `"${f.name}" exceeds the ${isVideo ? "100MB video" : "10MB photo"} limit.`
+        );
+        return;
+      }
+    }
+
+    // Single image selected: open adjust modal so user can crop/pan
+    if (
+      filesList.length === 1 &&
+      !filesList[0].type.startsWith("video/") &&
+      !isVideoMedia(filesList[0].name)
+    ) {
+      const file = filesList[0];
       const objectUrl = URL.createObjectURL(file);
       setPendingAdjust({
         file,
         objectUrl,
         fileName: file.name,
       });
-      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
-    // Multiple images: upload them all
+    // Multiple files or video: upload directly
     setIsUploading(true);
     setError(null);
     try {
-      const newUrls = await mediaApi.uploadMultiple(Array.from(files), "posts");
+      const newUrls: string[] = [];
+      for (const file of filesList) {
+        const url = await mediaApi.upload(file, "posts");
+        newUrls.push(url);
+      }
       setImageUrls((prev) => [...prev, ...newUrls]);
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          "Failed to upload image(s). Only JPG, PNG, WebP, and GIF under 10MB are supported."
+          "Failed to upload media. Supported: JPG, PNG, WebP, GIF (up to 10MB) and MP4, WebM, MOV (up to 100MB)."
       );
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    }
+  };
+
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length > 0) {
+      processFiles(files);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleVideoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length > 0) {
+      processFiles(files);
+    }
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  };
+
+  // Drag and Drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDraggingOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    dragCounter.current = 0;
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(Array.from(e.dataTransfer.files));
     }
   };
 
@@ -338,15 +406,55 @@ export function PostComposer({
 
   return (
     <div
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
       style={{
+        position: "relative",
         backgroundColor: "var(--bg-card)",
-        border: "1px solid var(--border-color)",
+        border: isDraggingOver
+          ? "2px dashed var(--primary)"
+          : "1px solid var(--border-color)",
         borderRadius: "var(--radius-lg)",
         padding: "18px 20px",
         marginBottom: 20,
-        boxShadow: "var(--shadow-card)",
+        boxShadow: isDraggingOver
+          ? "0 0 0 4px var(--primary-light)"
+          : "var(--shadow-card)",
+        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
       }}
     >
+      {/* Drag & Drop Overlay */}
+      {isDraggingOver && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(245, 158, 11, 0.08)",
+            borderRadius: "var(--radius-lg)",
+            border: "2px dashed var(--primary)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 40,
+            pointerEvents: "none",
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 8 }}>📷 🎥</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--primary)" }}>
+            Drop photos and videos here
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>
+            Photos up to 10MB • Videos up to 100MB
+          </div>
+        </div>
+      )}
       {/* Header: User avatar & details & Audience Switcher */}
       <div
         style={{
@@ -608,86 +716,126 @@ export function PostComposer({
               borderRadius: 8,
             }}
           >
-            {imageUrls.map((url, idx) => (
-              <div
-                key={idx}
-                style={{
-                  position: "relative",
-                  width: 88,
-                  height: 88,
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  border: "1px solid var(--border-color)",
-                  backgroundColor: "var(--bg-card)",
-                  boxShadow: "var(--shadow-sm)",
-                }}
-              >
-                <img
-                  src={getMediaUrl(url)}
-                  alt={`Attachment ${idx + 1}`}
-                  onClick={() => setAdjustingIndex(idx)}
-                  title="Click to adjust & crop"
+            {imageUrls.map((url, idx) => {
+              const isVideo = isVideoMedia(url);
+              return (
+                <div
+                  key={idx}
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    cursor: "pointer",
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setAdjustingIndex(idx)}
-                  title="Adjust (Zoom, Pan, Crop)"
-                  style={{
-                    position: "absolute",
-                    bottom: 4,
-                    left: 4,
-                    right: 4,
-                    height: 22,
-                    borderRadius: 4,
-                    backgroundColor: "rgba(0, 0, 0, 0.72)",
-                    color: "#fff",
-                    border: "none",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 3,
-                    cursor: "pointer",
-                    backdropFilter: "blur(2px)",
+                    position: "relative",
+                    width: isVideo ? 120 : 88,
+                    height: 88,
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "#000",
+                    boxShadow: "var(--shadow-sm)",
                   }}
                 >
-                  <span>✂️</span>
-                  <span>Adjust</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(idx)}
-                  title="Remove image"
-                  style={{
-                    position: "absolute",
-                    top: 4,
-                    right: 4,
-                    width: 22,
-                    height: 22,
-                    borderRadius: "50%",
-                    backgroundColor: "rgba(0, 0, 0, 0.72)",
-                    color: "#fff",
-                    border: "none",
-                    fontSize: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    lineHeight: 1,
-                    backdropFilter: "blur(2px)",
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+                  {isVideo ? (
+                    <>
+                      <video
+                        src={getMediaUrl(url)}
+                        preload="metadata"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: 4,
+                          left: 4,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          backgroundColor: "rgba(0, 0, 0, 0.72)",
+                          color: "#fff",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 3,
+                          letterSpacing: "0.3px",
+                        }}
+                      >
+                        🎥 Video
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <img
+                        src={getMediaUrl(url)}
+                        alt={`Attachment ${idx + 1}`}
+                        onClick={() => setAdjustingIndex(idx)}
+                        title="Click to adjust & crop"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          cursor: "pointer",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setAdjustingIndex(idx)}
+                        title="Adjust (Zoom, Pan, Crop)"
+                        style={{
+                          position: "absolute",
+                          bottom: 4,
+                          left: 4,
+                          right: 4,
+                          height: 22,
+                          borderRadius: 4,
+                          backgroundColor: "rgba(0, 0, 0, 0.72)",
+                          color: "#fff",
+                          border: "none",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 3,
+                          cursor: "pointer",
+                          backdropFilter: "blur(2px)",
+                        }}
+                      >
+                        <span>✂️</span>
+                        <span>Adjust</span>
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(idx)}
+                    title="Remove media"
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(0, 0, 0, 0.72)",
+                      color: "#fff",
+                      border: "none",
+                      fontSize: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      lineHeight: 1,
+                      backdropFilter: "blur(2px)",
+                      zIndex: 3,
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -719,11 +867,21 @@ export function PostComposer({
               style={{ display: "none" }}
             />
 
+            <input
+              ref={videoInputRef}
+              type="file"
+              multiple
+              accept="video/mp4,video/webm,video/quicktime,video/x-matroska,video/ogg,video/x-m4v"
+              onChange={handleVideoSelected}
+              style={{ display: "none" }}
+            />
+
+            {/* Photo button */}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || isSubmitting || imageUrls.length >= 10}
-              title="Attach photos"
+              title="Attach photos (up to 10MB)"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -756,7 +914,50 @@ export function PostComposer({
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7-3 3.72L9 13l-3 4h12l-4-5z" />
               </svg>
               <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                {isUploading ? "Uploading..." : "Photo/image"}
+                Photo/image
+              </span>
+            </button>
+
+            {/* Video button */}
+            <button
+              type="button"
+              onClick={() => videoInputRef.current?.click()}
+              disabled={isUploading || isSubmitting || imageUrls.length >= 10}
+              title="Attach videos (MP4, WebM, MOV up to 100MB)"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 10px",
+                borderRadius: 6,
+                border: "none",
+                backgroundColor: "transparent",
+                cursor: imageUrls.length >= 10 ? "not-allowed" : "pointer",
+                color: "#f02849",
+                fontWeight: 600,
+                fontSize: 13,
+                transition: "background-color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                if (imageUrls.length < 10)
+                  e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+              }}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "transparent")
+              }
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                style={{ color: "#f02849" }}
+              >
+                <polygon points="23 7 16 12 23 17 23 7" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
+                {isUploading ? "Uploading video..." : "Video"}
               </span>
             </button>
           </div>
