@@ -78,9 +78,10 @@ const CATEGORIES = [
 interface GifPickerProps {
   onSelectGif: (url: string) => void;
   onClose: () => void;
+  style?: React.CSSProperties;
 }
 
-export function GifPicker({ onSelectGif, onClose }: GifPickerProps) {
+export function GifPicker({ onSelectGif, onClose, style }: GifPickerProps) {
   const [activeTab, setActiveTab] = useState<string>("trending");
   const [searchQuery, setSearchQuery] = useState("");
   const [customUrl, setCustomUrl] = useState("");
@@ -159,6 +160,7 @@ export function GifPicker({ onSelectGif, onClose }: GifPickerProps) {
         zIndex: 100,
         overflow: "hidden",
         animation: "dropdownFadeIn 0.15s ease-out",
+        ...style,
       }}
     >
       {/* Header with Search */}
