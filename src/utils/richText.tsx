@@ -254,26 +254,28 @@ export function parseRichText(
 
     const href = url.toLowerCase().startsWith("www.") ? `https://${url}` : url;
 
-    // Render clickable link
-    parts.push(
-      <a
-        key={`link-${startIndex}`}
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          color: linkColor,
-          textDecoration: "underline",
-          wordBreak: "break-all",
-          fontWeight: 500,
-        }}
-        onClick={(e) => e.stopPropagation()}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "#38bdf8")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
-      >
-        {url}
-      </a>
-    );
+    // Only render raw clickable text link if it is NOT already handled by embedded media attachments
+    if (!media) {
+      parts.push(
+        <a
+          key={`link-${startIndex}`}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: linkColor,
+            textDecoration: "underline",
+            wordBreak: "break-all",
+            fontWeight: 500,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#38bdf8")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
+        >
+          {url}
+        </a>
+      );
+    }
 
     lastIndex = startIndex + url.length;
   }
