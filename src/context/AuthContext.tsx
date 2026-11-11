@@ -1,7 +1,9 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -53,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchUser();
   }, [token]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     try {
       const response = await api.post("/Auth/login", { email, password });
       const { token: newToken, user: apiUser } = response.data;
@@ -73,20 +75,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       throw error;
     }
-  };
+  }, []);
 
-  const register = async (data: RegisterData) => {
+  const register = useCallback(async (data: RegisterData) => {
     const response = await api.post("/auth/register", data);
     return response.data;
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
-  };
+  }, []);
 
-  const verify = async (token: string) => {
+  const verify = useCallback(async (token: string) => {
     try {
       // Sends the POST request with the token parameter exactly as your backend expects
       const response = await api.post(
@@ -114,34 +116,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           : (data?.message ?? "Verification failed.");
       throw new Error(message);
     }
-  };
+  }, []);
 
-  const resendVerificationEmail = async (email: string) => {
+  const resendVerificationEmail = useCallback(async (email: string) => {
     const response = await api.post(
       "/auth/resend-verification",
       {},
       { params: { email } },
     );
     return response.data.message ?? "Verification email resent.";
-  };
+  }, []);
 
-  const updateUser = (updatedData: Partial<User>) => {
+  const updateUser = useCallback((updatedData: Partial<User>) => {
     setUser((prev) => (prev ? { ...prev, ...updatedData } : null));
-  };
+  }, []);
 
   const isAuthenticated = token !== null;
 
-  const value: AuthContextValue = {
-    user,
-    token,
-    isAuthenticated,
-    login,
-    register,
-    logout,
-    verify,
-    resendVerificationEmail,
-    updateUser,
-  };
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      token,
+      isAuthenticated,
+      login,
+      register,
+      logout,
+      verify,
+      resendVerificationEmail,
+      updateUser,
+    }),
+    [
+      user,
+      token,
+      isAuthenticated,
+      login,
+      register,
+      logout,
+      verify,
+      resendVerificationEmail,
+      updateUser,
+    ],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -16,7 +16,7 @@ interface CommentsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCommentAdded?: (comment: Comment) => void;
-  onCommentDeleted?: (deletedCount: number) => void;
+  onCommentDeleted?: (deletedCount: number, deletedCommentId?: number) => void;
 }
 
 export function CommentsModal({
