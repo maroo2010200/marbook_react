@@ -1,7 +1,7 @@
 import React, { useId } from "react";
 
 export interface MarshmallowLoaderProps {
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   label?: React.ReactNode;
   sublabel?: React.ReactNode;
   inline?: boolean;
@@ -10,6 +10,7 @@ export interface MarshmallowLoaderProps {
 }
 
 const SIZE_CONFIGS = {
+  xs: { width: 27, height: 22, labelSize: "12px", sublabelSize: "11px", gap: "6px" },
   sm: { width: 44, height: 36, labelSize: "12px", sublabelSize: "11px", gap: "8px" },
   md: { width: 110, height: 90, labelSize: "13px", sublabelSize: "12px", gap: "8px" },
   lg: { width: 170, height: 140, labelSize: "15px", sublabelSize: "13px", gap: "10px" },
