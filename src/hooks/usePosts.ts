@@ -31,6 +31,8 @@ export function usePosts(
 
   const isFetchingRef = useRef(false);
   const loadedPagesRef = useRef<Set<number>>(new Set());
+  const seenCreatedCommentIdsRef = useRef<Set<number>>(new Set());
+  const seenDeletedCommentIdsRef = useRef<Set<number>>(new Set());
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -185,6 +187,34 @@ export function usePosts(
     []
   );
 
+  const recordCommentAdded = useCallback(
+    (postId: number, commentId?: number) => {
+      if (commentId) {
+        if (seenCreatedCommentIdsRef.current.has(commentId)) return;
+        seenCreatedCommentIdsRef.current.add(commentId);
+      }
+      updatePost(postId, (p) => ({
+        ...p,
+        commentsCount: (p.commentsCount ?? 0) + 1,
+      }));
+    },
+    [updatePost]
+  );
+
+  const recordCommentDeleted = useCallback(
+    (postId: number, commentId?: number, deletedCount = 1) => {
+      if (commentId) {
+        if (seenDeletedCommentIdsRef.current.has(commentId)) return;
+        seenDeletedCommentIdsRef.current.add(commentId);
+      }
+      updatePost(postId, (p) => ({
+        ...p,
+        commentsCount: Math.max(0, (p.commentsCount ?? 0) - deletedCount),
+      }));
+    },
+    [updatePost]
+  );
+
   const addPost = useCallback((newPost: Post) => {
     setPosts((prev) => {
       if (prev.some((p) => p.id === newPost.id)) return prev;
@@ -279,19 +309,17 @@ export function usePosts(
     };
 
     const handleLiveCommentCreated = (e: Event) => {
-      const { postId } = (e as CustomEvent<{ postId: number }>).detail || {};
+      const { postId, comment } =
+        (e as CustomEvent<{ postId: number; comment?: { id?: number } }>).detail || {};
       if (!postId) return;
-      setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? { ...p, commentsCount: (p.commentsCount ?? 0) + 1 } : p))
-      );
+      recordCommentAdded(postId, comment?.id);
     };
 
     const handleLiveCommentDeleted = (e: Event) => {
-      const { postId } = (e as CustomEvent<{ postId: number }>).detail || {};
+      const { postId, commentId } =
+        (e as CustomEvent<{ postId: number; commentId?: number }>).detail || {};
       if (!postId) return;
-      setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? { ...p, commentsCount: Math.max(0, (p.commentsCount ?? 1) - 1) } : p))
-      );
+      recordCommentDeleted(postId, commentId, 1);
     };
 
     window.addEventListener("marshmallow:live-post-created", handleLivePostCreated);
@@ -309,7 +337,7 @@ export function usePosts(
       window.removeEventListener("marshmallow:live-comment-created", handleLiveCommentCreated);
       window.removeEventListener("marshmallow:live-comment-deleted", handleLiveCommentDeleted);
     };
-  }, [userId]);
+  }, [userId, recordCommentAdded, recordCommentDeleted]);
 
   return {
     posts,
@@ -317,6 +345,8 @@ export function usePosts(
     addPost,
     removePost,
     createPost,
+    recordCommentAdded,
+    recordCommentDeleted,
     pageNumber,
     loading,
     loadingMore,

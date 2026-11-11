@@ -25,6 +25,10 @@ export default function VerifyPage() {
   const hasCalledVerify = useRef(false);
 
   useEffect(() => {
+    // Check before reading query params so navigating away after verification
+    // never flashes a missing-token error while the route transition commits.
+    if (hasCalledVerify.current) return;
+
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
 
@@ -36,7 +40,6 @@ export default function VerifyPage() {
       return;
     }
 
-    if (hasCalledVerify.current) return;
     hasCalledVerify.current = true;
 
     const attempt = async () => {

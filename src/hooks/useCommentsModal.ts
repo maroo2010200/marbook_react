@@ -56,7 +56,7 @@ interface UseCommentsModalOptions {
   isOpen: boolean;
   post: Post | null;
   onCommentAdded?: (comment: Comment) => void;
-  onCommentDeleted?: (deletedCount: number) => void;
+  onCommentDeleted?: (deletedCount: number, deletedCommentId?: number) => void;
 }
 
 export function useCommentsModal({
@@ -100,6 +100,12 @@ export function useCommentsModal({
   const pageNumberRef = useRef(1);
   const isFetchingRef = useRef(false);
   const loadedPagesRef = useRef<Set<number>>(new Set());
+  const knownCreatedCommentIdsRef = useRef<Set<number>>(new Set());
+  const knownDeletedCommentIdsRef = useRef<Set<number>>(new Set());
+  const onCommentAddedRef = useRef(onCommentAdded);
+  onCommentAddedRef.current = onCommentAdded;
+  const onCommentDeletedRef = useRef(onCommentDeleted);
+  onCommentDeletedRef.current = onCommentDeleted;
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -124,6 +130,8 @@ export function useCommentsModal({
     setLoadingRepliesCommentIds(new Set());
     pageNumberRef.current = 1;
     loadedPagesRef.current = new Set([1]);
+    knownCreatedCommentIdsRef.current.clear();
+    knownDeletedCommentIdsRef.current.clear();
     isFetchingRef.current = true;
 
     try {
@@ -353,6 +361,62 @@ export function useCommentsModal({
     }, 50);
   };
 
+  const commitCreatedComment = useCallback(
+    (comment: Comment, knownAncestors?: number[]) => {
+      if (
+        knownCreatedCommentIdsRef.current.has(comment.id) ||
+        findCommentInTree(commentsRef.current, comment.id)
+      ) {
+        return;
+      }
+      knownCreatedCommentIdsRef.current.add(comment.id);
+
+      setComments((prev) => {
+        if (findCommentInTree(prev, comment.id)) return prev;
+
+        if (!comment.parentCommentId) {
+          const updated = sortTopLevelComments([comment, ...prev]);
+          commentsRef.current = updated;
+          return updated;
+        }
+
+        const ancestorIds =
+          knownAncestors ??
+          getAncestorIds(prev, comment.parentCommentId) ?? [comment.parentCommentId];
+        const updated = addReplyAndIncrementAncestors(
+          prev,
+          comment.parentCommentId,
+          ancestorIds,
+          comment
+        );
+        commentsRef.current = updated;
+        return updated;
+      });
+      onCommentAddedRef.current?.(comment);
+    },
+    []
+  );
+
+  const removeCommentLocally = useCallback((commentId: number) => {
+    if (
+      knownDeletedCommentIdsRef.current.has(commentId) ||
+      !findCommentInTree(commentsRef.current, commentId)
+    ) {
+      return;
+    }
+
+    knownDeletedCommentIdsRef.current.add(commentId);
+    const ancestorIds = getAncestorIds(commentsRef.current, commentId) ?? [];
+    const { updatedList, totalDeleted } = deleteCommentAndDecrementAncestors(
+      commentsRef.current,
+      commentId,
+      ancestorIds
+    );
+    commentsRef.current = updatedList;
+    setComments(updatedList);
+    onCommentDeletedRef.current?.(totalDeleted, commentId);
+  }, []);
+
   const handleCancelReply = () => {
     setReplyingTo(null);
     setNewComment("");
@@ -391,18 +455,11 @@ export function useCommentsModal({
           return next;
         });
 
-        const updated = addReplyAndIncrementAncestors(
-          commentsRef.current,
-          targetParentId,
-          ancestors,
-          createdReply
-        );
-        setComments(updated);
-        commentsRef.current = updated;
+        commitCreatedComment(createdReply, ancestors);
+
         setNewComment("");
         setAttachedImageUrl(null);
         setReplyingTo(null);
-        onCommentAdded?.(createdReply);
         soundEffects.playComment();
       } else {
         const created = await commentsApi.createComment(
@@ -410,12 +467,11 @@ export function useCommentsModal({
           content,
           attachedImageUrl || undefined
         );
-        const updated = sortTopLevelComments([created, ...commentsRef.current]);
-        setComments(updated);
-        commentsRef.current = updated;
+
+        commitCreatedComment(created);
+
         setNewComment("");
         setAttachedImageUrl(null);
-        onCommentAdded?.(created);
         soundEffects.playComment();
       }
     } catch (err: any) {
@@ -453,19 +509,11 @@ export function useCommentsModal({
 
   const handleDeleteComment = useCallback(
     async (commentId: number): Promise<void> => {
-      const ancestorIds = getAncestorIds(commentsRef.current, commentId) ?? [];
       await commentsApi.deleteComment(commentId);
       soundEffects.playDelete();
-      const { updatedList, totalDeleted } = deleteCommentAndDecrementAncestors(
-        commentsRef.current,
-        commentId,
-        ancestorIds
-      );
-      setComments(updatedList);
-      commentsRef.current = updatedList;
-      onCommentDeleted?.(totalDeleted);
+      removeCommentLocally(commentId);
     },
-    [onCommentDeleted]
+    [removeCommentLocally]
   );
 
   const handleTogglePinComment = useCallback(
@@ -491,23 +539,7 @@ export function useCommentsModal({
     const handleLiveCommentCreated = (e: Event) => {
       const data = (e as CustomEvent<{ postId: number; comment: Comment }>).detail;
       if (!data || data.postId !== postId || !data.comment) return;
-      const incoming = data.comment;
-
-      setComments((prev) => {
-        if (findCommentInTree(prev, incoming.id)) return prev;
-
-        if (!incoming.parentCommentId) {
-          const updated = sortTopLevelComments([incoming, ...prev]);
-          commentsRef.current = updated;
-          return updated;
-        }
-
-        const ancestorIds = getAncestorIds(prev, incoming.parentCommentId) ?? [incoming.parentCommentId];
-        const updated = addReplyAndIncrementAncestors(prev, incoming.parentCommentId, ancestorIds, incoming);
-        commentsRef.current = updated;
-        return updated;
-      });
-      onCommentAdded?.(incoming);
+      commitCreatedComment(data.comment);
     };
 
     const handleLiveCommentLiked = (e: Event) => {
@@ -524,15 +556,7 @@ export function useCommentsModal({
     const handleLiveCommentDeleted = (e: Event) => {
       const data = (e as CustomEvent<{ commentId: number; postId: number }>).detail;
       if (!data || data.postId !== postId) return;
-      const ancestorIds = getAncestorIds(commentsRef.current, data.commentId) ?? [];
-      const { updatedList, totalDeleted } = deleteCommentAndDecrementAncestors(
-        commentsRef.current,
-        data.commentId,
-        ancestorIds
-      );
-      setComments(updatedList);
-      commentsRef.current = updatedList;
-      onCommentDeleted?.(totalDeleted);
+      removeCommentLocally(data.commentId);
     };
 
     const handleLiveCommentPinned = (e: Event) => {
@@ -556,7 +580,7 @@ export function useCommentsModal({
       window.removeEventListener("marshmallow:live-comment-deleted", handleLiveCommentDeleted);
       window.removeEventListener("marshmallow:live-comment-pinned", handleLiveCommentPinned);
     };
-  }, [isOpen, postId, onCommentAdded, onCommentDeleted]);
+  }, [isOpen, postId, commitCreatedComment, removeCommentLocally]);
 
   return {
     comments,

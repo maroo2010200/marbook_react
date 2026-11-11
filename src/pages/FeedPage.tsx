@@ -21,6 +21,8 @@ function FeedPage() {
     createPost,
     removePost,
     addPost,
+    recordCommentAdded,
+    recordCommentDeleted,
     loading,
     loadingMore,
     error,
@@ -680,13 +682,9 @@ function FeedPage() {
         post={selectedPostForComments}
         isOpen={isCommentsOpen}
         onClose={handleCloseComments}
-        onCommentAdded={(_newComment) => {
+        onCommentAdded={(newComment) => {
           if (selectedPostForComments) {
-            const postId = selectedPostForComments.id;
-            updatePost(postId, (p) => ({
-              ...p,
-              commentsCount: (p.commentsCount ?? 0) + 1,
-            }));
+            recordCommentAdded(selectedPostForComments.id, newComment.id);
             setSelectedPostForComments((prev) =>
               prev
                 ? { ...prev, commentsCount: (prev.commentsCount ?? 0) + 1 }
@@ -694,13 +692,13 @@ function FeedPage() {
             );
           }
         }}
-        onCommentDeleted={(deletedCount) => {
+        onCommentDeleted={(deletedCount, deletedCommentId) => {
           if (selectedPostForComments) {
-            const postId = selectedPostForComments.id;
-            updatePost(postId, (p) => ({
-              ...p,
-              commentsCount: Math.max(0, (p.commentsCount ?? 0) - deletedCount),
-            }));
+            recordCommentDeleted(
+              selectedPostForComments.id,
+              deletedCommentId,
+              deletedCount
+            );
             setSelectedPostForComments((prev) =>
               prev
                 ? {

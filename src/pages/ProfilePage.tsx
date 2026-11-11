@@ -170,6 +170,8 @@ export function ProfilePage() {
     removePost,
     addPost,
     createPost,
+    recordCommentAdded,
+    recordCommentDeleted,
   } = usePosts(1, 10, {
     userId: (targetUserId && !Number.isNaN(targetUserId) ? targetUserId : profile?.id) ?? undefined,
   });
@@ -1304,22 +1306,18 @@ export function ProfilePage() {
           isOpen={isCommentsOpen}
           post={selectedPostForComments}
           onClose={handleCloseComments}
-          onCommentAdded={(_newComment) => {
-            const pid = selectedPostForComments.id;
-            updatePost(pid, (prev) => ({
-              ...prev,
-              commentsCount: (prev.commentsCount ?? 0) + 1,
-            }));
+          onCommentAdded={(newComment) => {
+            recordCommentAdded(selectedPostForComments.id, newComment.id);
             setSelectedPostForComments((prev) =>
               prev ? { ...prev, commentsCount: (prev.commentsCount ?? 0) + 1 } : null
             );
           }}
-          onCommentDeleted={(deletedCount) => {
-            const pid = selectedPostForComments.id;
-            updatePost(pid, (prev) => ({
-              ...prev,
-              commentsCount: Math.max(0, (prev.commentsCount ?? 0) - deletedCount),
-            }));
+          onCommentDeleted={(deletedCount, deletedCommentId) => {
+            recordCommentDeleted(
+              selectedPostForComments.id,
+              deletedCommentId,
+              deletedCount
+            );
             setSelectedPostForComments((prev) =>
               prev
                 ? {
