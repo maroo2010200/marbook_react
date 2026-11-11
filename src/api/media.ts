@@ -8,7 +8,7 @@ export interface MultipleMediaUploadResponse {
   urls: string[];
 }
 
-export type MediaFolderType = "posts" | "avatars" | "covers" | "comments";
+export type MediaFolderType = "posts" | "avatars" | "covers" | "comments" | "chat";
 
 export const mediaApi = {
   upload: async (

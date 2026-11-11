@@ -1114,3 +1114,26 @@ h1, h2, h3, h4, h5, h6 {
 .navbar-brand-text:hover .marshmallow-logo-icon {
   animation: marshmallowLogoSquish 0.55s ease-in-out;
 }
+
+/* ============================================================
+   CHAT UTILITY KEYFRAMES (Spin & Dropzone FadeIn)
+   ============================================================ */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

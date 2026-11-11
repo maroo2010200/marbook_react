@@ -24,7 +24,12 @@ dist-ssr
 *.sw?
 
 # Local project documentation
+Frontend_explained.md
 FRONTEND_EXPLAINED.md
+Backend_Explained.md
+BACKEND_EXPLAINED.md
+Project_Overview.md
+PROJECT_OVERVIEW.md
 PROJECT_ROADMAP.md
 PROJECT_SUMMARY.md
 AGENTS.md

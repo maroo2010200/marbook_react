@@ -4,11 +4,16 @@ import React from "react";
 export interface MediaDetection {
   mediaUrl: string;
   isGif: boolean;
+  isVideo?: boolean;
+  isFile?: boolean;
+  fileName?: string;
+  fileExt?: string;
 }
 
 export interface ParsedRichText {
   nodes: React.ReactNode[];
   mediaUrls: string[];
+  attachments: MediaDetection[];
   isPureMedia: boolean;
 }
 
@@ -88,6 +93,35 @@ export function extractMediaUrlFromLink(rawUrl: string): MediaDetection | null {
       };
     }
 
+    // 6. Direct Video links
+    if (/\.(mp4|webm|mov|mkv|ogg|m4v)$/i.test(urlWithoutQuery)) {
+      const match = urlWithoutQuery.match(/\/([^/?#]+\.(?:mp4|webm|mov|mkv|ogg|m4v))$/i);
+      return {
+        mediaUrl: cleanUrl,
+        isGif: false,
+        isVideo: true,
+        fileName: match ? decodeURIComponent(match[1]) : "video.mp4",
+        fileExt: "VIDEO",
+      };
+    }
+
+    // 7. Direct Document / Archive / Raw file links
+    if (/\.(pdf|docx?|xlsx?|pptx?|txt|csv|zip|rar|7z)$/i.test(urlWithoutQuery)) {
+      const match = urlWithoutQuery.match(/\/([^/?#]+\.(?:pdf|docx?|xlsx?|pptx?|txt|csv|zip|rar|7z))$/i);
+      const extMatch = urlWithoutQuery.match(/\.([a-z0-9]+)$/i);
+      const rawExt = extMatch ? extMatch[1].toUpperCase() : "FILE";
+      let rawName = match ? decodeURIComponent(match[1]) : `document.${rawExt.toLowerCase()}`;
+      // Strip Cloudinary guid prefix e.g. "a1b2c3d4_document.pdf" -> "document.pdf"
+      rawName = rawName.replace(/^[0-9a-f]{32}_/i, "");
+      return {
+        mediaUrl: cleanUrl,
+        isGif: false,
+        isFile: true,
+        fileName: rawName,
+        fileExt: rawExt,
+      };
+    }
+
     return null;
   } catch {
     return null;
@@ -101,29 +135,48 @@ export function extractMediaUrlFromLink(rawUrl: string): MediaDetection | null {
 export function formatMessageSnippet(content: string): string {
   if (!content) return "";
   const trimmed = content.trim();
-  const isSingleUrl = Boolean(trimmed.match(/^(?:https?:\/\/|www\.)[^\s]+$/i));
-  if (isSingleUrl) {
+
+  // If message is just a single media/file link
+  if (/^(?:https?:\/\/|www\.)[^\s]+$/i.test(trimmed)) {
     const media = extractMediaUrlFromLink(trimmed);
     if (media) {
+      if (media.isVideo) return "Sent a video 🎥";
+      if (media.isFile) return `Sent a file 📄 ${media.fileExt ? `[${media.fileExt}]` : ""}`.trim();
       return media.isGif ? "Sent a GIF 🎬" : "Sent a photo 🖼️";
     }
     return "Sent a link 🔗";
   }
-  return content;
+
+  // If message contains a caption + trailing media/file link
+  const lines = trimmed.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    const lastLine = lines[lines.length - 1];
+    if (/^(?:https?:\/\/|www\.)[^\s]+$/i.test(lastLine)) {
+      const media = extractMediaUrlFromLink(lastLine);
+      if (media) {
+        const caption = lines.slice(0, -1).join(" ");
+        if (media.isVideo) return `${caption} [Video 🎥]`;
+        if (media.isFile) return `${caption} [File 📄]`;
+        return `${caption} [Photo 🖼️]`;
+      }
+    }
+  }
+
+  return trimmed;
 }
 
 /**
  * Parses user text:
  * - Highlights leading @mention (e.g. "@JohnDoe") in blue
  * - Turns all http/https/www links into clickable <a> tags
- * - Detects Giphy/Tenor/image media links for embedded rendering
+ * - Detects Giphy/Tenor/image/video/file media links for embedded rendering
  */
 export function parseRichText(
   content: string,
   options?: { hidePureMediaUrl?: boolean; linkColor?: string }
 ): ParsedRichText {
   if (!content) {
-    return { nodes: [], mediaUrls: [], isPureMedia: false };
+    return { nodes: [], mediaUrls: [], attachments: [], isPureMedia: false };
   }
 
   const linkColor = options?.linkColor || "#0095f6";
@@ -173,6 +226,7 @@ export function parseRichText(
   };
 
   const detectedMediaList: string[] = [];
+  const detectedAttachmentList: MediaDetection[] = [];
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -189,11 +243,12 @@ export function parseRichText(
       parts.push(...renderTextWithMentions(chunk, `txt-${lastIndex}`));
     }
 
-    // Check if this URL is a GIF or image
+    // Check if this URL is a GIF, image, video, or file
     const media = extractMediaUrlFromLink(url);
     if (media) {
       if (!detectedMediaList.includes(media.mediaUrl)) {
         detectedMediaList.push(media.mediaUrl);
+        detectedAttachmentList.push(media);
       }
     }
 
@@ -241,6 +296,7 @@ export function parseRichText(
   return {
     nodes: isPureMedia && hidePureMediaUrl ? [] : parts,
     mediaUrls: detectedMediaList,
+    attachments: detectedAttachmentList,
     isPureMedia,
   };
 }

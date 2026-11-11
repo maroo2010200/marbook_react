@@ -5,11 +5,21 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
 import { chatApi } from "../../api/chat";
+import { mediaApi } from "../../api/media";
 import { Avatar } from "../Avatar";
 import { formatRelativeTime } from "../../utils/time";
 import { parseRichText } from "../../utils/richText";
 import { soundEffects } from "../../utils/soundEffects";
 import { GifPicker } from "./GifPicker";
+import {
+  ChatAttachmentBubble,
+  PaperclipIcon,
+} from "./ChatAttachmentBubble";
+import {
+  ChatAttachmentStaging,
+  type StagedAttachment,
+} from "./ChatAttachmentStaging";
+import { ChatDropzoneOverlay } from "./ChatDropzoneOverlay";
 import type { Message, ConversationSummary } from "../../types/chat";
 
 export function FloatingChatDock() {
@@ -38,6 +48,24 @@ export function FloatingChatDock() {
   const [isSending, setIsSending] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
+  const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const dragDepthRef = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Clean up object URLs on dock close/unmount
+  const stagedAttachmentsRef = useRef(stagedAttachments);
+  useEffect(() => {
+    stagedAttachmentsRef.current = stagedAttachments;
+  }, [stagedAttachments]);
+
+  useEffect(() => {
+    return () => {
+      stagedAttachmentsRef.current.forEach((att) => {
+        if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+      });
+    };
+  }, []);
   const [conversationDetails, setConversationDetails] = useState<ConversationSummary | null>(null);
   const { isMessageSeen } = useConversationReadReceipt(
     floatingConversationId,
@@ -221,14 +249,107 @@ export function FloatingChatDock() {
     }, 2000);
   };
 
+  // Stage files for attachment
+  const stageFiles = (files: FileList | File[]) => {
+    const newStaged: StagedAttachment[] = [];
+    Array.from(files).forEach((file) => {
+      const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+      const isImage =
+        file.type.startsWith("image/") ||
+        [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext);
+      const isVideo =
+        file.type.startsWith("video/") ||
+        [".mp4", ".webm", ".mov", ".mkv", ".ogg", ".m4v"].includes(ext);
+
+      let type: "image" | "video" | "file" = "file";
+      let previewUrl: string | undefined = undefined;
+
+      if (isImage) {
+        type = "image";
+        previewUrl = URL.createObjectURL(file);
+      } else if (isVideo) {
+        type = "video";
+        previewUrl = URL.createObjectURL(file);
+      } else {
+        type = "file";
+      }
+
+      newStaged.push({
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        file,
+        previewUrl,
+        type,
+        name: file.name,
+        size: file.size,
+      });
+    });
+
+    setStagedAttachments((prev) => [...prev, ...newStaged]);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      stageFiles(e.target.files);
+      e.target.value = "";
+    }
+  };
+
+  const removeStagedAttachment = (id: string) => {
+    setStagedAttachments((prev) => {
+      const item = prev.find((a) => a.id === id);
+      if (item?.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+      return prev.filter((a) => a.id !== id);
+    });
+  };
+
+  // Drag and Drop handlers for floating chat dock
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDraggingOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current -= 1;
+    if (dragDepthRef.current <= 0) {
+      dragDepthRef.current = 0;
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = 0;
+    setIsDraggingOver(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      stageFiles(e.dataTransfer.files);
+    }
+  };
+
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = inputText.trim();
-    if (!trimmed || isSending || !floatingConversationId) return;
+    if ((!trimmed && stagedAttachments.length === 0) || isSending || !floatingConversationId) return;
 
+    const currentAttachments = [...stagedAttachments];
     setIsSending(true);
     setInputText("");
+    setStagedAttachments([]);
     inputRef.current?.focus();
 
     try {
@@ -238,17 +359,43 @@ export function FloatingChatDock() {
         sendTyping(floatingConversationId, false).catch(() => {});
       }
 
-      const newMsg = await chatApi.sendMessage(floatingConversationId, trimmed);
-      soundEffects.playChatSent();
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === newMsg.id)) {
-          return prev;
+      if (currentAttachments.length > 0) {
+        let caption = trimmed;
+        for (const staged of currentAttachments) {
+          const uploadedUrl = await mediaApi.upload(staged.file, "chat");
+          const messageContent = caption ? `${caption}\n${uploadedUrl}` : uploadedUrl;
+          caption = "";
+
+          const newMsg = await chatApi.sendMessage(floatingConversationId, messageContent);
+          soundEffects.playChatSent();
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) {
+              return prev;
+            }
+            return [...prev, { ...newMsg, isMine: true }];
+          });
         }
-        return [...prev, { ...newMsg, isMine: true }];
-      });
+
+        currentAttachments.forEach((att) => {
+          if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+        });
+      } else {
+        const newMsg = await chatApi.sendMessage(floatingConversationId, trimmed);
+        soundEffects.playChatSent();
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) {
+            return prev;
+          }
+          return [...prev, { ...newMsg, isMine: true }];
+        });
+      }
+
       refreshConversations().catch(() => {});
+      setTimeout(scrollToBottom, 50);
     } catch (err) {
       console.error("Failed to send floating chat message:", err);
+      if (trimmed) setInputText(trimmed);
+      if (currentAttachments.length > 0) setStagedAttachments(currentAttachments);
     } finally {
       setIsSending(false);
       inputRef.current?.focus();
@@ -296,6 +443,10 @@ export function FloatingChatDock() {
   return (
     <div
       className="floating-chat-dock"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
       style={{
         position: "fixed",
         bottom: 0,
@@ -313,6 +464,12 @@ export function FloatingChatDock() {
         overflow: "hidden",
       }}
     >
+      {/* Drag and Drop Overlay */}
+      <ChatDropzoneOverlay
+        isVisible={isDraggingOver}
+        targetName={otherParticipant?.name}
+      />
+
       {/* Header */}
       <div
         style={{
@@ -482,8 +639,8 @@ export function FloatingChatDock() {
                     </div>
                   )}
 
-                  {/* Embedded Media / GIF if message contains media URLs */}
-                  {!m.isDeleted && parsed.mediaUrls.length > 0 && (
+                  {/* Embedded Attachments (Images, Videos, Files, GIFs) */}
+                  {!m.isDeleted && parsed.attachments && parsed.attachments.length > 0 && (
                     <div
                       style={{
                         marginTop: parsed.nodes.length > 0 ? 6 : 0,
@@ -492,55 +649,14 @@ export function FloatingChatDock() {
                         gap: 4,
                       }}
                     >
-                      {parsed.mediaUrls.map((mUrl, mIdx) => (
-                        <div
-                          key={mIdx}
-                          onClick={() => window.open(mUrl, "_blank", "noopener,noreferrer")}
-                          title="Click to view full size"
-                          style={{
-                            position: "relative",
-                            borderRadius: isPureMedia ? 14 : 10,
-                            overflow: "hidden",
-                            maxWidth: 220,
-                            cursor: "pointer",
-                            backgroundColor: "rgba(0,0,0,0.08)",
-                            border: isPureMedia
-                              ? "1px solid var(--border-color)"
-                              : "none",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                          }}
-                        >
-                          <img
-                            src={mUrl}
-                            alt="Shared GIF"
-                            loading="lazy"
-                            onLoad={scrollToBottom}
-                            style={{
-                              maxWidth: "100%",
-                              maxHeight: 180,
-                              objectFit: "contain",
-                              display: "block",
-                              borderRadius: isPureMedia ? 14 : 10,
-                            }}
-                          />
-                          <span
-                            style={{
-                              position: "absolute",
-                              bottom: 4,
-                              left: 4,
-                              backgroundColor: "rgba(0,0,0,0.72)",
-                              color: "#fff",
-                              fontSize: 9,
-                              fontWeight: 700,
-                              padding: "1px 5px",
-                              borderRadius: 3,
-                              letterSpacing: "0.5px",
-                              pointerEvents: "none",
-                            }}
-                          >
-                            GIF
-                          </span>
-                        </div>
+                      {parsed.attachments.map((att, attIdx) => (
+                        <ChatAttachmentBubble
+                          key={attIdx}
+                          attachment={att}
+                          isMine={isMine}
+                          isPureMedia={isPureMedia}
+                          onMediaLoaded={scrollToBottom}
+                        />
                       ))}
                     </div>
                   )}
@@ -612,6 +728,13 @@ export function FloatingChatDock() {
         />
       )}
 
+      {/* Staged Attachments Preview Bar */}
+      <ChatAttachmentStaging
+        stagedAttachments={stagedAttachments}
+        onRemove={removeStagedAttachment}
+        isUploading={isSending}
+      />
+
       {/* Input Composer */}
       <form
         onSubmit={handleSendMessage}
@@ -625,6 +748,50 @@ export function FloatingChatDock() {
           flexShrink: 0,
         }}
       >
+        {/* Hidden File Input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          onChange={handleFileSelect}
+          style={{ display: "none" }}
+          accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z"
+        />
+
+        {/* Attachment Button */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          onMouseDown={(e) => e.stopPropagation()}
+          title="Attach files or media"
+          aria-label="Attach files or media"
+          disabled={isSending}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: "var(--bg-hover)",
+            color: "var(--text-secondary)",
+            border: "1px solid var(--border-color)",
+            cursor: isSending ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.15s ease",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--border-color)";
+            e.currentTarget.style.color = "var(--primary)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+            e.currentTarget.style.color = "var(--text-secondary)";
+          }}
+        >
+          <PaperclipIcon size={16} />
+        </button>
+
         {/* GIF Picker Toggle Button */}
         <button
           type="button"
@@ -662,7 +829,11 @@ export function FloatingChatDock() {
           type="text"
           value={inputText}
           onChange={handleInputChange}
-          placeholder="Type a message..."
+          placeholder={
+            stagedAttachments.length > 0
+              ? "Add a caption..."
+              : "Type a message..."
+          }
           style={{
             flex: 1,
             minWidth: 0,
@@ -677,35 +848,59 @@ export function FloatingChatDock() {
         />
         <button
           type="submit"
-          disabled={!inputText.trim() || isSending}
+          disabled={
+            (!inputText.trim() && stagedAttachments.length === 0) || isSending
+          }
           style={{
             width: 32,
             height: 32,
             borderRadius: "50%",
-            backgroundColor: inputText.trim() ? "var(--primary)" : "var(--bg-hover)",
-            color: inputText.trim() ? "#ffffff" : "var(--text-tertiary)",
+            backgroundColor:
+              (inputText.trim() || stagedAttachments.length > 0) && !isSending
+                ? "var(--primary)"
+                : "var(--bg-hover)",
+            color:
+              (inputText.trim() || stagedAttachments.length > 0) && !isSending
+                ? "#ffffff"
+                : "var(--text-tertiary)",
             border: "none",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            cursor: inputText.trim() && !isSending ? "pointer" : "default",
+            cursor:
+              (inputText.trim() || stagedAttachments.length > 0) && !isSending
+                ? "pointer"
+                : "default",
             transition: "all 0.15s ease",
             flexShrink: 0,
           }}
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
+          {isSending ? (
+            <div
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: "50%",
+                border: "2px solid rgba(255,255,255,0.3)",
+                borderTopColor: "#fff",
+                animation: "spin 0.8s linear infinite",
+              }}
+            />
+          ) : (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          )}
         </button>
       </form>
     </div>
