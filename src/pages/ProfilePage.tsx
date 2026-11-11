@@ -499,7 +499,8 @@ export function ProfilePage() {
       const url = await mediaApi.upload(croppedFile, "avatars");
       const updated = await usersApi.updateMyProfile({
         name: profile.name,
-        birthdate: profile.birthdate,
+        birthdate: profile.birthdate || "",
+        isBirthdatePrivate: profile.isBirthdatePrivate,
         avatarUrl: url,
       });
       setProfile(updated);
@@ -1197,39 +1198,72 @@ export function ProfilePage() {
               </div>
             </div>
 
-            {/* 3. Birthday */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  backgroundColor: "rgba(245, 158, 11, 0.12)",
-                  color: "#f59e0b",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
-                  flexShrink: 0,
-                }}
-              >
-                🎂
-              </div>
-              <div style={{ minWidth: 0 }}>
+            {/* 3. Birthday (Hidden for visitors if private) */}
+            {(!profile.isBirthdatePrivate || profile.isMe) && (
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <div
                   style={{
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: "var(--text-primary)",
+                    width: 44,
+                    height: 44,
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(245, 158, 11, 0.12)",
+                    color: "#f59e0b",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    flexShrink: 0,
                   }}
                 >
-                  Born {formatBirthdate(profile.birthdate)}
+                  🎂
                 </div>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                  {profile.birthdate ? "Date of birth" : "Not specified"}
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      Born {formatBirthdate(profile.birthdate)}
+                    </span>
+                    {profile.isBirthdatePrivate && profile.isMe && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "1px 8px",
+                          borderRadius: "var(--radius-full)",
+                          backgroundColor: "var(--bg-hover)",
+                          border: "1px solid var(--border-color)",
+                          color: "var(--text-secondary)",
+                          fontSize: 11,
+                          fontWeight: 600,
+                        }}
+                      >
+                        🔒 Only you
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2 }}>
+                    {profile.isBirthdatePrivate && profile.isMe
+                      ? "Private • Only you can see your birthday"
+                      : profile.birthdate
+                      ? "Date of birth"
+                      : "Not specified"}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* 4. Email */}
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>

@@ -30,6 +30,9 @@ export function EditProfileModal({
   const [username, setUsername] = useState(profile.username ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
   const [birthdate, setBirthdate] = useState(profile.birthdate ?? "");
+  const [isBirthdatePrivate, setIsBirthdatePrivate] = useState<boolean>(
+    Boolean(profile.isBirthdatePrivate)
+  );
 
   // Media attachments
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
@@ -75,6 +78,7 @@ export function EditProfileModal({
       setUsername(profile.username ?? "");
       setBio(profile.bio ?? "");
       setBirthdate(profile.birthdate ?? "");
+      setIsBirthdatePrivate(Boolean(profile.isBirthdatePrivate));
       setAvatarUrl(profile.avatarUrl ?? null);
       setCoverUrl(profile.coverUrl ?? null);
       setError(null);
@@ -116,6 +120,7 @@ export function EditProfileModal({
     trimmedUsername !== (profile.username ?? "") ||
     trimmedBio !== (profile.bio ?? "") ||
     birthdate !== (profile.birthdate ?? "") ||
+    isBirthdatePrivate !== Boolean(profile.isBirthdatePrivate) ||
     (avatarUrl ?? null) !== (profile.avatarUrl ?? null) ||
     (coverUrl ?? null) !== (profile.coverUrl ?? null);
 
@@ -211,6 +216,7 @@ export function EditProfileModal({
       username: trimmedUsername.length > 0 ? trimmedUsername : null,
       bio: trimmedBio.length > 0 ? trimmedBio : null,
       birthdate,
+      isBirthdatePrivate,
       avatarUrl: avatarUrl || null,
       coverUrl: coverUrl || null,
     };
@@ -223,6 +229,7 @@ export function EditProfileModal({
         username: updatedProfile.username,
         bio: updatedProfile.bio,
         birthdate: updatedProfile.birthdate,
+        isBirthdatePrivate: updatedProfile.isBirthdatePrivate,
         avatarUrl: updatedProfile.avatarUrl,
         coverUrl: updatedProfile.coverUrl,
       });
@@ -780,6 +787,94 @@ export function EditProfileModal({
                   outline: "none",
                 }}
               />
+
+              {/* Birthday Privacy Option */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 14px",
+                  marginTop: 10,
+                  borderRadius: "var(--radius-md)",
+                  backgroundColor: "var(--bg-hover)",
+                  border: "1px solid var(--border-color)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      Keep birthday private
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11.5,
+                        color: "var(--text-secondary)",
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      Only visible to you on your profile
+                    </div>
+                  </div>
+                </div>
+
+                {/* Toggle switch */}
+                <label
+                  style={{
+                    position: "relative",
+                    display: "inline-block",
+                    width: 44,
+                    height: 24,
+                    cursor: "pointer",
+                    flexShrink: 0,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isBirthdatePrivate}
+                    onChange={(e) => setIsBirthdatePrivate(e.target.checked)}
+                    disabled={isSubmitting}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span
+                    style={{
+                      position: "absolute",
+                      cursor: "pointer",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: isBirthdatePrivate
+                        ? "var(--primary)"
+                        : "var(--border-color)",
+                      transition: "0.2s ease",
+                      borderRadius: 24,
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: "absolute",
+                        content: '""',
+                        height: 18,
+                        width: 18,
+                        left: isBirthdatePrivate ? 23 : 3,
+                        bottom: 3,
+                        backgroundColor: "#ffffff",
+                        transition: "0.2s ease",
+                        borderRadius: "50%",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+                      }}
+                    />
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Action Buttons */}

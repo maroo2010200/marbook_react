@@ -9,7 +9,8 @@ export interface User {
   avatarUrl?: string | null;
   coverUrl?: string | null;
   isEmailVerified: boolean;
-  birthdate: string;
+  birthdate?: string;
+  isBirthdatePrivate?: boolean;
   createdAt: string;
   updatedAt: string;
 }
