@@ -69,6 +69,20 @@ export default function MessagesPage() {
   const dragDepthRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Clean up object URLs on component unmount
+  const stagedAttachmentsRef = useRef(stagedAttachments);
+  useEffect(() => {
+    stagedAttachmentsRef.current = stagedAttachments;
+  }, [stagedAttachments]);
+
+  useEffect(() => {
+    return () => {
+      stagedAttachmentsRef.current.forEach((att) => {
+        if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+      });
+    };
+  }, []);
+
   // GIF Picker & Lightbox
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);

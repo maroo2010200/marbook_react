@@ -135,8 +135,9 @@ export function extractMediaUrlFromLink(rawUrl: string): MediaDetection | null {
 export function formatMessageSnippet(content: string): string {
   if (!content) return "";
   const trimmed = content.trim();
-  const isSingleUrl = Boolean(trimmed.match(/^(?:https?:\/\/|www\.)[^\s]+$/i));
-  if (isSingleUrl) {
+
+  // If message is just a single media/file link
+  if (/^(?:https?:\/\/|www\.)[^\s]+$/i.test(trimmed)) {
     const media = extractMediaUrlFromLink(trimmed);
     if (media) {
       if (media.isVideo) return "Sent a video 🎥";
@@ -145,7 +146,23 @@ export function formatMessageSnippet(content: string): string {
     }
     return "Sent a link 🔗";
   }
-  return content;
+
+  // If message contains a caption + trailing media/file link
+  const lines = trimmed.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    const lastLine = lines[lines.length - 1];
+    if (/^(?:https?:\/\/|www\.)[^\s]+$/i.test(lastLine)) {
+      const media = extractMediaUrlFromLink(lastLine);
+      if (media) {
+        const caption = lines.slice(0, -1).join(" ");
+        if (media.isVideo) return `${caption} [Video 🎥]`;
+        if (media.isFile) return `${caption} [File 📄]`;
+        return `${caption} [Photo 🖼️]`;
+      }
+    }
+  }
+
+  return trimmed;
 }
 
 /**

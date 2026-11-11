@@ -52,6 +52,20 @@ export function FloatingChatDock() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const dragDepthRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Clean up object URLs on dock close/unmount
+  const stagedAttachmentsRef = useRef(stagedAttachments);
+  useEffect(() => {
+    stagedAttachmentsRef.current = stagedAttachments;
+  }, [stagedAttachments]);
+
+  useEffect(() => {
+    return () => {
+      stagedAttachmentsRef.current.forEach((att) => {
+        if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+      });
+    };
+  }, []);
   const [conversationDetails, setConversationDetails] = useState<ConversationSummary | null>(null);
   const { isMessageSeen } = useConversationReadReceipt(
     floatingConversationId,

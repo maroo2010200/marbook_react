@@ -67,3 +67,4 @@ export const ChatDropzoneOverlay: React.FC<ChatDropzoneOverlayProps> = ({
     </div>
   );
 };
+

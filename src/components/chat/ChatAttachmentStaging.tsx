@@ -162,3 +162,4 @@ export const ChatAttachmentStaging: React.FC<ChatAttachmentStagingProps> = ({
     </div>
   );
 };
+
