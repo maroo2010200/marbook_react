@@ -1,9 +1,10 @@
 import { useConversationReadReceipt } from "../../hooks/useConversationReadReceipt";
 import { MessageStatus } from "./MessageStatus";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
+import { useChatMessageActions } from "../../hooks/useChatMessageActions";
 import { chatApi } from "../../api/chat";
 import { mediaApi } from "../../api/media";
 import { Avatar } from "../Avatar";
@@ -12,6 +13,10 @@ import { parseRichText } from "../../utils/richText";
 import { soundEffects } from "../../utils/soundEffects";
 import { GifPicker } from "./GifPicker";
 import { LightboxModal } from "../LightboxModal";
+import { CloseIcon, PinIcon } from "./ChatIcons";
+import { MessageActionsMenu } from "./MessageActionsMenu";
+import { MessageEditBox } from "./MessageEditBox";
+import { DeleteMessageModal } from "./DeleteMessageModal";
 import {
   ChatAttachmentBubble,
   PaperclipIcon,
@@ -450,21 +455,30 @@ export function FloatingChatDock() {
     }
   };
 
-  const handleTogglePinMessage = async (messageId: number) => {
-    if (!floatingConversationId) return;
-    try {
-      const res = await chatApi.togglePinMessage(floatingConversationId, messageId);
-      setMessages((prev) =>
-        prev.map((m) => {
-          if (m.id === messageId) return { ...m, isPinned: res.isPinned };
-          if (res.isPinned) return { ...m, isPinned: false };
-          return m;
-        })
-      );
-    } catch (err) {
-      console.error("Failed to pin message:", err);
-    }
-  };
+  const handleMessageMutated = useCallback(() => {
+    refreshConversations().catch(() => {});
+  }, [refreshConversations]);
+
+  const {
+    editingMessageId,
+    editText,
+    setEditText,
+    isSavingEdit,
+    messageToDeleteId,
+    isDeletingMessage,
+    deleteMessageError,
+    startEdit,
+    cancelEdit,
+    saveEdit,
+    promptDelete,
+    cancelDelete,
+    confirmDelete,
+    togglePin,
+  } = useChatMessageActions({
+    conversationId: floatingConversationId,
+    setMessages,
+    onMutated: handleMessageMutated,
+  });
 
   // If on full messenger or no active floating chat, don't display dock
   if (!floatingConversationId || location.pathname === "/messages") {
@@ -575,14 +589,14 @@ export function FloatingChatDock() {
           <button
             type="button"
             title="Close"
+            aria-label="Close chat"
             onClick={closeFloatingChat}
             style={{
               background: "none",
               border: "none",
               color: "var(--text-secondary)",
               cursor: "pointer",
-              padding: "4px 8px",
-              fontSize: 16,
+              padding: "4px 6px",
               borderRadius: 4,
               display: "flex",
               alignItems: "center",
@@ -599,7 +613,7 @@ export function FloatingChatDock() {
               e.currentTarget.style.color = "var(--text-secondary)";
             }}
           >
-            ✕
+            <CloseIcon size={16} />
           </button>
         </div>
       </div>
@@ -637,7 +651,9 @@ export function FloatingChatDock() {
               }}
               title="Click to view pinned message"
             >
-              <span style={{ fontSize: 12 }}>📌</span>
+              <span style={{ color: "#f59e0b", display: "inline-flex", flexShrink: 0 }}>
+                <PinIcon size={13} filled />
+              </span>
               <strong style={{ color: "var(--text-primary)", flexShrink: 0 }}>Pinned:</strong>
               <span
                 style={{
@@ -653,7 +669,7 @@ export function FloatingChatDock() {
             {currentUser && pinnedMsg.senderUserId === currentUser.id && (
               <button
                 type="button"
-                onClick={() => handleTogglePinMessage(pinnedMsg.id)}
+                onClick={() => togglePin(pinnedMsg.id)}
                 style={{
                   background: "none",
                   border: "none",
@@ -706,6 +722,7 @@ export function FloatingChatDock() {
                 ? m.senderUserId === currentUser.id
                 : m.isMine;
               const isLastMine = isMine && index === lastMineIndex;
+              const isEditingThis = editingMessageId === m.id;
               const parsed = parseRichText(m.content, {
                 hidePureMediaUrl: true,
               });
@@ -724,52 +741,133 @@ export function FloatingChatDock() {
                     alignSelf: isMine ? "flex-end" : "flex-start",
                   }}
                 >
-                  {/* Bubble for text content (if not pure media or if deleted) */}
-                  {(parsed.nodes.length > 0 || m.isDeleted) && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      flexDirection: isMine ? "row-reverse" : "row",
+                      gap: 4,
+                      maxWidth: "100%",
+                    }}
+                  >
                     <div
                       style={{
-                        backgroundColor: isMine ? "var(--primary)" : "var(--bg-card)",
-                        color: isMine ? "#ffffff" : "var(--text-primary)",
-                        padding: "8px 12px",
-                        borderRadius: isMine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                        fontSize: 13,
-                        lineHeight: 1.4,
-                        wordBreak: "break-word",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-                        border: isMine ? "none" : "1px solid var(--border-color)",
-                        fontStyle: m.isDeleted ? "italic" : "normal",
-                        opacity: m.isDeleted ? 0.75 : 1,
-                      }}
-                    >
-                      {parsed.nodes}
-                    </div>
-                  )}
-
-                  {/* Embedded Attachments (Images, Videos, Files, GIFs) */}
-                  {!m.isDeleted && parsed.attachments && parsed.attachments.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: parsed.nodes.length > 0 ? 6 : 0,
                         display: "flex",
                         flexDirection: "column",
-                        gap: 4,
+                        alignItems: isMine ? "flex-end" : "flex-start",
+                        minWidth: 0,
+                        maxWidth: "100%",
                       }}
                     >
-                      {parsed.attachments.map((att, attIdx) => (
-                        <ChatAttachmentBubble
-                          key={attIdx}
-                          attachment={att}
-                          isMine={isMine}
-                          isPureMedia={isPureMedia}
-                          onImageClick={(url) => {
-                            setLightboxImages([url]);
-                            setIsLightboxOpen(true);
+                      {isEditingThis ? (
+                        <div
+                          style={{
+                            backgroundColor: isMine
+                              ? "var(--primary)"
+                              : "var(--bg-card)",
+                            padding: "8px 10px",
+                            borderRadius: isMine
+                              ? "16px 16px 4px 16px"
+                              : "16px 16px 16px 4px",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                            border: isMine
+                              ? "none"
+                              : "1px solid var(--border-color)",
                           }}
-                          onMediaLoaded={scrollToBottom}
-                        />
-                      ))}
+                        >
+                          <MessageEditBox
+                            value={editText}
+                            onChange={setEditText}
+                            onSave={() => saveEdit(m.id)}
+                            onCancel={cancelEdit}
+                            isSaving={isSavingEdit}
+                            isMine={isMine}
+                            compact
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          {/* Bubble for text content (if not pure media or if deleted) */}
+                          {(parsed.nodes.length > 0 || m.isDeleted) && (
+                            <div
+                              style={{
+                                backgroundColor: isMine
+                                  ? "var(--primary)"
+                                  : "var(--bg-card)",
+                                color: isMine ? "#ffffff" : "var(--text-primary)",
+                                padding: "8px 12px",
+                                borderRadius: isMine
+                                  ? "16px 16px 4px 16px"
+                                  : "16px 16px 16px 4px",
+                                fontSize: 13,
+                                lineHeight: 1.4,
+                                wordBreak: "break-word",
+                                boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                                border: isMine
+                                  ? "none"
+                                  : "1px solid var(--border-color)",
+                                fontStyle: m.isDeleted ? "italic" : "normal",
+                                opacity: m.isDeleted ? 0.75 : 1,
+                              }}
+                            >
+                              {parsed.nodes}
+                              {m.updatedAt && !m.isDeleted && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    opacity: 0.75,
+                                    marginLeft: 5,
+                                  }}
+                                >
+                                  (edited)
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Embedded Attachments (Images, Videos, Files, GIFs) */}
+                          {!m.isDeleted &&
+                            parsed.attachments &&
+                            parsed.attachments.length > 0 && (
+                              <div
+                                style={{
+                                  marginTop: parsed.nodes.length > 0 ? 6 : 0,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 4,
+                                }}
+                              >
+                                {parsed.attachments.map((att, attIdx) => (
+                                  <ChatAttachmentBubble
+                                    key={attIdx}
+                                    attachment={att}
+                                    isMine={isMine}
+                                    isPureMedia={isPureMedia}
+                                    onImageClick={(url) => {
+                                      setLightboxImages([url]);
+                                      setIsLightboxOpen(true);
+                                    }}
+                                    onMediaLoaded={scrollToBottom}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                        </>
+                      )}
                     </div>
-                  )}
+
+                    {isMine && !m.isDeleted && !isEditingThis && (
+                      <MessageActionsMenu
+                        compact
+                        align="right"
+                        isPinned={Boolean(m.isPinned)}
+                        canEdit={!isPureMedia}
+                        onTogglePin={() => togglePin(m.id)}
+                        onEdit={() => startEdit(m)}
+                        onDelete={() => promptDelete(m.id)}
+                      />
+                    )}
+                  </div>
 
                   <span
                     style={{
@@ -782,25 +880,13 @@ export function FloatingChatDock() {
                       gap: 4,
                     }}
                   >
-                    {m.isPinned && <span title="Pinned message">📌</span>}
-                    {isMine && !m.isDeleted && (
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePinMessage(m.id)}
-                        title={m.isPinned ? "Unpin message" : "Pin message"}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 0,
-                          fontSize: 10,
-                          color: m.isPinned ? "#f59e0b" : "var(--text-muted)",
-                          opacity: 0.7,
-                          lineHeight: 1,
-                        }}
+                    {m.isPinned && (
+                      <span
+                        title="Pinned message"
+                        style={{ color: "#f59e0b", display: "inline-flex" }}
                       >
-                        📌
-                      </button>
+                        <PinIcon size={11} filled />
+                      </span>
                     )}
                     <span>{formatRelativeTime(m.createdAt)}</span>
                     {isLastMine && (
@@ -1042,6 +1128,14 @@ export function FloatingChatDock() {
           setIsLightboxOpen(false);
           setLightboxImages([]);
         }}
+      />
+
+      <DeleteMessageModal
+        isOpen={messageToDeleteId !== null}
+        isDeleting={isDeletingMessage}
+        error={deleteMessageError}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
       />
     </div>
   );
