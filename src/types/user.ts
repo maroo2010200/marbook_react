@@ -2,7 +2,7 @@ export interface User {
   id: number;
   name: string;
   username: string | null;
-  email: string;
+  email?: string | null;
   bio?: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
@@ -17,7 +17,6 @@ export interface UserProfile {
   id: number;
   name: string;
   username: string | null;
-  email: string;
   bio: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;

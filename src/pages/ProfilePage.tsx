@@ -1195,41 +1195,7 @@ export function ProfilePage() {
               </div>
             )}
 
-            {/* 4. Email */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  backgroundColor: "rgba(16, 185, 129, 0.12)",
-                  color: "#10b981",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
-                  flexShrink: 0,
-                }}
-              >
-                ✉️
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {profile.email}
-                </div>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                  Verified email address
-                </div>
-              </div>
-            </div>
-
-            {/* 5. Network Stats */}
+            {/* 4. Network Stats */}
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <div
                 style={{
