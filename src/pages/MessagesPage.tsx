@@ -21,6 +21,11 @@ import {
   type StagedAttachment,
 } from "../components/chat/ChatAttachmentStaging";
 import { ChatDropzoneOverlay } from "../components/chat/ChatDropzoneOverlay";
+import { useChatMessageActions } from "../hooks/useChatMessageActions";
+import { CloseIcon, PinIcon } from "../components/chat/ChatIcons";
+import { MessageActionsMenu } from "../components/chat/MessageActionsMenu";
+import { MessageEditBox } from "../components/chat/MessageEditBox";
+import { DeleteMessageModal } from "../components/chat/DeleteMessageModal";
 import type { Message, ConversationSummary, TypingEvent } from "../types/chat";
 
 export default function MessagesPage() {
@@ -89,15 +94,25 @@ export default function MessagesPage() {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-  // Editing state: messageId -> boolean
-  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
-  const [editText, setEditText] = useState("");
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-
-  // Delete message confirmation modal state
-  const [messageToDeleteId, setMessageToDeleteId] = useState<number | null>(null);
-  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
-  const [deleteMessageError, setDeleteMessageError] = useState<string | null>(null);
+  const {
+    editingMessageId,
+    editText,
+    setEditText,
+    isSavingEdit,
+    messageToDeleteId,
+    isDeletingMessage,
+    deleteMessageError,
+    startEdit,
+    cancelEdit,
+    saveEdit,
+    promptDelete,
+    cancelDelete,
+    confirmDelete,
+    togglePin,
+  } = useChatMessageActions({
+    conversationId: selectedId,
+    setMessages,
+  });
 
   // Typing state of the other participant
   const [typingUser, setTypingUser] = useState<string | null>(null);
@@ -608,89 +623,6 @@ export default function MessagesPage() {
     }, 1500);
   };
 
-  // Start editing a message
-  const handleStartEdit = (msg: Message) => {
-    setEditingMessageId(msg.id);
-    setEditText(msg.content);
-  };
-
-  // Save edited message
-  const handleSaveEdit = async (messageId: number) => {
-    if (!selectedId || !editText.trim() || isSavingEdit) return;
-
-    setIsSavingEdit(true);
-    try {
-      const updated = await chatApi.editMessage(
-        selectedId,
-        messageId,
-        editText.trim()
-      );
-
-      setMessages((prev) =>
-        prev.map((m) => (m.id === messageId ? { ...updated, isMine: true } : m))
-      );
-      setEditingMessageId(null);
-      setEditText("");
-    } catch (err) {
-      console.error("Failed to edit message:", err);
-    } finally {
-      setIsSavingEdit(false);
-    }
-  };
-
-  // Open delete message confirmation modal
-  const handlePromptDeleteMessage = (messageId: number) => {
-    setDeleteMessageError(null);
-    setMessageToDeleteId(messageId);
-  };
-
-  const handleTogglePinMessage = async (messageId: number) => {
-    if (!selectedId) return;
-    try {
-      const res = await chatApi.togglePinMessage(selectedId, messageId);
-      setMessages((prev) =>
-        prev.map((m) => {
-          if (m.id === messageId) return { ...m, isPinned: res.isPinned };
-          if (res.isPinned) return { ...m, isPinned: false };
-          return m;
-        })
-      );
-    } catch (err) {
-      console.error("Failed to pin message:", err);
-    }
-  };
-
-  // Confirm delete message
-  const handleConfirmDeleteMessage = async () => {
-    if (!selectedId || !messageToDeleteId) return;
-
-    setIsDeletingMessage(true);
-    setDeleteMessageError(null);
-
-    try {
-      await chatApi.deleteMessage(selectedId, messageToDeleteId);
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageToDeleteId
-            ? {
-                ...m,
-                content: "This message was deleted",
-                isDeleted: true,
-                updatedAt: new Date().toISOString(),
-              }
-            : m
-        )
-      );
-      setMessageToDeleteId(null);
-    } catch (err: unknown) {
-      console.error("Failed to delete message:", err);
-      setDeleteMessageError("Failed to delete message. Please try again.");
-    } finally {
-      setIsDeletingMessage(false);
-    }
-  };
-
   // Switch conversation
   const handleSelectConversation = (convId: number) => {
     setSelectedId(convId);
@@ -793,16 +725,19 @@ export default function MessagesPage() {
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
+                title="Clear search"
+                aria-label="Clear search"
                 style={{
                   border: "none",
                   background: "none",
                   color: "var(--text-muted)",
                   cursor: "pointer",
-                  fontSize: 14,
+                  display: "inline-flex",
+                  alignItems: "center",
                   padding: 0,
                 }}
               >
-                ✕
+                <CloseIcon size={14} />
               </button>
             )}
           </div>
@@ -1243,7 +1178,9 @@ export default function MessagesPage() {
                     }}
                     title="Click to view pinned message"
                   >
-                    <span style={{ fontSize: 13 }}>📌</span>
+                    <span style={{ color: "#f59e0b", display: "inline-flex", flexShrink: 0 }}>
+                      <PinIcon size={14} filled />
+                    </span>
                     <strong style={{ color: "var(--text-primary)", flexShrink: 0 }}>Pinned:</strong>
                     <span
                       style={{
@@ -1259,7 +1196,7 @@ export default function MessagesPage() {
                   {(currentUser && pinnedMsg.senderUserId === currentUser.id) && (
                     <button
                       type="button"
-                      onClick={() => handleTogglePinMessage(pinnedMsg.id)}
+                      onClick={() => togglePin(pinnedMsg.id)}
                       style={{
                         background: "none",
                         border: "none",
@@ -1358,6 +1295,11 @@ export default function MessagesPage() {
                     ? msg.senderUserId === currentUser.id
                     : msg.isMine;
                   const isEditingThis = editingMessageId === msg.id;
+                  const parsed = parseRichText(msg.content, {
+                    linkColor: isMine ? "#e0f2fe" : "var(--primary)",
+                    hidePureMediaUrl: true,
+                  });
+                  const isPureMedia = !msg.isDeleted && parsed.isPureMedia;
 
                   return (
                     <div
@@ -1390,14 +1332,6 @@ export default function MessagesPage() {
                         )}
 
                         {/* Message Bubble */}
-                        {(() => {
-                          const parsed = parseRichText(msg.content, {
-                            linkColor: isMine ? "#e0f2fe" : "var(--primary)",
-                            hidePureMediaUrl: true,
-                          });
-                          const isPureMedia = !msg.isDeleted && parsed.isPureMedia;
-
-                          return (
                             <div
                               style={{
                                 padding: isPureMedia
@@ -1439,75 +1373,14 @@ export default function MessagesPage() {
                               }}
                             >
                               {isEditingThis ? (
-                                /* Inline Edit Mode */
-                                <div style={{ minWidth: 220 }}>
-                                  <input
-                                    type="text"
-                                    value={editText}
-                                    onChange={(e) => setEditText(e.target.value)}
-                                    autoFocus
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        handleSaveEdit(msg.id);
-                                      } else if (e.key === "Escape") {
-                                        setEditingMessageId(null);
-                                      }
-                                    }}
-                                    style={{
-                                      width: "100%",
-                                      padding: "6px 10px",
-                                      borderRadius: 6,
-                                      border: "1px solid var(--border-color)",
-                                      backgroundColor: "var(--bg-hover)",
-                                      color: "var(--text-primary)",
-                                      fontSize: 14,
-                                      outline: "none",
-                                      marginBottom: 6,
-                                    }}
-                                  />
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "flex-end",
-                                      gap: 6,
-                                    }}
-                                  >
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditingMessageId(null)}
-                                      style={{
-                                        border: "none",
-                                        background: "none",
-                                        color: isMine ? "#fff" : "var(--text-muted)",
-                                        fontSize: 12,
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSaveEdit(msg.id)}
-                                      disabled={isSavingEdit || !editText.trim()}
-                                      style={{
-                                        backgroundColor: isMine
-                                          ? "#fff"
-                                          : "var(--primary)",
-                                        color: isMine
-                                          ? "var(--primary)"
-                                          : "#fff",
-                                        border: "none",
-                                        borderRadius: 4,
-                                        padding: "3px 8px",
-                                        fontSize: 12,
-                                        fontWeight: 600,
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      Save
-                                    </button>
-                                  </div>
-                                </div>
+                                <MessageEditBox
+                                  value={editText}
+                                  onChange={setEditText}
+                                  onSave={() => saveEdit(msg.id)}
+                                  onCancel={cancelEdit}
+                                  isSaving={isSavingEdit}
+                                  isMine={isMine}
+                                />
                               ) : (
                                 /* Normal Message Content */
                                 <div>
@@ -1577,65 +1450,17 @@ export default function MessagesPage() {
                                 </div>
                               )}
                             </div>
-                          );
-                        })()}
 
-                        {/* Author Actions (Edit / Delete) */}
+                        {/* Author Actions (Three-Dots Menu: Pin / Edit / Delete) */}
                         {isMine && !msg.isDeleted && !isEditingThis && (
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 4,
-                              opacity: 0.8,
-                              transition: "opacity 0.15s ease",
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleTogglePinMessage(msg.id)}
-                              title={msg.isPinned ? "Unpin message" : "Pin message"}
-                              style={{
-                                border: "none",
-                                background: "none",
-                                cursor: "pointer",
-                                color: msg.isPinned ? "#f59e0b" : "var(--text-muted)",
-                                padding: "2px 4px",
-                                fontSize: 13,
-                              }}
-                            >
-                              📌
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleStartEdit(msg)}
-                              title="Edit message"
-                              style={{
-                                border: "none",
-                                background: "none",
-                                cursor: "pointer",
-                                color: "var(--text-muted)",
-                                padding: "2px 4px",
-                                fontSize: 13,
-                              }}
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handlePromptDeleteMessage(msg.id)}
-                              title="Delete message"
-                              style={{
-                                border: "none",
-                                background: "none",
-                                cursor: "pointer",
-                                color: "var(--text-muted)",
-                                padding: "2px 4px",
-                                fontSize: 13,
-                              }}
-                            >
-                              🗑️
-                            </button>
-                          </div>
+                          <MessageActionsMenu
+                            align="right"
+                            isPinned={Boolean(msg.isPinned)}
+                            canEdit={!isPureMedia}
+                            onTogglePin={() => togglePin(msg.id)}
+                            onEdit={() => startEdit(msg)}
+                            onDelete={() => promptDelete(msg.id)}
+                          />
                         )}
                       </div>
 
@@ -1652,7 +1477,14 @@ export default function MessagesPage() {
                           gap: 4,
                         }}
                       >
-                        {msg.isPinned && <span title="Pinned message">📌</span>}
+                        {msg.isPinned && (
+                          <span
+                            title="Pinned message"
+                            style={{ color: "#f59e0b", display: "inline-flex" }}
+                          >
+                            <PinIcon size={11} filled />
+                          </span>
+                        )}
                         {new Date(msg.createdAt).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -1946,119 +1778,13 @@ export default function MessagesPage() {
         }}
       />
 
-      {/* Delete Message Confirmation Modal */}
-      {messageToDeleteId !== null && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "var(--modal-overlay)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: 16,
-          }}
-          onClick={() => !isDeletingMessage && setMessageToDeleteId(null)}
-        >
-          <div
-            style={{
-              backgroundColor: "var(--bg-card)",
-              borderRadius: 10,
-              maxWidth: 420,
-              width: "100%",
-              padding: "24px 24px 20px",
-              boxShadow: "var(--shadow-lg)",
-              border: "1px solid var(--border-color)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3
-              style={{
-                margin: "0 0 8px",
-                fontSize: 18,
-                fontWeight: 700,
-                color: "var(--text-primary)",
-              }}
-            >
-              Delete Message?
-            </h3>
-            <p
-              style={{
-                margin: "0 0 20px",
-                fontSize: 14,
-                color: "var(--text-secondary)",
-                lineHeight: 1.4,
-              }}
-            >
-              Are you sure you want to delete this message? This action cannot be
-              undone and will replace the message with &ldquo;This message was deleted&rdquo;.
-            </p>
-
-            {deleteMessageError && (
-              <div
-                style={{
-                  backgroundColor: "#fde8e8",
-                  color: "#9b1c1c",
-                  padding: "8px 12px",
-                  borderRadius: 6,
-                  fontSize: 13,
-                  marginBottom: 16,
-                }}
-              >
-                {deleteMessageError}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 10,
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setMessageToDeleteId(null)}
-                disabled={isDeletingMessage}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 6,
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-hover)",
-                  color: "var(--text-primary)",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: isDeletingMessage ? "not-allowed" : "pointer",
-                }}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={handleConfirmDeleteMessage}
-                disabled={isDeletingMessage}
-                style={{
-                  padding: "8px 18px",
-                  borderRadius: 6,
-                  border: "none",
-                  backgroundColor: "#e02424",
-                  color: "#fff",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: isDeletingMessage ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                {isDeletingMessage ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteMessageModal
+        isOpen={messageToDeleteId !== null}
+        isDeleting={isDeletingMessage}
+        error={deleteMessageError}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
