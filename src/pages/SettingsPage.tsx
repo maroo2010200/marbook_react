@@ -1078,7 +1078,7 @@ export default function SettingsPage() {
                       marginTop: 2,
                     }}
                   >
-                    Get notified when someone hearts your posts
+                    Get notified when someone roasts your posts
                   </div>
                 </div>
                 <button
