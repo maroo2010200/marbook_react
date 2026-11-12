@@ -378,7 +378,8 @@ export default function SettingsPage() {
                       marginTop: 2,
                     }}
                   >
-                    @{user?.username || "user"} · {user?.email}
+                    @{user?.username || "user"}
+                    {user?.email ? ` · ${user.email}` : ""}
                   </div>
                 </div>
                 <div

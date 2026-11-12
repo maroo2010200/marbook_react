@@ -4,7 +4,7 @@ export interface User {
   id: number;
   name: string;
   username: string | null;
-  email: string;
+  email?: string | null;
   bio?: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
