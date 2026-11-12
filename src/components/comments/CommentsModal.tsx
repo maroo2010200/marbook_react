@@ -73,6 +73,17 @@ export function CommentsModal({
     }
   }, [isOpen, post?.id]);
 
+  // Lock background page scroll while the comments modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
+
   // Handle Escape key to close modal (let LightboxModal handle Escape first when open)
   useEffect(() => {
     if (!isOpen) return;
@@ -114,6 +125,10 @@ export function CommentsModal({
 
   return (
     <div
+      className="comments-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Post and comments by ${post.userName}`}
       style={{
         position: "fixed",
         top: 0,
@@ -124,18 +139,21 @@ export function CommentsModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 1000,
+        zIndex: 1600,
         padding: 16,
       }}
       onClick={onClose}
     >
       <div
+        className="comments-modal-card"
         style={{
           backgroundColor: "var(--bg-card)",
           borderRadius: 12,
           maxWidth: 620,
           width: "100%",
-          maxHeight: "85vh",
+          minWidth: 0,
+          maxHeight: "85dvh",
+          boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
           boxShadow: "var(--shadow-lg)",
@@ -146,18 +164,30 @@ export function CommentsModal({
       >
         {/* Modal Header */}
         <div
+          className="comments-modal-header"
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: 10,
             padding: "14px 18px",
             borderBottom: "1px solid var(--divider)",
+            flexShrink: 0,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
             <Avatar src={post.userAvatarUrl} name={post.userName} size={36} />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "var(--text-primary)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {post.userName}
               </div>
               <small style={{ color: "var(--text-secondary)", fontSize: 11 }}>
@@ -178,6 +208,7 @@ export function CommentsModal({
               color: "var(--text-secondary)",
               padding: "4px 8px",
               lineHeight: 1,
+              flexShrink: 0,
             }}
           >
             ×
@@ -188,9 +219,13 @@ export function CommentsModal({
         <div
           ref={scrollContainerRef}
           onScroll={handleContainerScroll}
+          className="comments-modal-scroll"
           style={{
             flex: 1,
+            minHeight: 0,
             overflowY: "auto",
+            overflowX: "hidden",
+            overscrollBehavior: "contain",
             padding: "16px 20px",
             display: "flex",
             flexDirection: "column",
@@ -214,6 +249,7 @@ export function CommentsModal({
                     color: "var(--text-primary)",
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
+                    overflowWrap: "anywhere",
                   }}
                 >
                   <strong style={{ marginRight: 6 }}>{post.userName}</strong>
@@ -267,6 +303,7 @@ export function CommentsModal({
                             color: "var(--text-primary)",
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word",
+                            overflowWrap: "anywhere",
                           }}
                         >
                           {parseRichText(post.originalPost.content, {

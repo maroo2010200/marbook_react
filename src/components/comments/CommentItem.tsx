@@ -269,6 +269,7 @@ export function CommentItem({
             <form onSubmit={handleSaveEdit} style={{ marginTop: 2 }}>
               <textarea
                 ref={editTextareaRef}
+                className="comment-edit-textarea"
                 value={editContent}
                 onChange={(e) => {
                   setEditContent(e.target.value);
@@ -490,7 +491,7 @@ export function CommentItem({
                   {comment.userName}
                 </Link>
                 {richParsed.nodes.length > 0 && (
-                  <span style={{ wordBreak: "break-word" }}>
+                  <span style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
                     {richParsed.nodes}
                   </span>
                 )}
@@ -519,7 +520,7 @@ export function CommentItem({
                           position: "relative",
                           borderRadius: 8,
                           overflow: "hidden",
-                          maxWidth: depth === 0 ? 260 : 200,
+                          maxWidth: depth === 0 ? "min(260px, 100%)" : "min(200px, 100%)",
                           cursor: "pointer",
                           backgroundColor: "var(--bg-hover)",
                           boxShadow: "var(--shadow-sm)",
@@ -925,6 +926,7 @@ export function CommentItem({
       {/* Nested Replies Tree (when expanded) */}
       {isExpanded && comment.replies && comment.replies.length > 0 && (
         <div
+          className="comment-replies-tree"
           style={{
             position: "relative",
             marginLeft: depth === 0 ? 15 : 11,

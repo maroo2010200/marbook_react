@@ -1263,3 +1263,46 @@ h1, h2, h3, h4, h5, h6 {
     transform: scale(1);
   }
 }
+
+/* ==========================================================================
+   Comments Modal Mobile Responsiveness
+   ========================================================================== */
+@media (max-width: 767px) {
+  .comments-modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .comments-modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 92dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 16px 16px 0 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  .comments-modal-header {
+    padding: 12px 14px !important;
+  }
+
+  .comments-modal-scroll {
+    padding: 12px 14px !important;
+  }
+
+  .comment-input-bar {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .comment-input-field,
+  .comment-edit-textarea {
+    font-size: 16px !important;
+  }
+
+  .comment-replies-tree {
+    margin-left: 8px !important;
+    padding-left: 10px !important;
+  }
+}

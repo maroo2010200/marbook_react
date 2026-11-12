@@ -40,6 +40,7 @@ export function CommentInput({
   if (!isAuthenticated) {
     return (
       <div
+        className="comment-input-bar"
         style={{
           borderTop: "1px solid var(--divider)",
           padding: "16px 18px",
@@ -47,6 +48,8 @@ export function CommentInput({
           textAlign: "center",
           fontSize: 13,
           color: "var(--text-secondary)",
+          flexShrink: 0,
+          boxSizing: "border-box",
         }}
       >
         Please{" "}
@@ -102,10 +105,13 @@ export function CommentInput({
 
   return (
     <div
+      className="comment-input-bar"
       style={{
         borderTop: "1px solid var(--divider)",
         padding: "12px 18px",
         backgroundColor: "var(--bg-card)",
+        flexShrink: 0,
+        boxSizing: "border-box",
       }}
     >
       <form onSubmit={onSubmit} style={{ margin: 0 }}>
@@ -116,6 +122,8 @@ export function CommentInput({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              gap: 8,
+              minWidth: 0,
               padding: "6px 12px",
               backgroundColor: "var(--bg-hover)",
               borderRadius: 8,
@@ -124,7 +132,14 @@ export function CommentInput({
               color: "var(--text-secondary)",
             }}
           >
-            <span>
+            <span
+              style={{
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               Replying to{" "}
               <strong style={{ color: "var(--text-primary)" }}>
                 @{replyingTo.userUsername || replyingTo.userName}
@@ -142,6 +157,7 @@ export function CommentInput({
                 fontWeight: 700,
                 fontSize: 14,
                 padding: "0 4px",
+                flexShrink: 0,
               }}
             >
               ✕
@@ -212,7 +228,7 @@ export function CommentInput({
         )}
 
         {/* Input & Action Buttons Row */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", minWidth: 0 }}>
           {/* Hidden image file input */}
           <input
             ref={fileInputRef}
@@ -239,6 +255,7 @@ export function CommentInput({
               justifyContent: "center",
               borderRadius: "50%",
               transition: "background-color 0.15s ease",
+              flexShrink: 0,
             }}
             onMouseEnter={(e) =>
               (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
@@ -259,6 +276,7 @@ export function CommentInput({
 
           <input
             ref={inputRef}
+            className="comment-input-field"
             type="text"
             placeholder={
               replyingTo
@@ -280,6 +298,9 @@ export function CommentInput({
             disabled={submitting}
             style={{
               flex: 1,
+              minWidth: 0,
+              width: "100%",
+              boxSizing: "border-box",
               border: "1px solid var(--border-color)",
               backgroundColor: "var(--bg-input)",
               color: "var(--text-primary)",
@@ -301,6 +322,8 @@ export function CommentInput({
               fontSize: 14,
               cursor: !canSubmit ? "default" : "pointer",
               padding: "6px 10px",
+              flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
             {submitting
