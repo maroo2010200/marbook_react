@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import type { Post, PostVisibility } from "../../types/posts";
 import { postsApi } from "../../api/posts";
@@ -14,6 +14,7 @@ import {
 import { PostImagesGrid } from "./PostImagesGrid";
 import { LightboxModal } from "../LightboxModal";
 import { ImageAdjustModal } from "../ImageAdjustModal";
+import { RoastsModal } from "../RoastsModal";
 import { Avatar } from "../Avatar";
 import { MarshmallowLoader } from "../MarshmallowLoader";
 import { parseRichText } from "../../utils/richText";
@@ -163,6 +164,14 @@ export function PostCard({
   } | null>(null);
   const [repostFeedback, setRepostFeedback] = useState<string | null>(null);
   const [originalLightboxIndex, setOriginalLightboxIndex] = useState<number | null>(null);
+
+  // Lightbox / Roasts modal state
+  const [isRoastsModalOpen, setIsRoastsModalOpen] = useState(false);
+  const fetchPostLikes = useCallback(
+    (pageNumber: number, pageSize: number) =>
+      postsApi.getLikes(post.id, pageNumber, pageSize),
+    [post.id]
+  );
 
   // Edit mode state
   const [isEditing, setIsEditing] = useState(false);
@@ -1649,64 +1658,79 @@ export function PostCard({
           borderTop: "1px solid var(--divider)",
         }}
       >
-        {/* Flame / Roast Button */}
-        <button
-          type="button"
-          onClick={() => {
-            if (!isLiked) {
-              soundEffects.playRoast();
-            }
-            onToggleLike(post.id);
-          }}
-          aria-label={isLiked ? "Unroast post" : "Roast post"}
-          title={isLiked ? "Unroast" : "Roast"}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            color: isLiked ? "#ff6b35" : "var(--text-secondary)",
-            transition: "transform 0.1s ease",
-          }}
-          onMouseDown={(e) =>
-            (e.currentTarget.style.transform = "scale(0.92)")
-          }
-          onMouseUp={(e) =>
-            (e.currentTarget.style.transform = "scale(1)")
-          }
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill={isLiked ? "#ff6b35" : "none"}
-            stroke={isLiked ? "#ff6b35" : "var(--text-secondary)"}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              transition: "fill 0.15s ease, stroke 0.15s ease, transform 0.15s ease",
-              transform: isLiked ? "scale(1.08)" : "scale(1)",
+        {/* Flame / Roast Button + Clickable Roast Count */}
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (!isLiked) {
+                soundEffects.playRoast();
+              }
+              onToggleLike(post.id);
             }}
+            aria-label={isLiked ? "Unroast post" : "Roast post"}
+            title={isLiked ? "Unroast" : "Roast"}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              display: "flex",
+              alignItems: "center",
+              color: isLiked ? "#ff6b35" : "var(--text-secondary)",
+              transition: "transform 0.1s ease",
+            }}
+            onMouseDown={(e) =>
+              (e.currentTarget.style.transform = "scale(0.92)")
+            }
+            onMouseUp={(e) =>
+              (e.currentTarget.style.transform = "scale(1)")
+            }
           >
-            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z" />
-          </svg>
-          {likesCount > 0 && (
-            <span
-              title={`${likesCount} ${likesCount === 1 ? "roast" : "roasts"}`}
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill={isLiked ? "#ff6b35" : "none"}
+              stroke={isLiked ? "#ff6b35" : "var(--text-secondary)"}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               style={{
+                transition: "fill 0.15s ease, stroke 0.15s ease, transform 0.15s ease",
+                transform: isLiked ? "scale(1.08)" : "scale(1)",
+              }}
+            >
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z" />
+            </svg>
+          </button>
+          {likesCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsRoastsModalOpen(true)}
+              aria-label={`View ${likesCount} ${likesCount === 1 ? "person" : "people"} who roasted this post`}
+              title="See who roasted this post"
+              style={{
+                background: "none",
+                border: "none",
+                padding: "2px 4px",
+                cursor: "pointer",
                 fontSize: 14,
                 fontWeight: 600,
                 color: isLiked ? "#ff6b35" : "var(--text-secondary)",
+                borderRadius: 4,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = "underline";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = "none";
               }}
             >
               {formatCount(likesCount)}
-            </span>
+            </button>
           )}
-        </button>
+        </div>
 
         {/* Comment Button */}
         <button
@@ -2002,6 +2026,14 @@ export function PostCard({
         onConfirm={handlePendingEditAdjustConfirm}
         onSkipCrop={handlePendingEditSkipCrop}
         onCancel={handlePendingEditCancel}
+      />
+
+      <RoastsModal
+        isOpen={isRoastsModalOpen}
+        title="People who roasted this post 🔥"
+        isAuthenticated={Boolean(currentUserId)}
+        onClose={() => setIsRoastsModalOpen(false)}
+        fetchPage={fetchPostLikes}
       />
     </article>
   );

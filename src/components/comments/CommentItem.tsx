@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import type { Comment } from "../../types/comments";
+import { commentsApi } from "../../api/comments";
 import { mediaApi } from "../../api/media";
 import { getMediaUrl, getPostOptimizedUrl } from "../../utils/media";
 import { LightboxModal } from "../LightboxModal";
+import { RoastsModal } from "../RoastsModal";
 import { Avatar } from "../Avatar";
 import { parseRichText } from "../../utils/richText";
 import { soundEffects } from "../../utils/soundEffects";
@@ -63,9 +65,15 @@ export function CommentItem({
   const [editError, setEditError] = useState<string | null>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Lightbox state
+  // Lightbox & Roasts modal state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [isRoastsModalOpen, setIsRoastsModalOpen] = useState(false);
+  const fetchCommentLikes = useCallback(
+    (pageNumber: number, pageSize: number) =>
+      commentsApi.getLikes(comment.id, pageNumber, pageSize),
+    [comment.id]
+  );
 
   // Dropdown menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -592,9 +600,29 @@ export function CommentItem({
               )}
 
               {commentLikeCount > 0 && (
-                <span style={{ fontWeight: 600, color: isCommentLiked ? "#ff6b35" : "inherit" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsRoastsModalOpen(true)}
+                  title="See who roasted this comment"
+                  aria-label={`View ${commentLikeCount} ${commentLikeCount === 1 ? "person" : "people"} who roasted this comment`}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    fontSize: depth === 0 ? 12 : 11,
+                    fontWeight: 600,
+                    color: isCommentLiked ? "#ff6b35" : "inherit",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.textDecoration = "underline";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.textDecoration = "none";
+                  }}
+                >
                   {commentLikeCount} {commentLikeCount === 1 ? "roast" : "roasts"}
-                </span>
+                </button>
               )}
 
               {/* Reply Button */}
@@ -1085,6 +1113,14 @@ export function CommentItem({
           onClose={() => setIsLightboxOpen(false)}
         />
       )}
+
+      <RoastsModal
+        isOpen={isRoastsModalOpen}
+        title="People who roasted this comment 🔥"
+        isAuthenticated={Boolean(currentUserId)}
+        onClose={() => setIsRoastsModalOpen(false)}
+        fetchPage={fetchCommentLikes}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { notificationsApi } from "../api/notifications";
 import { useNotifications } from "../context/NotificationContext";
 import type { NotificationItem } from "../types/notifications";
@@ -409,8 +409,16 @@ export function NotificationsDropdown({
                     : "var(--primary-light)")
                 }
               >
-                {/* Avatar with Action Badge */}
-                <div style={{ position: "relative", flexShrink: 0 }}>
+                {/* Avatar with Action Badge (clickable to actor profile) */}
+                <Link
+                  to={`/profile/${item.actorUserId}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
+                  title={`View ${item.actorName}'s profile`}
+                  style={{ position: "relative", flexShrink: 0, textDecoration: "none" }}
+                >
                   <Avatar src={item.actorAvatarUrl} name={item.actorName} size={44} />
 
                   {/* Overlaid type icon badge */}
@@ -432,7 +440,7 @@ export function NotificationsDropdown({
                   >
                     {config.icon}
                   </div>
-                </div>
+                </Link>
 
                 {/* Content */}
                 <div
@@ -453,7 +461,26 @@ export function NotificationsDropdown({
                       overflowWrap: "break-word",
                     }}
                   >
-                    <strong style={{ fontWeight: 600 }}>{item.actorName}</strong>{" "}
+                    <Link
+                      to={`/profile/${item.actorUserId}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                      }}
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--text-primary)",
+                        textDecoration: "none",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.textDecoration = "underline";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.textDecoration = "none";
+                      }}
+                    >
+                      {item.actorName}
+                    </Link>{" "}
                     <span
                       style={{
                         color: item.isRead

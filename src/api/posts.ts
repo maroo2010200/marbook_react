@@ -1,5 +1,6 @@
 import api from "./api";
 import type { GetPostsParams, PagedResult, Post, PostSearchResult, PostVisibility, RepostResponse } from "../types/posts";
+import type { UserSearchResult } from "../types/user";
 
 export const postsApi = {
   getAll: async (
@@ -89,6 +90,20 @@ export const postsApi = {
     const response = await api.get<PagedResult<PostSearchResult>>("/posts/search", {
       params: { search, pageNumber, pageSize },
     });
+    return response.data;
+  },
+
+  getLikes: async (
+    postId: number,
+    pageNumber = 1,
+    pageSize = 20
+  ): Promise<PagedResult<UserSearchResult>> => {
+    const response = await api.get<PagedResult<UserSearchResult>>(
+      `/posts/${postId}/Likes`,
+      {
+        params: { pageNumber, pageSize },
+      }
+    );
     return response.data;
   },
 };

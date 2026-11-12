@@ -4,6 +4,8 @@ import type {
   CommentsPagedResult,
   ToggleCommentLikeResponse,
 } from "../types/comments";
+import type { PagedResult } from "../types/posts";
+import type { UserSearchResult } from "../types/user";
 
 export const commentsApi = {
   getComments: async (
@@ -91,6 +93,20 @@ export const commentsApi = {
   ): Promise<{ commentId: number; isPinned: boolean }> => {
     const response = await api.post<{ commentId: number; isPinned: boolean }>(
       `/comments/${commentId}/Pin`
+    );
+    return response.data;
+  },
+
+  getLikes: async (
+    commentId: number,
+    pageNumber = 1,
+    pageSize = 20
+  ): Promise<PagedResult<UserSearchResult>> => {
+    const response = await api.get<PagedResult<UserSearchResult>>(
+      `/comments/${commentId}/Likes`,
+      {
+        params: { pageNumber, pageSize },
+      }
     );
     return response.data;
   },
