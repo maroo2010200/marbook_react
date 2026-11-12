@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { notificationsApi } from "../api/notifications";
 import { useNotifications } from "../context/NotificationContext";
 import { MainLayout } from "../components/layout/MainLayout";
@@ -333,8 +333,13 @@ export default function NotificationsPage() {
                     e.currentTarget.style.boxShadow = "var(--shadow-card)";
                   }}
                 >
-                  {/* Avatar with Action Badge */}
-                  <div style={{ position: "relative", flexShrink: 0 }}>
+                  {/* Avatar with Action Badge (clickable to actor profile) */}
+                  <Link
+                    to={`/profile/${item.actorUserId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    title={`View ${item.actorName}'s profile`}
+                    style={{ position: "relative", flexShrink: 0, textDecoration: "none" }}
+                  >
                     <Avatar src={item.actorAvatarUrl} name={item.actorName} size={46} />
                     <div
                       style={{
@@ -355,12 +360,28 @@ export default function NotificationsPage() {
                     >
                       {config.icon}
                     </div>
-                  </div>
+                  </Link>
 
                   {/* Body Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.4 }}>
-                      <strong style={{ fontWeight: 700 }}>{item.actorName}</strong>{" "}
+                      <Link
+                        to={`/profile/${item.actorUserId}`}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          fontWeight: 700,
+                          color: "var(--text-primary)",
+                          textDecoration: "none",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.textDecoration = "underline";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.textDecoration = "none";
+                        }}
+                      >
+                        {item.actorName}
+                      </Link>{" "}
                       <span>{config.text}</span>
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 3 }}>
