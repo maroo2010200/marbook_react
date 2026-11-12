@@ -1,7 +1,7 @@
 import { useConversationReadReceipt } from "../../hooks/useConversationReadReceipt";
 import { MessageStatus } from "./MessageStatus";
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
 import { useChatMessageActions } from "../../hooks/useChatMessageActions";
@@ -487,6 +487,68 @@ export function FloatingChatDock() {
 
   const otherParticipant = conversationDetails?.otherParticipant;
 
+  const headerIdentityContent = (
+    <>
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <Avatar src={otherParticipant?.avatarUrl} name={otherParticipant?.name || "Chat"} size={32} />
+        {otherParticipant && isUserOnline(otherParticipant.id) && (
+          <span
+            title="Active now"
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              width: 9,
+              height: 9,
+              borderRadius: "50%",
+              backgroundColor: "#22c55e",
+              border: "2px solid var(--bg-card)",
+            }}
+          />
+        )}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 700,
+            color: "var(--text-primary)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            lineHeight: 1.2,
+          }}
+        >
+          {otherParticipant?.name || "Conversation"}
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: isOtherTyping ? "var(--primary)" : "var(--text-secondary)",
+            fontWeight: isOtherTyping ? 600 : 400,
+            lineHeight: 1.2,
+            marginTop: 2,
+          }}
+        >
+          {isOtherTyping
+            ? "Typing..."
+            : otherParticipant && isUserOnline(otherParticipant.id)
+            ? "Active now"
+            : otherParticipant?.username
+            ? `@${otherParticipant.username}`
+            : "Offline"}
+        </div>
+      </div>
+    </>
+  );
+
+  const headerIdentityStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 0,
+  };
+
   // Render Full Floating Chat Window
   return (
     <div
@@ -531,58 +593,31 @@ export function FloatingChatDock() {
           flexShrink: 0,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <Avatar src={otherParticipant?.avatarUrl} name={otherParticipant?.name || "Chat"} size={32} />
-            {otherParticipant && isUserOnline(otherParticipant.id) && (
-              <span
-                title="Active now"
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  right: 0,
-                  width: 9,
-                  height: 9,
-                  borderRadius: "50%",
-                  backgroundColor: "#22c55e",
-                  border: "2px solid var(--bg-card)",
-                }}
-              />
-            )}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: "var(--text-primary)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                lineHeight: 1.2,
-              }}
-            >
-              {otherParticipant?.name || "Conversation"}
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: isOtherTyping ? "var(--primary)" : "var(--text-secondary)",
-                fontWeight: isOtherTyping ? 600 : 400,
-                lineHeight: 1.2,
-                marginTop: 2,
-              }}
-            >
-              {isOtherTyping
-                ? "Typing..."
-                : otherParticipant && isUserOnline(otherParticipant.id)
-                ? "Active now"
-                : otherParticipant?.username
-                ? `@${otherParticipant.username}`
-                : "Offline"}
-            </div>
-          </div>
-        </div>
+        {otherParticipant?.id ? (
+          <Link
+            to={`/profile/${otherParticipant.id}`}
+            title={`View ${otherParticipant.name}'s profile`}
+            aria-label={`View ${otherParticipant.name}'s profile`}
+            style={{
+              ...headerIdentityStyle,
+              textDecoration: "none",
+              padding: "4px 6px",
+              marginLeft: -6,
+              borderRadius: 8,
+              transition: "background-color 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
+          >
+            {headerIdentityContent}
+          </Link>
+        ) : (
+          <div style={headerIdentityStyle}>{headerIdentityContent}</div>
+        )}
 
         {/* Header Action Buttons: Close only */}
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
