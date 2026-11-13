@@ -1,6 +1,6 @@
 import { useConversationReadReceipt } from "../../hooks/useConversationReadReceipt";
 import { MessageStatus } from "./MessageStatus";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
@@ -13,7 +13,15 @@ import { parseRichText } from "../../utils/richText";
 import { soundEffects } from "../../utils/soundEffects";
 import { GifPicker } from "./GifPicker";
 import { LightboxModal } from "../LightboxModal";
-import { CloseIcon, PinIcon } from "./ChatIcons";
+import {
+  CloseIcon,
+  PinIcon,
+  SearchIcon,
+  SharedAssetsIcon,
+} from "./ChatIcons";
+import { SharedMediaModal } from "./SharedMediaModal";
+import { ChatSearchBar } from "./ChatSearchBar";
+import { useInChatSearch } from "../../hooks/useInChatSearch";
 import { MessageActionsMenu } from "./MessageActionsMenu";
 import { MessageEditBox } from "./MessageEditBox";
 import { DeleteMessageModal } from "./DeleteMessageModal";
@@ -90,6 +98,18 @@ export function FloatingChatDock() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // In-chat search hook
+  const search = useInChatSearch(messages, "dock-msg-");
+
+  // Shared media drawer state
+  const [isSharedMediaOpen, setIsSharedMediaOpen] = useState(false);
+
+  // Reset search when floating conversation changes
+  useEffect(() => {
+    search.closeSearch();
+    setIsSharedMediaOpen(false);
+  }, [floatingConversationId, search.closeSearch]);
 
   // Find or fetch conversation summary
   useEffect(() => {
@@ -619,8 +639,72 @@ export function FloatingChatDock() {
           <div style={headerIdentityStyle}>{headerIdentityContent}</div>
         )}
 
-        {/* Header Action Buttons: Close only */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        {/* Header Action Buttons: Search, Shared Media, Close */}
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <button
+            type="button"
+            title="Search in conversation"
+            aria-label="Search messages"
+            onClick={() => search.setIsSearching((prev) => !prev)}
+            style={{
+              background: search.isSearching ? "var(--primary)" : "none",
+              border: "none",
+              color: search.isSearching ? "#fff" : "var(--text-secondary)",
+              cursor: "pointer",
+              padding: "4px 6px",
+              borderRadius: 4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              if (!search.isSearching) {
+                e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+                e.currentTarget.style.color = "var(--text-primary)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!search.isSearching) {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "var(--text-secondary)";
+              }
+            }}
+          >
+            <SearchIcon size={14} />
+          </button>
+
+          <button
+            type="button"
+            title="Media, links and docs"
+            aria-label="View media, links and docs"
+            onClick={() => setIsSharedMediaOpen(true)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--text-secondary)",
+              cursor: "pointer",
+              padding: "4px 6px",
+              borderRadius: 4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+              e.currentTarget.style.color = "var(--text-primary)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "var(--text-secondary)";
+            }}
+          >
+            <SharedAssetsIcon size={14} />
+          </button>
+
           <button
             type="button"
             title="Close"
@@ -652,6 +736,13 @@ export function FloatingChatDock() {
           </button>
         </div>
       </div>
+
+      {/* Floating In-Chat Search Bar */}
+      <ChatSearchBar
+        search={search}
+        onOpenSharedMedia={() => setIsSharedMediaOpen(true)}
+        compact
+      />
 
       {/* Pinned Message Banner */}
       {(() => {
@@ -758,8 +849,12 @@ export function FloatingChatDock() {
                 : m.isMine;
               const isLastMine = isMine && index === lastMineIndex;
               const isEditingThis = editingMessageId === m.id;
+              const isCurrentMatch = search.isCurrentMatch(m.id);
+              const isMatchingMsg = search.isMatching(m.id);
               const parsed = parseRichText(m.content, {
                 hidePureMediaUrl: true,
+                searchQuery: search.isSearching ? search.searchQuery : undefined,
+                isCurrentMatch,
               });
               const isPureMedia =
                 !m.isDeleted && parsed.isPureMedia;
@@ -837,7 +932,12 @@ export function FloatingChatDock() {
                                 fontSize: 13,
                                 lineHeight: 1.4,
                                 wordBreak: "break-word",
-                                boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                                boxShadow: isCurrentMatch
+                                  ? "0 0 0 2px #eab308, 0 1px 2px rgba(0,0,0,0.08)"
+                                  : isMatchingMsg
+                                  ? "0 0 0 1.5px rgba(234, 179, 8, 0.45)"
+                                  : "0 1px 2px rgba(0,0,0,0.08)",
+                                transition: "box-shadow 0.2s ease",
                                 border: isMine
                                   ? "none"
                                   : "1px solid var(--border-color)",
@@ -1172,6 +1272,16 @@ export function FloatingChatDock() {
         onClose={cancelDelete}
         onConfirm={confirmDelete}
       />
+
+      {/* Shared Media, Links & Docs Drawer */}
+      {floatingConversationId && (
+        <SharedMediaModal
+          isOpen={isSharedMediaOpen}
+          onClose={() => setIsSharedMediaOpen(false)}
+          conversationId={floatingConversationId}
+          partnerName={otherParticipant?.name || "Chat Partner"}
+        />
+      )}
     </div>
   );
 }

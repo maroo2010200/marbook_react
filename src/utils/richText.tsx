@@ -173,7 +173,12 @@ export function formatMessageSnippet(content: string): string {
  */
 export function parseRichText(
   content: string,
-  options?: { hidePureMediaUrl?: boolean; linkColor?: string }
+  options?: {
+    hidePureMediaUrl?: boolean;
+    linkColor?: string;
+    searchQuery?: string;
+    isCurrentMatch?: boolean;
+  }
 ): ParsedRichText {
   if (!content) {
     return { nodes: [], mediaUrls: [], attachments: [], isPureMedia: false };
@@ -181,6 +186,39 @@ export function parseRichText(
 
   const linkColor = options?.linkColor || "#0095f6";
   const hidePureMediaUrl = options?.hidePureMediaUrl ?? true;
+  const searchQuery = options?.searchQuery?.trim();
+  const isCurrentMatch = options?.isCurrentMatch;
+
+  // Helper to highlight search query matches in plain text
+  const highlightSearch = (text: string, keyPrefix: string): React.ReactNode[] => {
+    if (!searchQuery) return [text];
+    const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escaped})`, "gi");
+    const pieces = text.split(regex);
+    if (pieces.length === 1) return [text];
+
+    return pieces.map((piece, i) => {
+      if (piece.toLowerCase() === searchQuery.toLowerCase()) {
+        return (
+          <mark
+            key={`${keyPrefix}-hl-${i}`}
+            style={{
+              backgroundColor: isCurrentMatch
+                ? "rgba(250, 204, 21, 0.95)"
+                : "rgba(250, 204, 21, 0.45)",
+              color: "#18181b",
+              borderRadius: 3,
+              padding: "0 2px",
+              fontWeight: 600,
+            }}
+          >
+            {piece}
+          </mark>
+        );
+      }
+      return piece;
+    });
+  };
 
   // Helper to parse @mentions inside text and render them as clickable profile links
   const renderTextWithMentions = (textChunk: string, keyPrefix: string): React.ReactNode[] => {
@@ -194,7 +232,8 @@ export function parseRichText(
       const matchStart = mMatch.index;
 
       if (matchStart > curIndex) {
-        result.push(textChunk.substring(curIndex, matchStart));
+        const textBefore = textChunk.substring(curIndex, matchStart);
+        result.push(...highlightSearch(textBefore, `${keyPrefix}-before-${matchStart}`));
       }
 
       result.push(
@@ -219,7 +258,8 @@ export function parseRichText(
     }
 
     if (curIndex < textChunk.length) {
-      result.push(textChunk.substring(curIndex));
+      const textAfter = textChunk.substring(curIndex);
+      result.push(...highlightSearch(textAfter, `${keyPrefix}-after-${curIndex}`));
     }
 
     return result;

@@ -41,13 +41,25 @@ export const chatApi = {
   getMessages: async (
     conversationId: number,
     pageNumber = 1,
-    pageSize = 30
+    pageSize = 30,
+    search?: string
   ): Promise<MessagesPagedResult> => {
     const response = await api.get<MessagesPagedResult>(
       `/conversations/${conversationId}/messages`,
       {
-        params: { pageNumber, pageSize },
+        params: {
+          pageNumber,
+          pageSize,
+          search: search?.trim() || undefined,
+        },
       }
+    );
+    return response.data;
+  },
+
+  getSharedMedia: async (conversationId: number): Promise<Message[]> => {
+    const response = await api.get<Message[]>(
+      `/conversations/${conversationId}/media`
     );
     return response.data;
   },

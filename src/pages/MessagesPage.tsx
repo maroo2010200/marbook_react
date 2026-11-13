@@ -1,6 +1,6 @@
 import { useConversationReadReceipt } from "../hooks/useConversationReadReceipt";
 import { MessageStatus } from "../components/chat/MessageStatus";
-﻿import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useChat } from "../context/ChatContext";
@@ -22,7 +22,15 @@ import {
 } from "../components/chat/ChatAttachmentStaging";
 import { ChatDropzoneOverlay } from "../components/chat/ChatDropzoneOverlay";
 import { useChatMessageActions } from "../hooks/useChatMessageActions";
-import { CloseIcon, PinIcon } from "../components/chat/ChatIcons";
+import { useInChatSearch } from "../hooks/useInChatSearch";
+import {
+  CloseIcon,
+  PinIcon,
+  SearchIcon,
+  SharedAssetsIcon,
+} from "../components/chat/ChatIcons";
+import { SharedMediaModal } from "../components/chat/SharedMediaModal";
+import { ChatSearchBar } from "../components/chat/ChatSearchBar";
 import { MessageActionsMenu } from "../components/chat/MessageActionsMenu";
 import { MessageEditBox } from "../components/chat/MessageEditBox";
 import { DeleteMessageModal } from "../components/chat/DeleteMessageModal";
@@ -64,6 +72,12 @@ export default function MessagesPage() {
 
   // Search filter for sidebar
   const [searchQuery, setSearchQuery] = useState("");
+
+  // In-conversation search hook (encapsulates query, match indexing, and keyboard navigation)
+  const search = useInChatSearch(messages, "msg-");
+
+  // Shared media drawer state
+  const [isSharedMediaOpen, setIsSharedMediaOpen] = useState(false);
 
   // Input & Sending
   const [inputText, setInputText] = useState("");
@@ -148,6 +162,12 @@ export default function MessagesPage() {
       setActiveConversationId(null);
     };
   }, [selectedId, setActiveConversationId]);
+
+  // Reset in-conversation search when active conversation changes
+  useEffect(() => {
+    search.closeSearch();
+    setIsSharedMediaOpen(false);
+  }, [selectedId, search.closeSearch]);
 
   // Find or fetch active conversation summary
   useEffect(() => {
@@ -1118,32 +1138,98 @@ export default function MessagesPage() {
                 </div>
               </div>
 
-              {/* View Profile Action */}
-              <Link
-                to={`/profile/${activeConversation.otherParticipant.id}`}
-                className="messages-header-profile-btn"
-                style={{
-                  textDecoration: "none",
-                  backgroundColor: "var(--bg-hover)",
-                  color: "var(--text-primary)",
-                  padding: "6px 12px",
-                  borderRadius: "var(--radius-full)",
-                  fontSize: 12.5,
-                  fontWeight: 600,
-                  transition: "background-color 0.15s ease",
-                  flexShrink: 0,
-                  whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "var(--border-color)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
-                }
-              >
-                Profile
-              </Link>
+              {/* Header Action Buttons */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                {/* Search In Chat */}
+                <button
+                  type="button"
+                  title="Search in conversation"
+                  aria-label="Search messages in this conversation"
+                  onClick={() => search.setIsSearching((prev) => !prev)}
+                  style={{
+                    backgroundColor: search.isSearching ? "var(--primary)" : "var(--bg-hover)",
+                    color: search.isSearching ? "#fff" : "var(--text-primary)",
+                    border: "none",
+                    borderRadius: "var(--radius-full)",
+                    width: 32,
+                    height: 32,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!search.isSearching) e.currentTarget.style.backgroundColor = "var(--border-color)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!search.isSearching) e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+                  }}
+                >
+                  <SearchIcon size={15} />
+                </button>
+
+                {/* Shared Media, Links & Docs */}
+                <button
+                  type="button"
+                  title="Media, links and docs"
+                  aria-label="View media, links and documents"
+                  onClick={() => setIsSharedMediaOpen(true)}
+                  style={{
+                    backgroundColor: "var(--bg-hover)",
+                    color: "var(--text-primary)",
+                    border: "none",
+                    borderRadius: "var(--radius-full)",
+                    width: 32,
+                    height: 32,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "var(--border-color)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+                  }
+                >
+                  <SharedAssetsIcon size={15} />
+                </button>
+
+                {/* View Profile Action */}
+                <Link
+                  to={`/profile/${activeConversation.otherParticipant.id}`}
+                  className="messages-header-profile-btn"
+                  style={{
+                    textDecoration: "none",
+                    backgroundColor: "var(--bg-hover)",
+                    color: "var(--text-primary)",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-full)",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    transition: "background-color 0.15s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "var(--border-color)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+                  }
+                >
+                  Profile
+                </Link>
+              </div>
             </div>
+
+            {/* In-Chat Search Bar Toolbar */}
+            <ChatSearchBar
+              search={search}
+              onOpenSharedMedia={() => setIsSharedMediaOpen(true)}
+            />
 
             {/* Pinned Message Banner */}
             {(() => {
@@ -1295,9 +1381,13 @@ export default function MessagesPage() {
                     ? msg.senderUserId === currentUser.id
                     : msg.isMine;
                   const isEditingThis = editingMessageId === msg.id;
+                  const isCurrentMatch = search.isCurrentMatch(msg.id);
+                  const isMatchingMsg = search.isMatching(msg.id);
                   const parsed = parseRichText(msg.content, {
                     linkColor: isMine ? "#e0f2fe" : "var(--primary)",
                     hidePureMediaUrl: true,
+                    searchQuery: search.isSearching ? search.searchQuery : undefined,
+                    isCurrentMatch,
                   });
                   const isPureMedia = !msg.isDeleted && parsed.isPureMedia;
 
@@ -1357,9 +1447,14 @@ export default function MessagesPage() {
                                 fontSize: 14,
                                 lineHeight: "20px",
                                 wordBreak: "break-word",
-                                boxShadow: isPureMedia
+                                boxShadow: isCurrentMatch
+                                  ? "0 0 0 2.5px #eab308, var(--shadow-sm)"
+                                  : isMatchingMsg
+                                  ? "0 0 0 1.5px rgba(234, 179, 8, 0.45)"
+                                  : isPureMedia
                                   ? "none"
                                   : "var(--shadow-sm)",
+                                transition: "box-shadow 0.2s ease",
                                 fontStyle: msg.isDeleted ? "italic" : "normal",
                                 border: msg.isDeleted
                                   ? "1px dashed var(--border-color)"
@@ -1785,6 +1880,16 @@ export default function MessagesPage() {
         onClose={cancelDelete}
         onConfirm={confirmDelete}
       />
+
+      {/* Shared Media, Links & Docs Drawer */}
+      {activeConversation && (
+        <SharedMediaModal
+          isOpen={isSharedMediaOpen}
+          onClose={() => setIsSharedMediaOpen(false)}
+          conversationId={activeConversation.id}
+          partnerName={activeConversation.otherParticipant.name}
+        />
+      )}
     </div>
   );
 }
