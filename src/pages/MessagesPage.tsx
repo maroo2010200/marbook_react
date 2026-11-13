@@ -1193,7 +1193,7 @@ export default function MessagesPage() {
                       {pinnedMsg.content.slice(0, 80)}
                     </span>
                   </div>
-                  {(currentUser && pinnedMsg.senderUserId === currentUser.id) && (
+                  {currentUser && (
                     <button
                       type="button"
                       onClick={() => togglePin(pinnedMsg.id)}
@@ -1451,15 +1451,15 @@ export default function MessagesPage() {
                               )}
                             </div>
 
-                        {/* Author Actions (Three-Dots Menu: Pin / Edit / Delete) */}
-                        {isMine && !msg.isDeleted && !isEditingThis && (
+                        {/* Actions (Three-Dots Menu: Pin / Edit / Delete) */}
+                        {!msg.isDeleted && !isEditingThis && (
                           <MessageActionsMenu
-                            align="right"
+                            align={isMine ? "right" : "left"}
                             isPinned={Boolean(msg.isPinned)}
-                            canEdit={!isPureMedia}
+                            canEdit={isMine && !isPureMedia}
                             onTogglePin={() => togglePin(msg.id)}
-                            onEdit={() => startEdit(msg)}
-                            onDelete={() => promptDelete(msg.id)}
+                            onEdit={isMine ? () => startEdit(msg) : undefined}
+                            onDelete={isMine ? () => promptDelete(msg.id) : undefined}
                           />
                         )}
                       </div>
