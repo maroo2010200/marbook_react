@@ -155,21 +155,28 @@ export const ChatAttachmentBubble: React.FC<ChatAttachmentBubbleProps> = ({
 
     return (
       <div
+        onClick={() => {
+          window.open(attachment.mediaUrl, "_blank", "noopener,noreferrer");
+        }}
+        title={`Download ${attachment.fileName || "attachment"}`}
         style={{
           display: "flex",
           alignItems: "center",
           gap: 12,
           padding: "10px 14px",
           borderRadius: 14,
-          backgroundColor: isMine
-            ? "rgba(255, 255, 255, 0.18)"
-            : "var(--bg-hover, rgba(0, 0, 0, 0.05))",
-          border: isMine
-            ? "1px solid rgba(255, 255, 255, 0.28)"
-            : "1px solid var(--border-color)",
+          backgroundColor: isMine ? "var(--bg-card)" : "var(--bg-hover)",
+          border: "1px solid var(--border-color)",
           maxWidth: 300,
           boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
-          backdropFilter: isMine ? "blur(4px)" : "none",
+          cursor: "pointer",
+          transition: "border-color 0.15s ease, transform 0.15s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = "var(--primary)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = "var(--border-color)";
         }}
       >
         {/* Extension Badge */}
@@ -210,7 +217,7 @@ export const ChatAttachmentBubble: React.FC<ChatAttachmentBubbleProps> = ({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
-              color: isMine ? "#ffffff" : "var(--text-primary)",
+              color: "var(--text-primary)",
             }}
             title={attachment.fileName || "File"}
           >
@@ -219,8 +226,7 @@ export const ChatAttachmentBubble: React.FC<ChatAttachmentBubbleProps> = ({
           <span
             style={{
               fontSize: 11,
-              opacity: 0.8,
-              color: isMine ? "rgba(255, 255, 255, 0.85)" : "var(--text-secondary)",
+              color: "var(--text-secondary)",
             }}
           >
             Click to download
@@ -235,27 +241,33 @@ export const ChatAttachmentBubble: React.FC<ChatAttachmentBubbleProps> = ({
           download={attachment.fileName}
           onClick={(e) => e.stopPropagation()}
           title="Download attachment"
+          aria-label={`Download ${attachment.fileName || "file"}`}
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: 32,
-            height: 32,
+            width: 34,
+            height: 34,
             borderRadius: 8,
-            backgroundColor: isMine
-              ? "rgba(255, 255, 255, 0.25)"
-              : "var(--bg-card)",
-            color: isMine ? "#ffffff" : "var(--primary)",
-            border: isMine ? "none" : "1px solid var(--border-color)",
+            backgroundColor: "var(--bg-hover)",
+            color: "var(--text-primary)",
+            border: "1px solid var(--border-color)",
             cursor: "pointer",
             flexShrink: 0,
             textDecoration: "none",
+            boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
             transition: "all 0.15s ease",
           }}
           onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--primary)";
+            e.currentTarget.style.color = "#ffffff";
+            e.currentTarget.style.borderColor = "var(--primary)";
             e.currentTarget.style.transform = "scale(1.08)";
           }}
           onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+            e.currentTarget.style.color = "var(--text-primary)";
+            e.currentTarget.style.borderColor = "var(--border-color)";
             e.currentTarget.style.transform = "scale(1)";
           }}
         >
