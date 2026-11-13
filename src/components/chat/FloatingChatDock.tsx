@@ -34,6 +34,10 @@ import { MessageReactionsDisplay } from "./MessageReactionsDisplay";
 import { ReplyPreviewBanner } from "./ReplyPreviewBanner";
 import { QuotedMessagePreview } from "./QuotedMessagePreview";
 import {
+  replaceEmojiShortcodes,
+  liveReplaceShortcodes,
+} from "../../utils/emojiShortcodes";
+import {
   ChatAttachmentBubble,
   PaperclipIcon,
 } from "./ChatAttachmentBubble";
@@ -306,9 +310,19 @@ export function FloatingChatDock() {
     setConversations,
   ]);
 
-  // Handle typing debounce
+  // Handle typing debounce and live emoji shortcodes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputText(e.target.value);
+    const rawVal = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    const { text, newCursorPos } = liveReplaceShortcodes(rawVal, cursorPos);
+    setInputText(text);
+
+    if (newCursorPos !== null && newCursorPos !== cursorPos && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    }
+
     if (!floatingConversationId) return;
 
     if (!userTypingSendTimeoutRef.current) {
@@ -419,7 +433,7 @@ export function FloatingChatDock() {
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = inputText.trim();
+    const trimmed = replaceEmojiShortcodes(inputText).trim();
     if ((!trimmed && stagedAttachments.length === 0) || isSending || !floatingConversationId) return;
 
     const currentAttachments = [...stagedAttachments];
@@ -544,8 +558,20 @@ export function FloatingChatDock() {
     onMutated: handleMessageMutated,
   });
 
-  // If on full messenger or no active floating chat, don't display dock
-  if (!floatingConversationId || location.pathname === "/messages") {
+  const [isMobileScreen, setIsMobileScreen] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileScreen(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // If on mobile, full messenger, or no active floating chat, don't display dock
+  if (!floatingConversationId || location.pathname === "/messages" || isMobileScreen) {
     return null;
   }
 
@@ -554,7 +580,7 @@ export function FloatingChatDock() {
   const headerIdentityContent = (
     <>
       <div style={{ position: "relative", flexShrink: 0 }}>
-        <Avatar src={otherParticipant?.avatarUrl} name={otherParticipant?.name || "Chat"} size={32} />
+        <Avatar src={otherParticipant?.avatarUrl} name={otherParticipant?.name || "Chat"} size={34} />
         {otherParticipant && isUserOnline(otherParticipant.id) && (
           <span
             title="Active now"
@@ -626,8 +652,8 @@ export function FloatingChatDock() {
         bottom: 0,
         right: "clamp(12px, 3vw, 24px)",
         zIndex: 1000,
-        width: "min(330px, calc(100vw - 24px))",
-        height: 420,
+        width: "min(360px, calc(100vw - 24px))",
+        height: 465,
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border-color)",
         borderBottom: "none",
@@ -929,7 +955,7 @@ export function FloatingChatDock() {
                       style={{
                         display: "flex",
                         flexDirection: "column",
-                        alignItems: isMine ? "flex-end" : "flex-start",
+                        alignItems: "flex-end",
                         minWidth: 0,
                         maxWidth: "100%",
                       }}
@@ -980,12 +1006,12 @@ export function FloatingChatDock() {
                                   ? "var(--primary)"
                                   : "var(--bg-card)",
                                 color: isMine ? "#ffffff" : "var(--text-primary)",
-                                padding: "8px 12px",
+                                padding: "9px 13px",
                                 borderRadius: isMine
                                   ? "16px 16px 4px 16px"
                                   : "16px 16px 16px 4px",
-                                fontSize: 13,
-                                lineHeight: 1.4,
+                                fontSize: 14,
+                                lineHeight: 1.45,
                                 wordBreak: "break-word",
                                 boxShadow: isCurrentMatch
                                   ? "0 0 0 2px #eab308, 0 1px 2px rgba(0,0,0,0.08)"
@@ -1044,6 +1070,18 @@ export function FloatingChatDock() {
                             )}
                         </>
                       )}
+
+                      {/* Message Reactions Badges (anchored to bottom-right of bubble) */}
+                      {!m.isDeleted && (
+                        <MessageReactionsDisplay
+                          reactions={m.reactions}
+                          currentUserId={currentUser?.id}
+                          isMine={isMine}
+                          align="right"
+                          onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
+                          compact
+                        />
+                      )}
                     </div>
 
                     {!m.isDeleted && !isEditingThis && (
@@ -1063,17 +1101,6 @@ export function FloatingChatDock() {
                       />
                     )}
                   </div>
-
-                  {/* Message Reactions Badges */}
-                  {!m.isDeleted && (
-                    <MessageReactionsDisplay
-                      reactions={m.reactions}
-                      currentUserId={currentUser?.id}
-                      isMine={isMine}
-                      onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
-                      compact
-                    />
-                  )}
 
                   <span
                     style={{
@@ -1334,8 +1361,8 @@ export function FloatingChatDock() {
           style={{
             flex: 1,
             minWidth: 0,
-            padding: "8px 12px",
-            fontSize: 13,
+            padding: "9px 12px",
+            fontSize: 14,
             backgroundColor: "var(--bg-hover)",
             color: "var(--text-primary)",
             border: "1px solid var(--border-color)",
