@@ -28,9 +28,14 @@ import {
   PinIcon,
   SearchIcon,
   SharedAssetsIcon,
+  SmileIcon,
 } from "../components/chat/ChatIcons";
 import { SharedMediaModal } from "../components/chat/SharedMediaModal";
 import { ChatSearchBar } from "../components/chat/ChatSearchBar";
+import {
+  EmojiPickerPopover,
+  insertEmojiAtCursor,
+} from "../components/chat/EmojiPickerPopover";
 import { MessageActionsMenu } from "../components/chat/MessageActionsMenu";
 import { MessageEditBox } from "../components/chat/MessageEditBox";
 import { DeleteMessageModal } from "../components/chat/DeleteMessageModal";
@@ -103,10 +108,22 @@ export default function MessagesPage() {
     };
   }, []);
 
-  // GIF Picker & Lightbox
+  // GIF Picker & Emoji Picker & Lightbox
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  const handleSelectEmoji = useCallback((emoji: string) => {
+    const { newText, newCursorPos } = insertEmojiAtCursor(inputText, emoji, inputRef.current);
+    setInputText(newText);
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
+  }, [inputText]);
 
   const {
     editingMessageId,
@@ -1686,6 +1703,15 @@ export default function MessagesPage() {
                 />
               )}
 
+              {/* Emoji Picker Popover */}
+              {isEmojiPickerOpen && (
+                <EmojiPickerPopover
+                  isOpen={isEmojiPickerOpen}
+                  onClose={() => setIsEmojiPickerOpen(false)}
+                  onSelectEmoji={handleSelectEmoji}
+                />
+              )}
+
               {/* Hidden File Input for Paperclip Attachments */}
               <input
                 ref={fileInputRef}
@@ -1763,7 +1789,10 @@ export default function MessagesPage() {
               {/* GIF Picker Toggle Button */}
               <button
                 type="button"
-                onClick={() => setIsGifPickerOpen((prev) => !prev)}
+                onClick={() => {
+                  setIsGifPickerOpen((prev) => !prev);
+                  if (isEmojiPickerOpen) setIsEmojiPickerOpen(false);
+                }}
                 title="Choose a GIF"
                 aria-label="Choose a GIF"
                 style={{
@@ -1799,6 +1828,47 @@ export default function MessagesPage() {
                 }}
               >
                 GIF
+              </button>
+
+              {/* Emoji Picker Toggle Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEmojiPickerOpen((prev) => !prev);
+                  if (isGifPickerOpen) setIsGifPickerOpen(false);
+                }}
+                title="Choose an emoji"
+                aria-label="Choose an emoji"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 19,
+                  backgroundColor: isEmojiPickerOpen
+                    ? "var(--primary-light)"
+                    : "var(--bg-hover)",
+                  color: isEmojiPickerOpen
+                    ? "var(--primary)"
+                    : "var(--text-secondary)",
+                  border: "1px solid var(--border-color)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s ease",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isEmojiPickerOpen) {
+                    e.currentTarget.style.backgroundColor = "var(--border-color)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isEmojiPickerOpen) {
+                    e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+                  }
+                }}
+              >
+                <SmileIcon size={19} />
               </button>
 
               {/* Send Button */}

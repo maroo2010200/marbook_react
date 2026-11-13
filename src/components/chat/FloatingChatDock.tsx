@@ -18,9 +18,14 @@ import {
   PinIcon,
   SearchIcon,
   SharedAssetsIcon,
+  SmileIcon,
 } from "./ChatIcons";
 import { SharedMediaModal } from "./SharedMediaModal";
 import { ChatSearchBar } from "./ChatSearchBar";
+import {
+  EmojiPickerPopover,
+  insertEmojiAtCursor,
+} from "./EmojiPickerPopover";
 import { useInChatSearch } from "../../hooks/useInChatSearch";
 import { MessageActionsMenu } from "./MessageActionsMenu";
 import { MessageEditBox } from "./MessageEditBox";
@@ -63,12 +68,24 @@ export function FloatingChatDock() {
   const [isSending, setIsSending] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const dragDepthRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleSelectEmoji = useCallback((emoji: string) => {
+    const { newText, newCursorPos } = insertEmojiAtCursor(inputText, emoji, inputRef.current);
+    setInputText(newText);
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
+  }, [inputText]);
 
   // Clean up object URLs on dock close/unmount
   const stagedAttachmentsRef = useRef(stagedAttachments);
@@ -1079,6 +1096,29 @@ export function FloatingChatDock() {
         />
       )}
 
+      {/* Emoji Picker Popover */}
+      {isEmojiPickerOpen && (
+        <EmojiPickerPopover
+          isOpen={isEmojiPickerOpen}
+          onClose={() => setIsEmojiPickerOpen(false)}
+          onSelectEmoji={handleSelectEmoji}
+          style={{
+            position: "absolute",
+            bottom: 49,
+            left: 0,
+            right: 0,
+            width: "100%",
+            height: 320,
+            maxHeight: 320,
+            borderRadius: "12px 12px 0 0",
+            borderLeft: "none",
+            borderRight: "none",
+            boxShadow: "0 -6px 20px rgba(0,0,0,0.2)",
+            zIndex: 100,
+          }}
+        />
+      )}
+
       {/* Staged Attachments Preview Bar */}
       <ChatAttachmentStaging
         stagedAttachments={stagedAttachments}
@@ -1146,7 +1186,10 @@ export function FloatingChatDock() {
         {/* GIF Picker Toggle Button */}
         <button
           type="button"
-          onClick={() => setIsGifPickerOpen((prev) => !prev)}
+          onClick={() => {
+            setIsGifPickerOpen((prev) => !prev);
+            if (isEmojiPickerOpen) setIsEmojiPickerOpen(false);
+          }}
           onMouseDown={(e) => e.stopPropagation()}
           title="Choose a GIF"
           aria-label="Choose a GIF"
@@ -1173,6 +1216,48 @@ export function FloatingChatDock() {
           }}
         >
           GIF
+        </button>
+
+        {/* Emoji Picker Toggle Button */}
+        <button
+          type="button"
+          onClick={() => {
+            setIsEmojiPickerOpen((prev) => !prev);
+            if (isGifPickerOpen) setIsGifPickerOpen(false);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          title="Choose an emoji"
+          aria-label="Choose an emoji"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: isEmojiPickerOpen
+              ? "var(--primary-light)"
+              : "var(--bg-hover)",
+            color: isEmojiPickerOpen
+              ? "var(--primary)"
+              : "var(--text-secondary)",
+            border: "1px solid var(--border-color)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.15s ease",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            if (!isEmojiPickerOpen) {
+              e.currentTarget.style.backgroundColor = "var(--border-color)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isEmojiPickerOpen) {
+              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+            }
+          }}
+        >
+          <SmileIcon size={16} />
         </button>
 
         <input

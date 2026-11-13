@@ -1340,4 +1340,16 @@ h1, h2, h3, h4, h5, h6 {
     padding: 6px 10px !important;
     gap: 6px !important;
   }
+
+  /* Emoji Picker Mobile Popover */
+  .emoji-picker-popover {
+    position: fixed !important;
+    inset: auto 8px calc(62px + env(safe-area-inset-bottom, 0px)) 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    height: 330px !important;
+    border-radius: 16px !important;
+    z-index: 2200 !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4) !important;
+  }
 }
