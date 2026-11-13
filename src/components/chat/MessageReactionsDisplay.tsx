@@ -5,6 +5,7 @@ interface MessageReactionsDisplayProps {
   reactions?: MessageReactionItem[];
   currentUserId?: number;
   isMine?: boolean;
+  align?: "left" | "right";
   onToggleReaction: (emoji: string) => void;
   compact?: boolean;
 }
@@ -19,7 +20,7 @@ interface GroupedReaction {
 export function MessageReactionsDisplay({
   reactions = [],
   currentUserId,
-  isMine = false,
+  align = "right",
   onToggleReaction,
   compact = false,
 }: MessageReactionsDisplayProps) {
@@ -63,7 +64,7 @@ export function MessageReactionsDisplay({
         marginTop: -6,
         marginBottom: 2,
         zIndex: 2,
-        alignSelf: isMine ? "flex-end" : "flex-start",
+        alignSelf: align === "left" ? "flex-start" : "flex-end",
         padding: "0 4px",
       }}
     >

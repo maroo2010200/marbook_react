@@ -472,7 +472,11 @@ export function ProfilePage() {
     setIsStartingChat(true);
     try {
       const conv = await chatApi.startConversation(profile.id);
-      openFloatingChat(conv.id);
+      if (typeof window !== "undefined" && window.innerWidth < 768) {
+        navigate(`/messages?conversationId=${conv.id}`);
+      } else {
+        openFloatingChat(conv.id);
+      }
     } catch (err) {
       console.error("Failed to start conversation:", err);
     } finally {

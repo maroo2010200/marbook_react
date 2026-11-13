@@ -42,6 +42,10 @@ import { DeleteMessageModal } from "../components/chat/DeleteMessageModal";
 import { MessageReactionsDisplay } from "../components/chat/MessageReactionsDisplay";
 import { ReplyPreviewBanner } from "../components/chat/ReplyPreviewBanner";
 import { QuotedMessagePreview } from "../components/chat/QuotedMessagePreview";
+import {
+  replaceEmojiShortcodes,
+  liveReplaceShortcodes,
+} from "../utils/emojiShortcodes";
 import type { Message, ConversationSummary, TypingEvent } from "../types/chat";
 
 export default function MessagesPage() {
@@ -533,15 +537,15 @@ export default function MessagesPage() {
   // Handle Send Message (supports text and multi-file attachments)
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    const textToSend = replaceEmojiShortcodes(inputText).trim();
     if (
       !selectedId ||
-      (!inputText.trim() && stagedAttachments.length === 0) ||
+      (!textToSend && stagedAttachments.length === 0) ||
       isSending
     ) {
       return;
     }
 
-    const textToSend = inputText.trim();
     const currentAttachments = [...stagedAttachments];
     const replyId = replyingToMessage?.id;
     cancelReply();
@@ -669,9 +673,18 @@ export default function MessagesPage() {
     }
   };
 
-  // Typing event handler with debouncing
+  // Typing event handler with debouncing and live emoji shortcodes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputText(e.target.value);
+    const rawVal = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    const { text, newCursorPos } = liveReplaceShortcodes(rawVal, cursorPos);
+    setInputText(text);
+
+    if (newCursorPos !== null && newCursorPos !== cursorPos && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    }
 
     if (!selectedId) return;
 
@@ -1457,148 +1470,179 @@ export default function MessagesPage() {
                       >
                         {/* Other User Avatar snippet */}
                         {!isMine && (
-                          <Avatar
-                            src={msg.senderAvatarUrl}
-                            name={msg.senderName}
-                            size={28}
-                            fontSize={11}
-                          />
+                          <div
+                            style={{
+                              alignSelf: "flex-end",
+                              marginBottom:
+                                msg.reactions && msg.reactions.length > 0 ? 16 : 0,
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Avatar
+                              src={msg.senderAvatarUrl}
+                              name={msg.senderName}
+                              size={32}
+                              fontSize={12}
+                            />
+                          </div>
                         )}
 
-                        {/* Message Bubble */}
-                            <div
-                              className={flashingMessageId === msg.id ? "flash-highlight" : undefined}
-                              style={{
-                                padding: isPureMedia
-                                  ? "0"
-                                  : msg.isDeleted
-                                  ? "8px 14px"
-                                  : "10px 16px",
-                                borderRadius: isMine
-                                  ? "18px 18px 4px 18px"
-                                  : "18px 18px 18px 4px",
-                                backgroundColor: msg.isDeleted
-                                  ? "var(--bg-hover)"
-                                  : isPureMedia
-                                  ? "transparent"
-                                  : isMine
-                                  ? "var(--primary)"
-                                  : "var(--bg-card)",
-                                color: msg.isDeleted
-                                  ? "var(--text-muted)"
-                                  : isMine
-                                  ? "#fff"
-                                  : "var(--text-primary)",
-                                fontSize: 14,
-                                lineHeight: "20px",
-                                wordBreak: "break-word",
-                                boxShadow: isCurrentMatch
-                                  ? "0 0 0 2.5px #eab308, var(--shadow-sm)"
-                                  : isMatchingMsg
-                                  ? "0 0 0 1.5px rgba(234, 179, 8, 0.45)"
-                                  : isPureMedia
-                                  ? "none"
-                                  : "var(--shadow-sm)",
-                                transition: "box-shadow 0.2s ease",
-                                fontStyle: msg.isDeleted ? "italic" : "normal",
-                                border: msg.isDeleted
-                                  ? "1px dashed var(--border-color)"
-                                  : isPureMedia
-                                  ? "none"
-                                  : !isMine
-                                  ? "1px solid var(--border-color)"
-                                  : "none",
-                                position: "relative",
-                                maxWidth: "100%",
-                              }}
-                            >
-                              {/* Quoted Message Preview if replying */}
-                              {!msg.isDeleted && msg.replyTo && (
-                                <QuotedMessagePreview
-                                  replyTo={msg.replyTo}
-                                  isMine={isMine}
-                                  onJumpToMessage={jumpToMessage}
-                                />
-                              )}
+                        {/* Bubble and Reactions Column (anchored to bottom-right) */}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            minWidth: 0,
+                            maxWidth: "100%",
+                          }}
+                        >
+                          {/* Message Bubble */}
+                          <div
+                            className={flashingMessageId === msg.id ? "flash-highlight" : undefined}
+                            style={{
+                              padding: isPureMedia
+                                ? "0"
+                                : msg.isDeleted
+                                ? "8px 14px"
+                                : "10px 16px",
+                              borderRadius: isMine
+                                ? "18px 18px 4px 18px"
+                                : "18px 18px 18px 4px",
+                              backgroundColor: msg.isDeleted
+                                ? "var(--bg-hover)"
+                                : isPureMedia
+                                ? "transparent"
+                                : isMine
+                                ? "var(--primary)"
+                                : "var(--bg-card)",
+                              color: msg.isDeleted
+                                ? "var(--text-muted)"
+                                : isMine
+                                ? "#fff"
+                                : "var(--text-primary)",
+                              fontSize: 15,
+                              lineHeight: "22px",
+                              wordBreak: "break-word",
+                              boxShadow: isCurrentMatch
+                                ? "0 0 0 2.5px #eab308, var(--shadow-sm)"
+                                : isMatchingMsg
+                                ? "0 0 0 1.5px rgba(234, 179, 8, 0.45)"
+                                : isPureMedia
+                                ? "none"
+                                : "var(--shadow-sm)",
+                              transition: "box-shadow 0.2s ease",
+                              fontStyle: msg.isDeleted ? "italic" : "normal",
+                              border: msg.isDeleted
+                                ? "1px dashed var(--border-color)"
+                                : isPureMedia
+                                ? "none"
+                                : !isMine
+                                ? "1px solid var(--border-color)"
+                                : "none",
+                              position: "relative",
+                              maxWidth: "100%",
+                            }}
+                          >
+                            {/* Quoted Message Preview if replying */}
+                            {!msg.isDeleted && msg.replyTo && (
+                              <QuotedMessagePreview
+                                replyTo={msg.replyTo}
+                                isMine={isMine}
+                                onJumpToMessage={jumpToMessage}
+                              />
+                            )}
 
-                              {isEditingThis ? (
-                                <MessageEditBox
-                                  value={editText}
-                                  onChange={setEditText}
-                                  onSave={() => saveEdit(msg.id)}
-                                  onCancel={cancelEdit}
-                                  isSaving={isSavingEdit}
-                                  isMine={isMine}
-                                />
-                              ) : (
-                                /* Normal Message Content */
-                                <div>
-                                  {/* Parsed Text with Clickable Links */}
-                                  {parsed.nodes.length > 0 && (
-                                    <div>
-                                      {parsed.nodes}
-                                      {/* (edited) tag */}
-                                      {msg.updatedAt && !msg.isDeleted && (
-                                        <span
-                                          style={{
-                                            fontSize: 11,
-                                            opacity: 0.75,
-                                            marginLeft: 6,
+                            {isEditingThis ? (
+                              <MessageEditBox
+                                value={editText}
+                                onChange={setEditText}
+                                onSave={() => saveEdit(msg.id)}
+                                onCancel={cancelEdit}
+                                isSaving={isSavingEdit}
+                                isMine={isMine}
+                              />
+                            ) : (
+                              /* Normal Message Content */
+                              <div>
+                                {/* Parsed Text with Clickable Links */}
+                                {parsed.nodes.length > 0 && (
+                                  <div>
+                                    {parsed.nodes}
+                                    {/* (edited) tag */}
+                                    {msg.updatedAt && !msg.isDeleted && (
+                                      <span
+                                        style={{
+                                          fontSize: 11,
+                                          opacity: 0.75,
+                                          marginLeft: 6,
+                                        }}
+                                      >
+                                        (edited)
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Embedded Attachments (Images, Videos, Files, GIFs) */}
+                                {!msg.isDeleted &&
+                                  parsed.attachments &&
+                                  parsed.attachments.length > 0 && (
+                                    <div
+                                      style={{
+                                        marginTop:
+                                          parsed.nodes.length > 0 ? 8 : 0,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 6,
+                                      }}
+                                    >
+                                      {parsed.attachments.map((att, attIdx) => (
+                                        <ChatAttachmentBubble
+                                          key={attIdx}
+                                          attachment={att}
+                                          isMine={isMine}
+                                          isPureMedia={isPureMedia}
+                                          onImageClick={(url) => {
+                                            setLightboxImages([url]);
+                                            setIsLightboxOpen(true);
                                           }}
-                                        >
-                                          (edited)
-                                        </span>
-                                      )}
+                                          onMediaLoaded={() =>
+                                            scrollToBottom(false)
+                                          }
+                                        />
+                                      ))}
                                     </div>
                                   )}
 
-                                  {/* Embedded Attachments (Images, Videos, Files, GIFs) */}
-                                  {!msg.isDeleted &&
-                                    parsed.attachments &&
-                                    parsed.attachments.length > 0 && (
-                                      <div
-                                        style={{
-                                          marginTop:
-                                            parsed.nodes.length > 0 ? 8 : 0,
-                                          display: "flex",
-                                          flexDirection: "column",
-                                          gap: 6,
-                                        }}
-                                      >
-                                        {parsed.attachments.map((att, attIdx) => (
-                                          <ChatAttachmentBubble
-                                            key={attIdx}
-                                            attachment={att}
-                                            isMine={isMine}
-                                            isPureMedia={isPureMedia}
-                                            onImageClick={(url) => {
-                                              setLightboxImages([url]);
-                                              setIsLightboxOpen(true);
-                                            }}
-                                            onMediaLoaded={() =>
-                                              scrollToBottom(false)
-                                            }
-                                          />
-                                        ))}
-                                      </div>
-                                    )}
+                                {/* (edited) tag if pure media was edited */}
+                                {msg.updatedAt && !msg.isDeleted && parsed.nodes.length === 0 && (
+                                  <span
+                                    style={{
+                                      fontSize: 11,
+                                      opacity: 0.75,
+                                      marginTop: 4,
+                                      display: "inline-block",
+                                    }}
+                                  >
+                                    (edited)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
 
-                                  {/* (edited) tag if pure media was edited */}
-                                  {msg.updatedAt && !msg.isDeleted && parsed.nodes.length === 0 && (
-                                    <span
-                                      style={{
-                                        fontSize: 11,
-                                        opacity: 0.75,
-                                        marginTop: 4,
-                                        display: "inline-block",
-                                      }}
-                                    >
-                                      (edited)
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                          {/* Message Reactions Badges (anchored to bottom-right of bubble) */}
+                          {!msg.isDeleted && (
+                            <MessageReactionsDisplay
+                              reactions={msg.reactions}
+                              currentUserId={currentUser?.id}
+                              isMine={isMine}
+                              align="right"
+                              onToggleReaction={(emoji) => toggleReaction(msg.id, emoji)}
+                            />
+                          )}
+                        </div>
 
                         {/* Actions (Three-Dots Menu: Pin / Edit / Delete / Reply / React) */}
                         {!msg.isDeleted && !isEditingThis && (
@@ -1618,16 +1662,6 @@ export default function MessagesPage() {
                         )}
                       </div>
 
-                      {/* Message Reactions Badges */}
-                      {!msg.isDeleted && (
-                        <MessageReactionsDisplay
-                          reactions={msg.reactions}
-                          currentUserId={currentUser?.id}
-                          isMine={isMine}
-                          onToggleReaction={(emoji) => toggleReaction(msg.id, emoji)}
-                        />
-                      )}
-
                       {/* Timestamp & Pin Indicator */}
                       <span
                         style={{
@@ -1635,7 +1669,7 @@ export default function MessagesPage() {
                           color: "var(--text-muted)",
                           marginTop: 3,
                           marginRight: isMine ? 4 : 0,
-                          marginLeft: !isMine ? 36 : 0,
+                          marginLeft: !isMine ? 40 : 0,
                           display: "inline-flex",
                           alignItems: "center",
                           gap: 4,
