@@ -66,11 +66,12 @@ export const chatApi = {
 
   sendMessage: async (
     conversationId: number,
-    content: string
+    content: string,
+    replyToMessageId?: number
   ): Promise<Message> => {
     const response = await api.post<Message>(
       `/conversations/${conversationId}/messages`,
-      { content }
+      { content, replyToMessageId }
     );
     return response.data;
   },
@@ -107,6 +108,18 @@ export const chatApi = {
       messageId: number;
       isPinned: boolean;
     }>(`/conversations/${conversationId}/messages/${messageId}/pin`);
+    return response.data;
+  },
+
+  toggleReaction: async (
+    conversationId: number,
+    messageId: number,
+    emoji: string
+  ): Promise<import("../types/chat").MessageReactionItem[]> => {
+    const response = await api.post<import("../types/chat").MessageReactionItem[]>(
+      `/conversations/${conversationId}/messages/${messageId}/reactions`,
+      { emoji }
+    );
     return response.data;
   },
 };

@@ -4,6 +4,7 @@ import {
   PinIcon,
   EditPencilIcon,
   TrashIcon,
+  ReplyIcon,
 } from "./ChatIcons";
 
 interface MessageActionsMenuProps {
@@ -12,6 +13,8 @@ interface MessageActionsMenuProps {
   align?: "left" | "right";
   compact?: boolean;
   onTogglePin: () => void;
+  onReply?: () => void;
+  onReact?: (emoji: string) => void;
   onEdit?: () => void;
   onDelete?: () => void;
 }
@@ -34,6 +37,8 @@ export function MessageActionsMenu({
   align = "right",
   compact = false,
   onTogglePin,
+  onReply,
+  onReact,
   onEdit,
   onDelete,
 }: MessageActionsMenuProps) {
@@ -86,9 +91,9 @@ export function MessageActionsMenu({
         : window.innerHeight;
       const boundaryLeft = scrollRect ? scrollRect.left : 0;
       const boundaryRight = scrollRect ? scrollRect.right : window.innerWidth;
-      const menuWidth = compact ? 140 : 154;
+      const menuWidth = compact ? 154 : 170;
 
-      setOpenUpward(btnRect.bottom + 130 > boundaryBottom);
+      setOpenUpward(btnRect.bottom + 150 > boundaryBottom);
 
       // Flip horizontally if opening toward the configured side would clip outside the container.
       const preferRightward = align === "left";
@@ -104,6 +109,15 @@ export function MessageActionsMenu({
   };
 
   const items: MenuItem[] = [
+    ...(onReply
+      ? [
+          {
+            label: "Reply",
+            icon: <ReplyIcon size={compact ? 13 : 14} />,
+            onClick: onReply,
+          },
+        ]
+      : []),
     {
       label: isPinned ? "Unpin message" : "Pin message",
       icon: <PinIcon size={compact ? 13 : 14} filled={isPinned} />,
@@ -141,8 +155,45 @@ export function MessageActionsMenu({
         flexShrink: 0,
         display: "inline-flex",
         alignItems: "center",
+        gap: 2,
       }}
     >
+      {onReply && (
+        <button
+          type="button"
+          onClick={onReply}
+          title="Reply to message"
+          aria-label="Reply to message"
+          style={{
+            width: triggerSize,
+            height: triggerSize,
+            borderRadius: "50%",
+            border: "none",
+            backgroundColor: "transparent",
+            color: "var(--text-secondary)",
+            opacity: 0.72,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            transition: "background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+            e.currentTarget.style.color = "var(--primary)";
+            e.currentTarget.style.opacity = "1";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+            e.currentTarget.style.color = "var(--text-secondary)";
+            e.currentTarget.style.opacity = "0.72";
+          }}
+        >
+          <ReplyIcon size={compact ? 13 : 14} />
+        </button>
+      )}
+
       <button
         ref={buttonRef}
         type="button"
@@ -185,18 +236,67 @@ export function MessageActionsMenu({
               ? { bottom: "calc(100% + 4px)" }
               : { top: "calc(100% + 4px)" }),
             ...(openRightward ? { left: 0 } : { right: 0 }),
-            minWidth: compact ? 136 : 150,
+            minWidth: compact ? 154 : 172,
             backgroundColor: "var(--bg-card)",
             border: "1px solid var(--border-color)",
-            borderRadius: 8,
+            borderRadius: 10,
             boxShadow: "var(--shadow-lg)",
-            padding: 4,
+            padding: 5,
             zIndex: 60,
             display: "flex",
             flexDirection: "column",
             gap: 2,
           }}
         >
+          {onReact && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "3px 4px 6px 4px",
+                borderBottom: "1px solid var(--border-color)",
+                marginBottom: 2,
+                gap: 2,
+              }}
+            >
+              {["👍", "❤️", "😂", "😮", "😢", "🔥"].map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    onReact(emoji);
+                  }}
+                  title={`React with ${emoji}`}
+                  aria-label={`React with ${emoji}`}
+                  style={{
+                    border: "none",
+                    backgroundColor: "transparent",
+                    fontSize: compact ? 16 : 18,
+                    fontFamily:
+                      '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+                    padding: compact ? "2px 3px" : "3px 5px",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    lineHeight: 1,
+                    transition: "transform 0.12s ease, background-color 0.12s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+                    e.currentTarget.style.transform = "scale(1.22)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+
           {items.map((item) => (
             <button
               key={item.label}

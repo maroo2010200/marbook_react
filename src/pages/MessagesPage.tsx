@@ -39,6 +39,9 @@ import {
 import { MessageActionsMenu } from "../components/chat/MessageActionsMenu";
 import { MessageEditBox } from "../components/chat/MessageEditBox";
 import { DeleteMessageModal } from "../components/chat/DeleteMessageModal";
+import { MessageReactionsDisplay } from "../components/chat/MessageReactionsDisplay";
+import { ReplyPreviewBanner } from "../components/chat/ReplyPreviewBanner";
+import { QuotedMessagePreview } from "../components/chat/QuotedMessagePreview";
 import type { Message, ConversationSummary, TypingEvent } from "../types/chat";
 
 export default function MessagesPage() {
@@ -59,6 +62,7 @@ export default function MessagesPage() {
     onMessageEdited,
     onMessageDeleted,
     onMessagePinned,
+    onMessageReactionUpdated,
     onUserTyping,
     isUserOnline,
   } = useChat();
@@ -140,6 +144,12 @@ export default function MessagesPage() {
     cancelDelete,
     confirmDelete,
     togglePin,
+    replyingToMessage,
+    flashingMessageId,
+    startReply,
+    cancelReply,
+    toggleReaction,
+    jumpToMessage,
   } = useChatMessageActions({
     conversationId: selectedId,
     setMessages,
@@ -395,11 +405,23 @@ export default function MessagesPage() {
       }
     });
 
+    // 6. Message reaction updated
+    const unsubReaction = onMessageReactionUpdated((data) => {
+      if (data.conversationId === selectedId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === data.messageId ? { ...m, reactions: data.reactions } : m
+          )
+        );
+      }
+    });
+
     return () => {
       unsubReceive();
       unsubEdited();
       unsubDeleted();
       unsubPinned();
+      unsubReaction();
       unsubTyping();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -411,6 +433,7 @@ export default function MessagesPage() {
     onMessageEdited,
     onMessageDeleted,
     onMessagePinned,
+    onMessageReactionUpdated,
     onUserTyping,
     refreshUnreadCount,
     scrollToBottom,
@@ -520,6 +543,8 @@ export default function MessagesPage() {
 
     const textToSend = inputText.trim();
     const currentAttachments = [...stagedAttachments];
+    const replyId = replyingToMessage?.id;
+    cancelReply();
 
     setInputText("");
     setStagedAttachments([]);
@@ -537,7 +562,7 @@ export default function MessagesPage() {
           const messageContent = caption ? `${caption}\n${uploadedUrl}` : uploadedUrl;
           caption = ""; // Caption attached to first uploaded item
 
-          const created = await chatApi.sendMessage(selectedId, messageContent);
+          const created = await chatApi.sendMessage(selectedId, messageContent, replyId);
           soundEffects.playChatSent();
 
           setMessages((prev) => {
@@ -566,7 +591,7 @@ export default function MessagesPage() {
           if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
         });
       } else {
-        const created = await chatApi.sendMessage(selectedId, textToSend);
+        const created = await chatApi.sendMessage(selectedId, textToSend, replyId);
         soundEffects.playChatSent();
 
         // Append locally if not already appended by SignalR
@@ -606,12 +631,14 @@ export default function MessagesPage() {
   // Handle Send GIF
   const handleSendGif = async (gifUrl: string) => {
     if (!selectedId || isSending) return;
+    const replyId = replyingToMessage?.id;
+    cancelReply();
     setIsSending(true);
     setIsGifPickerOpen(false);
     sendTyping(selectedId, false);
 
     try {
-      const created = await chatApi.sendMessage(selectedId, gifUrl);
+      const created = await chatApi.sendMessage(selectedId, gifUrl, replyId);
       soundEffects.playChatSent();
 
       setMessages((prev) => {
@@ -1440,6 +1467,7 @@ export default function MessagesPage() {
 
                         {/* Message Bubble */}
                             <div
+                              className={flashingMessageId === msg.id ? "flash-highlight" : undefined}
                               style={{
                                 padding: isPureMedia
                                   ? "0"
@@ -1484,6 +1512,15 @@ export default function MessagesPage() {
                                 maxWidth: "100%",
                               }}
                             >
+                              {/* Quoted Message Preview if replying */}
+                              {!msg.isDeleted && msg.replyTo && (
+                                <QuotedMessagePreview
+                                  replyTo={msg.replyTo}
+                                  isMine={isMine}
+                                  onJumpToMessage={jumpToMessage}
+                                />
+                              )}
+
                               {isEditingThis ? (
                                 <MessageEditBox
                                   value={editText}
@@ -1563,18 +1600,33 @@ export default function MessagesPage() {
                               )}
                             </div>
 
-                        {/* Actions (Three-Dots Menu: Pin / Edit / Delete) */}
+                        {/* Actions (Three-Dots Menu: Pin / Edit / Delete / Reply / React) */}
                         {!msg.isDeleted && !isEditingThis && (
                           <MessageActionsMenu
                             align={isMine ? "right" : "left"}
                             isPinned={Boolean(msg.isPinned)}
                             canEdit={isMine && !isPureMedia}
                             onTogglePin={() => togglePin(msg.id)}
+                            onReply={() => {
+                              startReply(msg);
+                              inputRef.current?.focus();
+                            }}
+                            onReact={(emoji) => toggleReaction(msg.id, emoji)}
                             onEdit={isMine ? () => startEdit(msg) : undefined}
                             onDelete={isMine ? () => promptDelete(msg.id) : undefined}
                           />
                         )}
                       </div>
+
+                      {/* Message Reactions Badges */}
+                      {!msg.isDeleted && (
+                        <MessageReactionsDisplay
+                          reactions={msg.reactions}
+                          currentUserId={currentUser?.id}
+                          isMine={isMine}
+                          onToggleReaction={(emoji) => toggleReaction(msg.id, emoji)}
+                        />
+                      )}
 
                       {/* Timestamp & Pin Indicator */}
                       <span
@@ -1678,6 +1730,12 @@ export default function MessagesPage() {
               stagedAttachments={stagedAttachments}
               onRemove={removeStagedAttachment}
               isUploading={isSending}
+            />
+
+            {/* WhatsApp-Style Quoted Reply Banner */}
+            <ReplyPreviewBanner
+              replyTo={replyingToMessage}
+              onCancel={cancelReply}
             />
 
             {/* Chat Bottom Input Bar */}

@@ -1353,3 +1353,21 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4) !important;
   }
 }
+
+@keyframes message-flash-highlight {
+  0% {
+    box-shadow: 0 0 0 3.5px #eab308, 0 4px 14px rgba(234, 179, 8, 0.4);
+    transform: scale(1.02);
+  }
+  60% {
+    box-shadow: 0 0 0 2.5px rgba(234, 179, 8, 0.6);
+  }
+  100% {
+    box-shadow: none;
+    transform: scale(1);
+  }
+}
+
+.flash-highlight {
+  animation: message-flash-highlight 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+}
