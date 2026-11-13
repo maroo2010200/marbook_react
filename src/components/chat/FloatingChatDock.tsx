@@ -701,7 +701,7 @@ export function FloatingChatDock() {
                 {pinnedMsg.content.slice(0, 50)}
               </span>
             </div>
-            {currentUser && pinnedMsg.senderUserId === currentUser.id && (
+            {currentUser && (
               <button
                 type="button"
                 onClick={() => togglePin(pinnedMsg.id)}
@@ -891,15 +891,15 @@ export function FloatingChatDock() {
                       )}
                     </div>
 
-                    {isMine && !m.isDeleted && !isEditingThis && (
+                    {!m.isDeleted && !isEditingThis && (
                       <MessageActionsMenu
                         compact
-                        align="right"
+                        align={isMine ? "right" : "left"}
                         isPinned={Boolean(m.isPinned)}
-                        canEdit={!isPureMedia}
+                        canEdit={isMine && !isPureMedia}
                         onTogglePin={() => togglePin(m.id)}
-                        onEdit={() => startEdit(m)}
-                        onDelete={() => promptDelete(m.id)}
+                        onEdit={isMine ? () => startEdit(m) : undefined}
+                        onDelete={isMine ? () => promptDelete(m.id) : undefined}
                       />
                     )}
                   </div>

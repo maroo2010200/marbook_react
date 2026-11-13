@@ -12,8 +12,8 @@ interface MessageActionsMenuProps {
   align?: "left" | "right";
   compact?: boolean;
   onTogglePin: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 interface MenuItem {
@@ -110,7 +110,7 @@ export function MessageActionsMenu({
       onClick: onTogglePin,
       highlight: isPinned,
     },
-    ...(canEdit
+    ...(canEdit && onEdit
       ? [
           {
             label: "Edit",
@@ -119,12 +119,16 @@ export function MessageActionsMenu({
           },
         ]
       : []),
-    {
-      label: "Delete",
-      icon: <TrashIcon size={compact ? 13 : 14} />,
-      onClick: onDelete,
-      danger: true,
-    },
+    ...(onDelete
+      ? [
+          {
+            label: "Delete",
+            icon: <TrashIcon size={compact ? 13 : 14} />,
+            onClick: onDelete,
+            danger: true,
+          },
+        ]
+      : []),
   ];
 
   const triggerSize = compact ? 24 : 28;
