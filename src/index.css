@@ -1305,4 +1305,51 @@ h1, h2, h3, h4, h5, h6 {
     margin-left: 8px !important;
     padding-left: 10px !important;
   }
+
+  /* Shared Media Modal Mobile Bottom Sheet */
+  .shared-media-modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .shared-media-modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 92dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 16px 16px 0 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  .shared-media-modal-header {
+    padding: 12px 16px 10px !important;
+  }
+
+  .shared-media-modal-scroll {
+    padding: 12px !important;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .chat-search-input {
+    font-size: 16px !important;
+  }
+
+  .chat-search-toolbar {
+    padding: 6px 10px !important;
+    gap: 6px !important;
+  }
+
+  /* Emoji Picker Mobile Popover */
+  .emoji-picker-popover {
+    position: fixed !important;
+    inset: auto 8px calc(62px + env(safe-area-inset-bottom, 0px)) 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    height: 330px !important;
+    border-radius: 16px !important;
+    z-index: 2200 !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4) !important;
+  }
 }
