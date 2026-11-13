@@ -30,6 +30,9 @@ import { useInChatSearch } from "../../hooks/useInChatSearch";
 import { MessageActionsMenu } from "./MessageActionsMenu";
 import { MessageEditBox } from "./MessageEditBox";
 import { DeleteMessageModal } from "./DeleteMessageModal";
+import { MessageReactionsDisplay } from "./MessageReactionsDisplay";
+import { ReplyPreviewBanner } from "./ReplyPreviewBanner";
+import { QuotedMessagePreview } from "./QuotedMessagePreview";
 import {
   ChatAttachmentBubble,
   PaperclipIcon,
@@ -58,6 +61,7 @@ export function FloatingChatDock() {
     onMessageEdited,
     onMessageDeleted,
     onMessagePinned,
+    onMessageReactionUpdated,
     onUserTyping,
     isUserOnline,
   } = useChat();
@@ -270,11 +274,22 @@ export function FloatingChatDock() {
       }
     });
 
+    const unsubReaction = onMessageReactionUpdated((data) => {
+      if (data.conversationId === floatingConversationId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === data.messageId ? { ...m, reactions: data.reactions } : m
+          )
+        );
+      }
+    });
+
     return () => {
       unsubReceive();
       unsubEdited();
       unsubDeleted();
       unsubPinned();
+      unsubReaction();
       unsubTyping();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
@@ -285,6 +300,7 @@ export function FloatingChatDock() {
     onMessageEdited,
     onMessageDeleted,
     onMessagePinned,
+    onMessageReactionUpdated,
     onUserTyping,
     refreshUnreadCount,
     setConversations,
@@ -407,6 +423,9 @@ export function FloatingChatDock() {
     if ((!trimmed && stagedAttachments.length === 0) || isSending || !floatingConversationId) return;
 
     const currentAttachments = [...stagedAttachments];
+    const replyId = replyingToMessage?.id;
+    cancelReply();
+
     setIsSending(true);
     setInputText("");
     setStagedAttachments([]);
@@ -426,7 +445,7 @@ export function FloatingChatDock() {
           const messageContent = caption ? `${caption}\n${uploadedUrl}` : uploadedUrl;
           caption = "";
 
-          const newMsg = await chatApi.sendMessage(floatingConversationId, messageContent);
+          const newMsg = await chatApi.sendMessage(floatingConversationId, messageContent, replyId);
           soundEffects.playChatSent();
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) {
@@ -440,7 +459,7 @@ export function FloatingChatDock() {
           if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
         });
       } else {
-        const newMsg = await chatApi.sendMessage(floatingConversationId, trimmed);
+        const newMsg = await chatApi.sendMessage(floatingConversationId, trimmed, replyId);
         soundEffects.playChatSent();
         setMessages((prev) => {
           if (prev.some((m) => m.id === newMsg.id)) {
@@ -465,6 +484,8 @@ export function FloatingChatDock() {
   // Handle Send GIF
   const handleSendGif = async (gifUrl: string) => {
     if (!floatingConversationId || isSending) return;
+    const replyId = replyingToMessage?.id;
+    cancelReply();
     setIsSending(true);
     setIsGifPickerOpen(false);
 
@@ -475,7 +496,7 @@ export function FloatingChatDock() {
         sendTyping(floatingConversationId, false).catch(() => {});
       }
 
-      const newMsg = await chatApi.sendMessage(floatingConversationId, gifUrl);
+      const newMsg = await chatApi.sendMessage(floatingConversationId, gifUrl, replyId);
       setMessages((prev) => {
         if (prev.some((m) => m.id === newMsg.id)) {
           return prev;
@@ -511,6 +532,12 @@ export function FloatingChatDock() {
     cancelDelete,
     confirmDelete,
     togglePin,
+    replyingToMessage,
+    flashingMessageId,
+    startReply,
+    cancelReply,
+    toggleReaction,
+    jumpToMessage,
   } = useChatMessageActions({
     conversationId: floatingConversationId,
     setMessages,
@@ -880,6 +907,7 @@ export function FloatingChatDock() {
                 <div
                   key={m.id}
                   id={`dock-msg-${m.id}`}
+                  className={flashingMessageId === m.id ? "flash-highlight" : undefined}
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -906,6 +934,16 @@ export function FloatingChatDock() {
                         maxWidth: "100%",
                       }}
                     >
+                      {/* Quoted Message Preview if replying */}
+                      {!m.isDeleted && m.replyTo && (
+                        <QuotedMessagePreview
+                          replyTo={m.replyTo}
+                          isMine={isMine}
+                          onJumpToMessage={jumpToMessage}
+                          compact
+                        />
+                      )}
+
                       {isEditingThis ? (
                         <div
                           style={{
@@ -1015,11 +1053,27 @@ export function FloatingChatDock() {
                         isPinned={Boolean(m.isPinned)}
                         canEdit={isMine && !isPureMedia}
                         onTogglePin={() => togglePin(m.id)}
+                        onReply={() => {
+                          startReply(m);
+                          inputRef.current?.focus();
+                        }}
+                        onReact={(emoji) => toggleReaction(m.id, emoji)}
                         onEdit={isMine ? () => startEdit(m) : undefined}
                         onDelete={isMine ? () => promptDelete(m.id) : undefined}
                       />
                     )}
                   </div>
+
+                  {/* Message Reactions Badges */}
+                  {!m.isDeleted && (
+                    <MessageReactionsDisplay
+                      reactions={m.reactions}
+                      currentUserId={currentUser?.id}
+                      isMine={isMine}
+                      onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
+                      compact
+                    />
+                  )}
 
                   <span
                     style={{
@@ -1124,6 +1178,13 @@ export function FloatingChatDock() {
         stagedAttachments={stagedAttachments}
         onRemove={removeStagedAttachment}
         isUploading={isSending}
+      />
+
+      {/* WhatsApp-Style Quoted Reply Banner */}
+      <ReplyPreviewBanner
+        replyTo={replyingToMessage}
+        onCancel={cancelReply}
+        compact
       />
 
       {/* Input Composer */}

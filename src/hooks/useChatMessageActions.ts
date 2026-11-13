@@ -33,6 +33,18 @@ export function useChatMessageActions({
     null
   );
 
+  const [replyTarget, setReplyTarget] = useState<{
+    conversationId: number;
+    message: Message;
+  } | null>(null);
+
+  const [flashingMessageId, setFlashingMessageId] = useState<number | null>(null);
+
+  const replyingToMessage =
+    conversationId && replyTarget?.conversationId === conversationId
+      ? replyTarget.message
+      : null;
+
   const editingMessageId =
     conversationId && editState?.conversationId === conversationId
       ? editState.messageId
@@ -171,6 +183,50 @@ export function useChatMessageActions({
     [conversationId, setMessages]
   );
 
+  const startReply = useCallback(
+    (msg: Message) => {
+      if (!conversationId) return;
+      setReplyTarget({ conversationId, message: msg });
+    },
+    [conversationId]
+  );
+
+  const cancelReply = useCallback(() => {
+    setReplyTarget(null);
+  }, []);
+
+  const toggleReaction = useCallback(
+    async (messageId: number, emoji: string) => {
+      if (!conversationId) return;
+      try {
+        const updated = await chatApi.toggleReaction(
+          conversationId,
+          messageId,
+          emoji
+        );
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId ? { ...m, reactions: updated } : m
+          )
+        );
+      } catch (err) {
+        console.error("Failed to toggle reaction:", err);
+      }
+    },
+    [conversationId, setMessages]
+  );
+
+  const jumpToMessage = useCallback((targetId: number) => {
+    const el =
+      document.getElementById(`msg-${targetId}`) ||
+      document.getElementById(`dock-msg-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setFlashingMessageId(targetId);
+      setTimeout(() => setFlashingMessageId(null), 1600);
+    }
+  }, []);
+
   return {
     editingMessageId,
     editText,
@@ -179,6 +235,8 @@ export function useChatMessageActions({
     messageToDeleteId,
     isDeletingMessage,
     deleteMessageError,
+    replyingToMessage,
+    flashingMessageId,
     startEdit,
     cancelEdit,
     saveEdit,
@@ -186,6 +244,10 @@ export function useChatMessageActions({
     cancelDelete,
     confirmDelete,
     togglePin,
+    startReply,
+    cancelReply,
+    toggleReaction,
+    jumpToMessage,
   };
 }
 

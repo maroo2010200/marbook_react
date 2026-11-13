@@ -1,5 +1,25 @@
 import type { UserSummary } from "./user";
 
+export interface MessageReply {
+  id: number;
+  senderUserId: number;
+  senderName: string;
+  content: string;
+  isDeleted: boolean;
+}
+
+export interface MessageReactionItem {
+  userId: number;
+  userName: string;
+  emoji: string;
+}
+
+export interface MessageReactionUpdatedEvent {
+  conversationId: number;
+  messageId: number;
+  reactions: MessageReactionItem[];
+}
+
 export interface Message {
   id: number;
   conversationId: number;
@@ -12,6 +32,8 @@ export interface Message {
   isDeleted: boolean;
   isMine: boolean;
   isPinned?: boolean;
+  replyTo?: MessageReply | null;
+  reactions?: MessageReactionItem[];
 }
 
 export interface ConversationSummary {

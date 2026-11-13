@@ -60,6 +60,13 @@ interface ChatContextType {
       isPinned: boolean;
     }) => void
   ) => () => void;
+  onMessageReactionUpdated: (
+    listener: (data: {
+      conversationId: number;
+      messageId: number;
+      reactions: import("../types/chat").MessageReactionItem[];
+    }) => void
+  ) => () => void;
   onUserTyping: (listener: (event: TypingEvent) => void) => () => void;
   onMessagesRead: (listener: (event: ReadReceiptEvent) => void) => () => void;
   onConversationUpdated: (
@@ -149,6 +156,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }) => void
     >
   >(new Set());
+  const messageReactionListeners = useRef<
+    Set<
+      (data: {
+        conversationId: number;
+        messageId: number;
+        reactions: import("../types/chat").MessageReactionItem[];
+      }) => void
+    >
+  >(new Set());
   const userTypingListeners = useRef<Set<(event: TypingEvent) => void>>(
     new Set()
   );
@@ -203,6 +219,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       messagePinnedListeners.current.add(listener);
       return () => {
         messagePinnedListeners.current.delete(listener);
+      };
+    },
+    []
+  );
+
+  const onMessageReactionUpdated = useCallback(
+    (
+      listener: (data: {
+        conversationId: number;
+        messageId: number;
+        reactions: import("../types/chat").MessageReactionItem[];
+      }) => void
+    ) => {
+      messageReactionListeners.current.add(listener);
+      return () => {
+        messageReactionListeners.current.delete(listener);
       };
     },
     []
@@ -431,6 +463,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
+    connection.on(
+      "MessageReactionUpdated",
+      (data: {
+        conversationId: number;
+        messageId: number;
+        reactions: import("../types/chat").MessageReactionItem[];
+      }) => {
+        messageReactionListeners.current.forEach((listener) => {
+          try {
+            listener(data);
+          } catch (err) {
+            console.error("MessageReactionUpdated listener error:", err);
+          }
+        });
+      }
+    );
+
     connection.on("UserTyping", (event: TypingEvent) => {
       userTypingListeners.current.forEach((listener) => {
         try {
@@ -645,6 +694,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       onMessageEdited,
       onMessageDeleted,
       onMessagePinned,
+      onMessageReactionUpdated,
       onUserTyping,
       onMessagesRead,
       onConversationUpdated,
@@ -669,6 +719,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       onMessageEdited,
       onMessageDeleted,
       onMessagePinned,
+      onMessageReactionUpdated,
       onUserTyping,
       onMessagesRead,
       onConversationUpdated,
