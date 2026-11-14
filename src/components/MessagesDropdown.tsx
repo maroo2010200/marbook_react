@@ -10,9 +10,14 @@ import type { ConversationSummary } from "../types/chat";
 interface MessagesDropdownProps {
   isOpen: boolean;
   onClose: () => void;
+  triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
-export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
+export function MessagesDropdown({
+  isOpen,
+  onClose,
+  triggerRef,
+}: MessagesDropdownProps) {
   const { user: currentUser } = useAuth();
   const { conversations, refreshConversations, openFloatingChat, isUserOnline } = useChat();
   const navigate = useNavigate();
@@ -35,10 +40,19 @@ export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
     if (!isOpen) return;
 
     const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as Node;
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
+        !dropdownRef.current.contains(target)
       ) {
+        // If clicking the messenger trigger button (or inside it), ignore so onClick toggles cleanly
+        if (triggerRef?.current && triggerRef.current.contains(target)) {
+          return;
+        }
+        const messengerBtn = document.getElementById("navbar-messenger-btn");
+        if (messengerBtn && messengerBtn.contains(target)) {
+          return;
+        }
         onCloseRef.current();
       }
     };
@@ -47,7 +61,7 @@ export function MessagesDropdown({ isOpen, onClose }: MessagesDropdownProps) {
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
     };
-  }, [isOpen]);
+  }, [isOpen, triggerRef]);
 
   if (!isOpen) return null;
 

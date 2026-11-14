@@ -12,6 +12,7 @@ interface NotificationsDropdownProps {
   onClose: () => void;
   onNotificationClick: (item: NotificationItem) => void;
   onUnreadCountChanged?: (count: number) => void;
+  triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
 export function NotificationsDropdown({
@@ -19,6 +20,7 @@ export function NotificationsDropdown({
   onClose,
   onNotificationClick,
   onUnreadCountChanged,
+  triggerRef,
 }: NotificationsDropdownProps) {
   const navigate = useNavigate();
   const { subscribeToNotifications } = useNotifications();
@@ -53,10 +55,19 @@ export function NotificationsDropdown({
     if (!isOpen) return;
 
     const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as Node;
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        !containerRef.current.contains(target)
       ) {
+        // If clicking the bell trigger button (or inside it), ignore so onClick toggles cleanly
+        if (triggerRef?.current && triggerRef.current.contains(target)) {
+          return;
+        }
+        const bellBtn = document.getElementById("notifications-bell-btn");
+        if (bellBtn && bellBtn.contains(target)) {
+          return;
+        }
         onClose();
       }
     };
@@ -66,7 +77,7 @@ export function NotificationsDropdown({
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, triggerRef]);
 
   // Fetch notifications for the active tab
   const fetchNotifications = useCallback(

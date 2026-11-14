@@ -21,6 +21,8 @@ function Navbar() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const messengerBtnRef = useRef<HTMLButtonElement>(null);
+  const notificationsBellRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -212,6 +214,7 @@ function Navbar() {
             {/* Messenger */}
             <div style={{ position: "relative" }}>
               <button
+                ref={messengerBtnRef}
                 type="button"
                 id="navbar-messenger-btn"
                 onClick={() => {
@@ -281,12 +284,14 @@ function Navbar() {
               <MessagesDropdown
                 isOpen={isMessagesOpen}
                 onClose={handleCloseMessages}
+                triggerRef={messengerBtnRef}
               />
             </div>
 
             {/* Notifications Bell */}
             <div style={{ position: "relative" }}>
               <button
+                ref={notificationsBellRef}
                 type="button"
                 id="notifications-bell-btn"
                 onClick={() => {
@@ -363,6 +368,7 @@ function Navbar() {
                 onClose={handleCloseNotifications}
                 onNotificationClick={handleNotificationClick}
                 onUnreadCountChanged={(count) => setUnreadCount(count)}
+                triggerRef={notificationsBellRef}
               />
             </div>
 

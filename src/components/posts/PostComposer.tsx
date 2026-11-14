@@ -710,7 +710,7 @@ export function PostComposer({
             ref={textareaRef}
             value={content}
             onChange={handleInput}
-            placeholder={`What's on your mind, ${user.name}?`}
+            placeholder={`What's your favorite marshmallow flavor, ${user.name}?`}
             rows={3}
             disabled={isSubmitting}
             style={{
